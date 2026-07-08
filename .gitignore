@@ -1,0 +1,12 @@
+# Local database - never commit real tracked data
+data/*.db
+data/*.db-journal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor/OS cruft
+.vscode/
+.DS_Store

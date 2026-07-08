@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Dashboard{% endblock %}
+{% block content %}
+
+{% if not has_any_data %}
+<section class="empty-state">
+  <h1>Nothing tracked yet</h1>
+  <p>Paste your order history in on the <a href="/import">Import</a> page and this'll fill itself in.</p>
+</section>
+{% else %}
+
+{% if duplicate_groups %}
+<section class="block">
+  <div class="block-head">
+    <h2 class="warning-head">&#9888; Possible duplicate orders</h2>
+  </div>
+  <div class="groups">
+    {% for dup in duplicate_groups %}
+    <div class="group group-warning">
+      <div class="group-head">
+        <span class="group-date">{{ dup.release_date_label }}</span>
+        <form method="post" action="/duplicates/dismiss" class="inline-form">
+          <input type="hidden" name="name" value="{{ dup.name }}">
+          <input type="hidden" name="release_date" value="{{ dup.release_date }}">
+          <button type="submit" class="btn-tiny btn-dismiss">Not a duplicate</button>
+        </form>
+      </div>
+      <p class="dup-name">{{ dup.name }}</p>
+      <ul class="item-list item-list-simple">
+        {% for item in dup.entries %}
+        <li>
+          <span class="item-name muted">Order #{{ item.order_number }}</span>
+          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <div class="item-actions-group">
+          <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
+            <input type="hidden" name="action" value="cancel">
+            <button type="submit" class="btn-x" title="Cancel this one" aria-label="Cancel this one">&times;</button>
+          </form>
+          <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+            <input type="hidden" name="action" value="remove">
+            <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
+          </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if ghost_items %}
+<section class="block">
+  <div class="block-head">
+    <h2 class="warning-head">&#9888; Items with no order number ({{ ghost_items|length }})</h2>
+    <form method="post" action="/ghost-items/remove-all" class="inline-form"
+          onsubmit="return confirm('Remove all {{ ghost_items|length }} of these permanently? This cannot be undone.');">
+      <button type="submit" class="btn-tiny btn-remove-all">Remove all</button>
+    </form>
+  </div>
+  <p class="muted ghost-hint">
+    These came from a parser issue in an earlier version and can't be matched to a real
+    order &mdash; almost always a duplicate of something already tracked properly.
+    Check before keeping.
+  </p>
+  <div class="groups">
+    <div class="group group-warning">
+      <ul class="item-list item-list-simple">
+        {% for item in ghost_items %}
+        <li>
+          <span class="item-name muted">{{ item.name }} &middot; {{ item.release_date }}</span>
+          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <div class="item-actions-group">
+            <a href="/items/{{ item.id }}/edit" class="btn-tiny">Edit</a>
+            <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+              <input type="hidden" name="action" value="remove">
+              <button type="submit" class="btn-remove">Remove</button>
+            </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="hero">
+  <div class="price-stamp">
+    <span class="price-stamp-label">Still due &middot; {{ current_month_label }}</span>
+    <span class="price-stamp-value">&pound;{{ "%.2f"|format(hero_remaining_total) }}</span>
+  </div>
+  <div class="hero-detail">
+    <h1>{{ current_month_label }}</h1>
+    <p class="hero-line">
+      <span class="mono">&pound;{{ "%.2f"|format(hero_spent_total) }}</span> spent so far
+      (<span class="mono">{{ hero_spent_count }}</span> issue{{ "s" if hero_spent_count != 1 else "" }}) &middot;
+      <span class="mono">&pound;{{ "%.2f"|format(hero_grand_total) }}</span> forecast total
+      for the month, comics + est. shipping.
+    </p>
+    <p class="hero-line muted">
+      {{ next_month_label }} is forecast at <span class="mono">&pound;{{ "%.2f"|format(next_month_total) }}</span> so far.
+    </p>
+    <p class="hero-line muted shipping-note">
+      Shipping estimated at <span class="mono">&pound;{{ "%.2f"|format(shipping_estimate) }}</span> per parcel
+      {% if shipping_source == 'exact' %}
+      &middot; based on <span class="mono">{{ shipping_samples }}</span> actual shipment{{ "s" if shipping_samples != 1 else "" }} from your order pages
+      {% elif shipping_source == 'calibrated' %}
+      &middot; calibrated from <span class="mono">{{ shipping_samples }}</span> past order{{ "s" if shipping_samples != 1 else "" }}
+      {% else %}
+      &middot; default estimate &mdash; only <span class="mono">{{ shipping_samples }}</span> of
+      <span class="mono">{{ shipping_orders_checked }}</span> tracked orders had usable shipping data so far (need at least 3)
+      {% endif %}
+    </p>
+  </div>
+</section>
+
+<section class="block year-block">
+  <div class="block-head">
+    <h2>{{ year_stats.year }} so far</h2>
+  </div>
+  <p class="hero-line">
+    <span class="mono">&pound;{{ "%.2f"|format(year_stats.spent) }}</span> spent &middot;
+    <span class="mono">&pound;{{ "%.2f"|format(year_stats.total) }}</span> tracked total across
+    <span class="mono">{{ year_stats.count }}</span> issue{{ "s" if year_stats.count != 1 else "" }} this year.
+  </p>
+</section>
+
+{% if all_sources|length > 1 %}
+<div class="source-filter-row">
+  <a href="/?month={{ viewed_month_param }}&chart_range={{ active_chart_range }}"
+     class="range-tab {{ 'active' if not active_source else '' }}">All shops</a>
+  {% for s in all_sources %}
+  <a href="/?month={{ viewed_month_param }}&chart_range={{ active_chart_range }}&source={{ s }}"
+     class="range-tab {{ 'active' if active_source == s else '' }}">{{ s }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>This week</h2>
+    <span class="block-total mono">&pound;{{ "%.2f"|format(week_remaining) }} left of &pound;{{ "%.2f"|format(week_total) }}</span>
+  </div>
+
+  {% if week_groups %}
+  <div class="groups">
+    {% for group in week_groups %}
+    <div class="group {{ 'group-paid' if group.all_paid else '' }}">
+      <div class="group-head">
+        <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
+        <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+      </div>
+      {% for sg in group.source_groups %}
+      <div class="source-subgroup">
+        {% if group.source_groups|length > 1 %}
+        <div class="source-label" style="color: {{ sg.color }};">
+          <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
+          <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
+        </div>
+        {% endif %}
+        <ul class="item-list">
+          {% for item in sg.entries %}
+          <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }}">
+            <form method="post" action="/items/{{ item.id }}/mark" class="toggle-form">
+              <input type="hidden" name="action" value="{{ 'undo' if item.charge_status == 'charged' else 'paid' }}">
+              <button type="submit" class="paid-circle {{ 'is-checked' if item.charge_status == 'charged' else '' }}"
+                      title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
+                      aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
+            </form>
+            <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+            <div class="item-actions-group">
+            <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
+              <input type="hidden" name="action" value="cancel">
+              <button type="submit" class="btn-x" title="Cancel this item" aria-label="Cancel this item">&times;</button>
+            </form>
+            <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+              <input type="hidden" name="action" value="remove">
+              <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
+            </form>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nothing due in the next 7 days.</p>
+  {% endif %}
+</section>
+
+<section class="block">
+  <div class="block-head month-nav-head">
+    <div class="month-nav">
+      <a href="/?month={{ prev_month_param }}&chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-btn" aria-label="Previous month">&larr;</a>
+      <h2>{{ viewed_month_label }}, by shipment</h2>
+      <a href="/?month={{ next_month_param }}&chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-btn" aria-label="Next month">&rarr;</a>
+      {% if not is_current_month %}
+      <a href="/?chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-today">Today</a>
+      {% endif %}
+    </div>
+    <span class="block-total mono">&pound;{{ "%.2f"|format(viewed_remaining_total) }} left of &pound;{{ "%.2f"|format(viewed_grand_total) }}</span>
+  </div>
+
+  {% if viewed_groups %}
+  <div class="groups">
+    {% for group in viewed_groups %}
+    <div class="group {{ 'group-paid' if group.all_paid else '' }}">
+      <div class="group-head">
+        <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
+        <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+      </div>
+      {% for sg in group.source_groups %}
+      <div class="source-subgroup">
+        {% if group.source_groups|length > 1 %}
+        <div class="source-label" style="color: {{ sg.color }};">
+          <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
+          <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
+        </div>
+        {% endif %}
+        <ul class="item-list">
+          {% for item in sg.entries %}
+          <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }}">
+            <form method="post" action="/items/{{ item.id }}/mark" class="toggle-form">
+              <input type="hidden" name="action" value="{{ 'undo' if item.charge_status == 'charged' else 'paid' }}">
+              <button type="submit" class="paid-circle {{ 'is-checked' if item.charge_status == 'charged' else '' }}"
+                      title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
+                      aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
+            </form>
+            <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+            <div class="item-actions-group">
+            <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
+              <input type="hidden" name="action" value="cancel">
+              <button type="submit" class="btn-x" title="Cancel this item" aria-label="Cancel this item">&times;</button>
+            </form>
+            <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+              <input type="hidden" name="action" value="remove">
+              <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
+            </form>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+      <div class="group-ship mono">+ &pound;{{ "%.2f"|format(shipping_estimate) }} est. shipping{% if group.all_paid %} (paid){% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nothing due in {{ viewed_month_label }}.</p>
+  {% endif %}
+</section>
+
+{% if recently_cancelled %}
+<section class="block">
+  <div class="block-head">
+    <h2>Recently cancelled</h2>
+  </div>
+  <div class="groups">
+    <div class="group">
+      <ul class="item-list item-list-simple">
+        {% for item in recently_cancelled %}
+        <li>
+          <span class="item-name muted">{{ item.name }}</span>
+          <span class="item-price mono muted">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <form method="post" action="/items/{{ item.id }}/mark" class="inline-form">
+            <input type="hidden" name="action" value="undo">
+            <button type="submit" class="btn-tiny btn-undo">Undo</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="block">
+  <div class="block-head chart-head">
+    <h2>Spend trend</h2>
+    <div class="range-tabs">
+      {% for key, label in range_tabs %}
+      <a href="/?chart_range={{ key }}&month={{ viewed_month_param }}"
+         class="range-tab {{ 'active' if key == active_chart_range else '' }}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="chart">
+    {% for c in chart_data %}
+    <div class="chart-col">
+      <div class="chart-bar-track">
+        <div class="chart-bar {{ 'current' if c.is_current else ('future' if c.is_future else 'past') }}"
+             style="height: {{ c.height_pct }}%;"
+             title="&pound;{{ '%.2f'|format(c.total) }}"></div>
+      </div>
+      <span class="chart-total mono">&pound;{{ "%.0f"|format(c.total) }}</span>
+      <span class="chart-label">{{ c.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% endif %}
+{% endblock %}

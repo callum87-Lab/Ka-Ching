@@ -1,0 +1,12 @@
+services:
+  pullcost:
+    build: .
+    container_name: pullcost
+    restart: unless-stopped
+    ports:
+      - "8091:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      # Flat estimate added per distinct release date (i.e. per likely shipment)
+      - SHIPPING_ESTIMATE=4.00

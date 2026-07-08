@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; {{ heading }}{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>{{ heading }}</h2>
+  </div>
+
+  <form method="post" action="{{ form_action }}" class="item-edit-form">
+    <label>
+      <span>Name</span>
+      <input type="text" name="name" required value="{{ item.name if item else '' }}" placeholder="e.g. Batman #1">
+    </label>
+
+    <div class="form-row">
+      <label>
+        <span>Price</span>
+        <input type="number" name="price" step="0.01" min="0" required value="{{ item.price if item else '' }}">
+      </label>
+      <label>
+        <span>Release date</span>
+        <input type="date" name="release_date" required value="{{ item.release_date if item else '' }}">
+      </label>
+    </div>
+
+    <label>
+      <span>Source / retailer</span>
+      <input type="text" name="source" list="known-sources" required
+             value="{{ item.source if item else 'Forbidden Planet' }}" placeholder="e.g. Forbidden Planet">
+      <datalist id="known-sources">
+        {% for s in all_sources %}
+        <option value="{{ s }}">
+        {% endfor %}
+      </datalist>
+    </label>
+
+    <label class="checkbox-row">
+      <input type="checkbox" name="already_paid" value="yes" {{ 'checked' if item and item.charge_status == 'charged' else '' }}>
+      <span>Already paid</span>
+    </label>
+
+    <button type="submit">{{ submit_label }}</button>
+  </form>
+
+  <p class="muted item-form-hint">
+    {% if item %}
+    Manually-edited items are protected from being overwritten by a later re-import.
+    {% else %}
+    For anything Ka-Ching! can't parse automatically &mdash; a different shop, a
+    one-off purchase, or just something you want to track by hand.
+    {% endif %}
+  </p>
+</section>
+
+{% endblock %}

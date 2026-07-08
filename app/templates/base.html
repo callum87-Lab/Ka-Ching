@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Ka-Ching!{% endblock %}</title>
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="frame">
+  <header class="topbar">
+    <a class="wordmark" href="/">
+      <img src="/static/img/logo.png" alt="Ka-Ching!" class="wordmark-logo">
+    </a>
+    <nav class="topnav">
+      <a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">Dashboard</a>
+      <a href="/calendar" class="{{ 'active' if request.url.path == '/calendar' else '' }}">Calendar</a>
+      <a href="/import" class="{{ 'active' if request.url.path == '/import' else '' }}">Import</a>
+      <a href="/items/new" class="{{ 'active' if request.url.path == '/items/new' else '' }}">+ Add</a>
+    </nav>
+  </header>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="foot">
+    <span>Ka-Ching! &middot; tracks what's due, not what you own</span>
+  </footer>
+</div>
+</body>
+</html>

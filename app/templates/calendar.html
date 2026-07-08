@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Calendar{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head month-nav-head">
+    <div class="month-nav">
+      <a href="/calendar?month={{ prev_month_param }}" class="month-nav-btn" aria-label="Previous month">&larr;</a>
+      <h2>{{ viewed_month_label }}</h2>
+      <a href="/calendar?month={{ next_month_param }}" class="month-nav-btn" aria-label="Next month">&rarr;</a>
+      {% if not is_current_month %}
+      <a href="/calendar" class="month-nav-today">Today</a>
+      {% endif %}
+    </div>
+    <a href="/calendar/export.ics" class="btn-tiny btn-export">Download .ics</a>
+  </div>
+
+  <div class="cal-grid">
+    <div class="cal-weekday">Mon</div>
+    <div class="cal-weekday">Tue</div>
+    <div class="cal-weekday">Wed</div>
+    <div class="cal-weekday">Thu</div>
+    <div class="cal-weekday">Fri</div>
+    <div class="cal-weekday">Sat</div>
+    <div class="cal-weekday">Sun</div>
+
+    {% for week in weeks %}
+      {% for day in week %}
+        {% if day %}
+        <div class="cal-day {{ 'cal-today' if day.is_today else '' }} {{ 'cal-has-items' if day.count else '' }}">
+          <span class="cal-day-num">{{ day.day }}</span>
+          {% if day.count %}
+          <span class="cal-day-total mono">&pound;{{ "%.2f"|format(day.total) }}</span>
+          <span class="cal-day-count">{{ day.count }} issue{{ "s" if day.count != 1 else "" }}</span>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="cal-day cal-day-empty"></div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <p class="muted cal-hint">
+    Blank days are release-free. Full details for every release day are listed below &mdash;
+    the download gives you the same thing as a calendar file for Google Calendar, Apple Calendar,
+    Outlook, or similar, one entry per release day rather than per variant.
+  </p>
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <h2>{{ viewed_month_label }} releases</h2>
+  </div>
+
+  {% if agenda_groups %}
+  <div class="groups">
+    {% for group in agenda_groups %}
+    <div class="group {{ 'group-paid' if group.all_paid else '' }}">
+      <div class="group-head">
+        <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
+        <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+      </div>
+      <ul class="item-list item-list-readonly">
+        {% for sg in group.source_groups %}
+        {% if group.source_groups|length > 1 %}
+        <li class="cal-source-divider">
+          <span class="source-label" style="color: {{ sg.color }};">
+            <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
+          </span>
+          <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
+        </li>
+        {% endif %}
+        {% for item in sg.entries %}
+        <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }}">
+          <span class="item-name">{{ item.name }}{% if item.charge_status == 'charged' %} <span class="readonly-paid-tag">paid</span>{% endif %}</span>
+          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+        </li>
+        {% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nothing due in {{ viewed_month_label }}.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

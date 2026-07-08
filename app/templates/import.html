@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Import{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>Import order history</h2>
+  </div>
+  <p class="muted import-hint">
+    Copy your order history page (Forbidden Planet or similar) and paste the whole thing below &mdash;
+    addresses, card details and pagination are ignored automatically. Items you've already ticked
+    "paid" or "cancelled" yourself are left alone; everything else gets refreshed to match
+    what the retailer's currently showing, so it's safe to paste the same page again next month.
+    You can also paste one of Forbidden Planet's "revised release date" emails straight in &mdash;
+    it'll update just that item's date without needing a full re-import.
+  </p>
+
+  {% if result %}
+  <div class="result-banner">
+    Found <span class="mono">{{ result.found }}</span> items &middot;
+    added <span class="mono">{{ result.imported }}</span> new &middot;
+    refreshed <span class="mono">{{ result.updated }}</span> &middot;
+    skipped <span class="mono">{{ result.skipped }}</span> unchanged/locked
+    &middot; captured <span class="mono">{{ result.order_totals_captured }}</span> order total{{ "s" if result.order_totals_captured != 1 else "" }} for shipping
+    &middot; <span class="mono">{{ result.postage_captured }}</span> exact shipment postage figure{{ "s" if result.postage_captured != 1 else "" }}.
+    {% if result.skipped_no_order %}
+    <br>
+    &#9888; <span class="mono">{{ result.skipped_no_order }}</span> item{{ "s" if result.skipped_no_order != 1 else "" }} skipped - couldn't tell which order they belonged to
+    (likely a page-break in the pasted text). Check <code>docker logs pullcost</code> for "SKIPPED item" to see which ones.
+    {% endif %}
+    {% if result.release_matched or result.release_unmatched %}
+    <br>
+    Release-date update: <span class="mono">{{ result.release_matched }}</span> item(s) updated
+    {% if result.release_unmatched %}&middot; <span class="mono">{{ result.release_unmatched }}</span> not found (already locked, or name didn't match){% endif %}.
+    {% endif %}
+  </div>
+  {% if result.release_changes %}
+  <div class="result-changes">
+    {% for c in result.release_changes %}
+    <div class="result-change-row">
+      <span class="item-name">{{ c.name }}</span>
+      <span class="mono">{{ c.old_date_label }} &rarr; {{ c.new_date_label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <form method="post" action="/import" class="import-form">
+    <textarea name="order_text" rows="16" placeholder="Paste order history here..." required></textarea>
+    <button type="submit">Import</button>
+  </form>
+</section>
+
+{% endblock %}
