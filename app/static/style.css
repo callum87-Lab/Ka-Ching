@@ -670,6 +670,73 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .item-form-hint { margin-top: 4px; max-width: 60ch; }
 
+#comic-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.comic-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.comic-row-name {
+  flex: 1 1 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 12px;
+}
+.comic-row-price {
+  flex: 0 0 110px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 12px;
+}
+.comic-row-name:focus, .comic-row-price:focus {
+  outline: none;
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 0 2px rgba(47, 216, 255, 0.2);
+}
+.btn-remove-row {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+.btn-remove-row:hover {
+  color: var(--neon-pink);
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 8px rgba(255, 77, 141, 0.35);
+}
+.btn-add-row {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--neon-blue);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-add-row:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 8px rgba(47, 216, 255, 0.25);
+}
+
 /* ---- Calendar ---- */
 
 .btn-export {
@@ -784,4 +851,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   .cal-weekday { font-size: 9px; }
   .range-tabs { flex-wrap: wrap; }
   .form-row { flex-direction: column; gap: 16px; }
+  .comic-row { flex-wrap: wrap; }
+  .comic-row-name { flex: 1 1 100%; }
+  .comic-row-price { flex: 1 1 auto; }
 }

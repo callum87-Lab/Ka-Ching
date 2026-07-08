@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Add items{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>Add items</h2>
+  </div>
+
+  <form method="post" action="/items/new" class="item-edit-form">
+    <div class="form-row">
+      <label>
+        <span>Release date</span>
+        <input type="date" name="release_date" required>
+      </label>
+      <label>
+        <span>Source / retailer</span>
+        <input type="text" name="source" list="known-sources" required value="Forbidden Planet" placeholder="e.g. Forbidden Planet">
+        <datalist id="known-sources">
+          {% for s in all_sources %}
+          <option value="{{ s }}">
+          {% endfor %}
+        </datalist>
+      </label>
+    </div>
+
+    <div id="comic-rows">
+      <div class="comic-row">
+        <input type="text" name="name" required placeholder="Comic name" class="comic-row-name">
+        <input type="number" name="price" step="0.01" min="0" required placeholder="Price" class="comic-row-price">
+        <button type="button" class="btn-remove-row" title="Remove this row" aria-label="Remove this row">&times;</button>
+      </div>
+    </div>
+
+    <button type="button" id="add-row-btn" class="btn-add-row">+ Add another comic</button>
+
+    <label class="checkbox-row">
+      <input type="checkbox" name="already_paid" value="yes">
+      <span>Already paid (applies to all rows above)</span>
+    </label>
+
+    <button type="submit">Add item(s)</button>
+  </form>
+
+  <p class="muted item-form-hint">
+    Set the release date and shop once, then add every comic from that same
+    order before submitting &mdash; one shipment, one form.
+  </p>
+</section>
+
+<script>
+(function () {
+  const container = document.getElementById('comic-rows');
+  const addBtn = document.getElementById('add-row-btn');
+
+  function rowTemplate() {
+    const row = document.createElement('div');
+    row.className = 'comic-row';
+    row.innerHTML =
+      '<input type="text" name="name" required placeholder="Comic name" class="comic-row-name">' +
+      '<input type="number" name="price" step="0.01" min="0" required placeholder="Price" class="comic-row-price">' +
+      '<button type="button" class="btn-remove-row" title="Remove this row" aria-label="Remove this row">&times;</button>';
+    return row;
+  }
+
+  addBtn.addEventListener('click', function () {
+    const row = rowTemplate();
+    container.appendChild(row);
+    row.querySelector('.comic-row-name').focus();
+  });
+
+  container.addEventListener('click', function (e) {
+    if (e.target.classList.contains('btn-remove-row')) {
+      if (container.children.length > 1) {
+        e.target.closest('.comic-row').remove();
+      }
+    }
+  });
+})();
+</script>
+
+{% endblock %}

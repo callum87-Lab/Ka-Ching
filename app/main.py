@@ -564,52 +564,57 @@ def _parse_item_form_date(raw: str, fallback: date) -> str:
 
 
 @app.get("/items/new")
-def new_item_form(request: Request):
+def new_items_form(request: Request):
     conn = db.get_db()
     cur = conn.cursor()
     all_sources = get_all_sources(cur)
     conn.close()
-    return templates.TemplateResponse("item_form.html", {
+    return templates.TemplateResponse("add_items.html", {
         "request": request,
-        "item": None,
-        "form_action": "/items/new",
         "all_sources": all_sources,
-        "heading": "Add an item",
-        "submit_label": "Add item",
     })
 
 
 @app.post("/items/new")
-def create_item(
-    name: str = Form(...),
-    price: float = Form(...),
-    release_date: str = Form(...),
-    source: str = Form(...),
-    already_paid: str | None = Form(None),
-):
+async def create_items(request: Request):
+    form = await request.form()
+    names = form.getlist("name")
+    prices = form.getlist("price")
+    release_date = form.get("release_date", "")
+    source = (form.get("source") or "").strip() or DEFAULT_SOURCE
+    already_paid = form.get("already_paid")
+
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
-    now = datetime.now(timezone.utc).isoformat()
     charge_status = "charged" if already_paid else "not_charged"
-    source_clean = source.strip() or DEFAULT_SOURCE
+    now = datetime.now(timezone.utc).isoformat()
 
     conn = db.get_db()
     cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO items
-            (name, order_number, placed_date, status, release_date, charge_status,
-             price, note, imported_at, manual_override, source)
-        VALUES (?, NULL, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?)
-        """,
-        (name.strip(), today.isoformat(), release_iso, charge_status, price, now, source_clean),
-    )
+    created = []
+    for raw_name, raw_price in zip(names, prices):
+        clean_name = raw_name.strip()
+        if not clean_name:
+            continue
+        try:
+            price_val = float(raw_price)
+        except (TypeError, ValueError):
+            continue
+        cur.execute(
+            """
+            INSERT INTO items
+                (name, order_number, placed_date, status, release_date, charge_status,
+                 price, note, imported_at, manual_override, source)
+            VALUES (?, NULL, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?)
+            """,
+            (clean_name, today.isoformat(), release_iso, charge_status, price_val, now, source),
+        )
+        created.append((cur.lastrowid, clean_name, price_val))
     conn.commit()
-    new_id = cur.lastrowid
     conn.close()
     logger.info(
-        "MANUAL ADD: id=%s name=%r price=%s release_date=%s source=%r",
-        new_id, name, price, release_iso, source_clean,
+        "MANUAL BATCH ADD: release_date=%s source=%r created=%s",
+        release_iso, source, created,
     )
     return RedirectResponse(url="/", status_code=303)
 

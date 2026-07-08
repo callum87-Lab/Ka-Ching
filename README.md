@@ -174,9 +174,11 @@ doesn't get picked up, paste an example and it can be adjusted.
 ## More than one shop
 
 Ka-Ching! only knows how to *read* Forbidden Planet's pages — it can't parse
-any other retailer's site. For anything else, use **+ Add** in the nav to
-enter an item by hand: name, price, release date, and which shop it's from.
-Click any item's name to edit those same details later.
+any other retailer's site. For anything else, use **+ Add** in the nav.
+Set the release date and shop once, then add every comic from that same
+order as its own row (name + price) before submitting — one shipment, one
+form, rather than repeating the whole form per comic. Click any item's name
+on the dashboard to edit those same details later, one at a time.
 
 Once more than one shop is being tracked, a small filter row appears above
 "This week" (All shops / each shop by name), and any day with releases from
