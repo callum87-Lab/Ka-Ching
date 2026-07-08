@@ -16,8 +16,8 @@
     <nav class="topnav">
       <a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">Dashboard</a>
       <a href="/calendar" class="{{ 'active' if request.url.path == '/calendar' else '' }}">Calendar</a>
-      <a href="/import" class="{{ 'active' if request.url.path == '/import' else '' }}">Import</a>
       <a href="/items/new" class="{{ 'active' if request.url.path == '/items/new' else '' }}">+ Add</a>
+      <a href="/settings" class="{{ 'active' if request.url.path == '/settings' else '' }}">Settings</a>
     </nav>
   </header>
   <main class="content">

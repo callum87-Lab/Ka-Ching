@@ -597,6 +597,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   margin-bottom: 18px;
   font-size: 14px;
 }
+.result-banner-error { border-left-color: var(--neon-pink); }
 
 .result-changes {
   background: var(--surface);
@@ -636,7 +637,8 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .item-edit-form input[type="text"],
 .item-edit-form input[type="number"],
-.item-edit-form input[type="date"] {
+.item-edit-form input[type="date"],
+.item-edit-form select {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -648,10 +650,28 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   letter-spacing: normal;
   padding: 10px 12px;
 }
-.item-edit-form input:focus {
+.item-edit-form input:focus,
+.item-edit-form select:focus {
   outline: none;
   border-color: var(--neon-blue);
   box-shadow: 0 0 0 2px rgba(47, 216, 255, 0.2);
+}
+.provider-fields { padding: 2px 0; }
+.settings-test-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.btn-test {
+  padding: 8px 14px;
+  font-size: 12.5px;
+  color: var(--neon-blue);
+  border-color: var(--border-strong);
+}
+.btn-test:hover {
+  color: var(--text);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 8px rgba(47, 216, 255, 0.3);
 }
 .form-row {
   display: flex;

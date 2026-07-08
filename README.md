@@ -174,11 +174,36 @@ doesn't get picked up, paste an example and it can be adjusted.
 ## More than one shop
 
 Ka-Ching! only knows how to *read* Forbidden Planet's pages — it can't parse
-any other retailer's site. For anything else, use **+ Add** in the nav.
-Set the release date and shop once, then add every comic from that same
-order as its own row (name + price) before submitting — one shipment, one
-form, rather than repeating the whole form per comic. Click any item's name
-on the dashboard to edit those same details later, one at a time.
+any other retailer's site. For anything else, use **+ Add** in the nav (which
+also has the paste-in Import box further down the same page). Set the release
+date and shop once, then add every comic from that same order as its own row
+(name + price) before submitting — one shipment, one form, rather than
+repeating the whole form per comic. Click any item's name on the dashboard to
+edit those same details later, one at a time.
+
+## Notifications
+
+The **Settings** page sets up a daily check — once a day, Ka-Ching! looks at
+what's releasing tomorrow and sends a single push through whichever service
+you configure, grouped by shop, e.g. *"Tomorrow: 3 comics, £11.48 — Forbidden
+Planet: 2 items, £8.49 · Cocktails and Comics: 1 item, £2.99."* Stays
+completely silent on quiet days — no pointless daily pings when nothing's due.
+
+Supports **ntfy**, **Gotify**, or **Telegram** — pick one from the dropdown,
+fill in its details (server URL + topic for ntfy, server URL + app token for
+Gotify, bot token + chat ID for Telegram), and set what time of day the check
+should run.
+
+Two buttons let you confirm it's actually working before relying on it:
+- **Send test notification** — an immediate, generic ping, just to prove the
+  connection details are right
+- **Test tomorrow's digest now** — sends the real message you'd get
+  tomorrow (or "nothing releasing" on a quiet day), without waiting for the
+  scheduled time
+
+This all runs inside the container itself — no cron job to set up, no
+external scheduler. It just needs the container running once a day at the
+time you pick.
 
 Once more than one shop is being tracked, a small filter row appears above
 "This week" (All shops / each shop by name), and any day with releases from

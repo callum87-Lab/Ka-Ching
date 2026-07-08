@@ -42,6 +42,11 @@ CREATE TABLE IF NOT EXISTS shipment_postage (
     captured_at TEXT NOT NULL,
     PRIMARY KEY (order_number, shipment_index)
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
 """
 
 # Columns added after the initial release. Listed here so an existing

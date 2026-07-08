@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Settings{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>Notifications</h2>
+  </div>
+  <p class="muted item-form-hint">
+    Ka-Ching! checks once a day for anything releasing tomorrow and sends a single
+    push through whichever service you set up below, grouped by shop. Stays silent
+    on days with nothing due.
+  </p>
+
+  {% if test_result == 'sent' %}
+  <div class="result-banner">Test sent &mdash; check your device.</div>
+  {% endif %}
+  {% if test_error %}
+  <div class="result-banner result-banner-error">Failed: {{ test_error }}</div>
+  {% endif %}
+
+  <form method="post" action="/settings" class="item-edit-form" id="settings-form">
+    <label>
+      <span>Provider</span>
+      <select name="notify_provider" id="provider-select">
+        <option value="none" {{ 'selected' if values.notify_provider == 'none' else '' }}>None (off)</option>
+        <option value="ntfy" {{ 'selected' if values.notify_provider == 'ntfy' else '' }}>ntfy</option>
+        <option value="gotify" {{ 'selected' if values.notify_provider == 'gotify' else '' }}>Gotify</option>
+        <option value="telegram" {{ 'selected' if values.notify_provider == 'telegram' else '' }}>Telegram</option>
+      </select>
+    </label>
+
+    <div class="provider-fields" data-provider="ntfy">
+      <div class="form-row">
+        <label>
+          <span>ntfy server URL</span>
+          <input type="text" name="ntfy_url" value="{{ values.ntfy_url }}" placeholder="https://ntfy.sh">
+        </label>
+        <label>
+          <span>ntfy topic</span>
+          <input type="text" name="ntfy_topic" value="{{ values.ntfy_topic }}" placeholder="e.g. kaching-callum">
+        </label>
+      </div>
+    </div>
+
+    <div class="provider-fields" data-provider="gotify">
+      <div class="form-row">
+        <label>
+          <span>Gotify server URL</span>
+          <input type="text" name="gotify_url" value="{{ values.gotify_url }}" placeholder="https://gotify.example.com">
+        </label>
+        <label>
+          <span>Gotify app token</span>
+          <input type="text" name="gotify_token" value="{{ values.gotify_token }}" placeholder="app token">
+        </label>
+      </div>
+    </div>
+
+    <div class="provider-fields" data-provider="telegram">
+      <div class="form-row">
+        <label>
+          <span>Telegram bot token</span>
+          <input type="text" name="telegram_bot_token" value="{{ values.telegram_bot_token }}" placeholder="123456:ABC-token">
+        </label>
+        <label>
+          <span>Telegram chat ID</span>
+          <input type="text" name="telegram_chat_id" value="{{ values.telegram_chat_id }}" placeholder="e.g. 123456789">
+        </label>
+      </div>
+    </div>
+
+    <label>
+      <span>Check time (24hr)</span>
+      <select name="notify_hour">
+        {% for h in range(24) %}
+        <option value="{{ h }}" {{ 'selected' if values.notify_hour|string == h|string else '' }}>{{ "%02d:00"|format(h) }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <button type="submit">Save settings</button>
+  </form>
+
+  <div class="settings-test-actions">
+    <form method="post" action="/settings/test" class="inline-form">
+      <button type="submit" class="btn-tiny btn-test">Send test notification</button>
+    </form>
+    <form method="post" action="/settings/test-digest" class="inline-form">
+      <button type="submit" class="btn-tiny btn-test">Test tomorrow's digest now</button>
+    </form>
+  </div>
+
+  <p class="muted item-form-hint">
+    Save your settings first, then use the buttons above to confirm it actually
+    works before relying on it. "Test tomorrow's digest" sends the real message
+    you'd get tomorrow (or says "nothing releasing" if the day's quiet) &mdash;
+    useful for checking the format without waiting for the scheduled time.
+  </p>
+</section>
+
+<script>
+(function () {
+  const select = document.getElementById('provider-select');
+  const groups = document.querySelectorAll('.provider-fields');
+
+  function updateVisibility() {
+    const current = select.value;
+    groups.forEach(function (g) {
+      g.style.display = (g.dataset.provider === current) ? '' : 'none';
+    });
+  }
+
+  select.addEventListener('change', updateVisibility);
+  updateVisibility();
+})();
+</script>
+
+{% endblock %}

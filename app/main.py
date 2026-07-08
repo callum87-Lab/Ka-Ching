@@ -1,15 +1,17 @@
+import asyncio
 import calendar
 import hashlib
 import logging
 import os
 from datetime import date, datetime, timedelta, timezone
+from urllib.parse import quote
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, parser
+from . import db, notifications, parser
 
 APP_DIR = os.path.dirname(__file__)
 
@@ -43,6 +45,41 @@ SOURCE_PALETTE = ["#3cf2a6", "#9b7bff", "#ff4d8d", "#ffd166", "#5ec8f2", "#ff9f5
 @app.on_event("startup")
 def startup():
     db.init_db()
+
+
+async def _daily_notification_loop():
+    """Runs forever in the background: sleeps until the configured notify
+    hour, runs the due-tomorrow check, then sleeps until the next day.
+    Wrapped in try/except so one bad night (network blip, bad config)
+    doesn't kill the loop for good."""
+    while True:
+        try:
+            conn = db.get_db()
+            cur = conn.cursor()
+            try:
+                notify_hour = int(notifications.get_setting(cur, "notify_hour", "8") or 8)
+            except (TypeError, ValueError):
+                notify_hour = 8
+            conn.close()
+
+            now = datetime.now()
+            target = now.replace(hour=notify_hour, minute=0, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            wait_seconds = max(1.0, (target - now).total_seconds())
+            logger.info("NOTIFY SCHEDULER: sleeping %.0fs until %s", wait_seconds, target.isoformat())
+            await asyncio.sleep(wait_seconds)
+
+            result = await asyncio.to_thread(notifications.check_and_notify_tomorrow)
+            logger.info("NOTIFY SCHEDULER: daily check ran, result=%s", result)
+        except Exception:
+            logger.exception("NOTIFY SCHEDULER: daily check failed, will retry tomorrow")
+            await asyncio.sleep(3600)
+
+
+@app.on_event("startup")
+async def start_notification_scheduler():
+    asyncio.create_task(_daily_notification_loop())
 
 
 # --- Shared helpers ----------------------------------------------------------
@@ -572,6 +609,7 @@ def new_items_form(request: Request):
     return templates.TemplateResponse("add_items.html", {
         "request": request,
         "all_sources": all_sources,
+        "result": None,
     })
 
 
@@ -813,8 +851,10 @@ def export_ics():
 # --- Import -------------------------------------------------------------------
 
 @app.get("/import")
-def import_form(request: Request):
-    return templates.TemplateResponse("import.html", {"request": request, "result": None})
+def import_form_redirect():
+    # Import now lives on the same page as Add - keep this route working
+    # in case of an old bookmark, but send people to the combined page.
+    return RedirectResponse(url="/items/new", status_code=307)
 
 
 @app.post("/import")
@@ -823,7 +863,80 @@ def import_submit(request: Request, order_text: str = Form(...)):
     for c in result.get("release_changes", []):
         c["old_date_label"] = date.fromisoformat(c["old_date"]).strftime("%d %b %Y") if c["old_date"] else "no date set"
         c["new_date_label"] = date.fromisoformat(c["new_date"]).strftime("%d %b %Y")
-    return templates.TemplateResponse("import.html", {"request": request, "result": result})
+    conn = db.get_db()
+    cur = conn.cursor()
+    all_sources = get_all_sources(cur)
+    conn.close()
+    return templates.TemplateResponse("add_items.html", {
+        "request": request,
+        "result": result,
+        "all_sources": all_sources,
+    })
+
+
+# --- Settings / notifications -------------------------------------------------
+
+@app.get("/settings")
+def settings_form(request: Request, test_result: str | None = None, test_error: str | None = None):
+    conn = db.get_db()
+    cur = conn.cursor()
+    values = notifications.get_all_settings(cur)
+    conn.close()
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "values": values,
+        "test_result": test_result,
+        "test_error": test_error,
+    })
+
+
+@app.post("/settings")
+def save_settings(
+    notify_provider: str = Form("none"),
+    notify_hour: str = Form("8"),
+    ntfy_url: str = Form(""),
+    ntfy_topic: str = Form(""),
+    gotify_url: str = Form(""),
+    gotify_token: str = Form(""),
+    telegram_bot_token: str = Form(""),
+    telegram_chat_id: str = Form(""),
+):
+    notifications.save_settings({
+        "notify_provider": notify_provider,
+        "notify_hour": notify_hour,
+        "ntfy_url": ntfy_url.strip(),
+        "ntfy_topic": ntfy_topic.strip(),
+        "gotify_url": gotify_url.strip(),
+        "gotify_token": gotify_token.strip(),
+        "telegram_bot_token": telegram_bot_token.strip(),
+        "telegram_chat_id": telegram_chat_id.strip(),
+    })
+    logger.info("SETTINGS SAVED: provider=%s notify_hour=%s", notify_provider, notify_hour)
+    return RedirectResponse(url="/settings", status_code=303)
+
+
+@app.post("/settings/test")
+def test_notification():
+    conn = db.get_db()
+    cur = conn.cursor()
+    ok, err = notifications.send_via_configured_provider(
+        cur, "Ka-Ching! test", "If you're seeing this, notifications are working."
+    )
+    conn.close()
+    if ok:
+        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+
+
+@app.post("/settings/test-digest")
+def test_digest():
+    result = notifications.check_and_notify_tomorrow(force=True)
+    if result is None:
+        return RedirectResponse(url="/settings?test_error=No+provider+configured", status_code=303)
+    ok, err = result
+    if ok:
+        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
 
 
 # --- API ------------------------------------------------------------------
