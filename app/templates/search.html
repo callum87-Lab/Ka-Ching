@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Search{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>Search</h2>
+  </div>
+
+  <form method="get" action="/search" class="search-filters">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by comic name..." class="search-name-input">
+
+    <div class="search-filter-row">
+      <label>
+        <span>Shop</span>
+        <select name="source">
+          <option value="">All shops</option>
+          {% for s in all_sources %}
+          <option value="{{ s }}" {{ 'selected' if active_source == s else '' }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        <span>Status</span>
+        <select name="status">
+          <option value="all" {{ 'selected' if active_status == 'all' else '' }}>All</option>
+          <option value="paid" {{ 'selected' if active_status == 'paid' else '' }}>Paid</option>
+          <option value="unpaid" {{ 'selected' if active_status == 'unpaid' else '' }}>Unpaid</option>
+          <option value="cancelled" {{ 'selected' if active_status == 'cancelled' else '' }}>Cancelled</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Sort</span>
+        <select name="sort">
+          {% for key, opt in sort_options.items() %}
+          <option value="{{ key }}" {{ 'selected' if active_sort == key else '' }}>{{ opt[1] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <div class="search-filter-row">
+      <label>
+        <span>From</span>
+        <input type="date" name="start_date" value="{{ start_date }}">
+      </label>
+      <label>
+        <span>To</span>
+        <input type="date" name="end_date" value="{{ end_date }}">
+      </label>
+      <button type="submit" class="search-submit-btn">Search</button>
+    </div>
+  </form>
+
+  {% if has_filter %}
+    {% if results %}
+    <div class="search-totals">
+      <span><span class="mono">{{ match_count }}</span> match{{ "es" if match_count != 1 else "" }}{% if truncated %} (showing first 500){% endif %}</span>
+      <span class="search-totals-spent">Spent: <span class="mono">&pound;{{ "%.2f"|format(spent) }}</span></span>
+      <span class="search-totals-remaining">Still due: <span class="mono">&pound;{{ "%.2f"|format(remaining) }}</span></span>
+      {% if cancelled_count %}
+      <span class="muted">+ {{ cancelled_count }} cancelled (&pound;{{ "%.2f"|format(cancelled_total) }}, not counted above)</span>
+      {% endif %}
+    </div>
+    <div class="groups">
+      <div class="group">
+        <ul class="item-list">
+          {% for item in results %}
+          <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }} {{ 'search-row-cancelled' if item.status == 'cancelled' else '' }}">
+            {% if item.status == 'cancelled' %}
+            <a href="/items/{{ item.id }}/edit" class="item-name-link">
+              <span class="item-name muted"><span class="search-status-tag">Cancelled</span> {{ item.name }}</span>
+            </a>
+            <span class="item-price mono muted">&pound;{{ "%.2f"|format(item.price) }}</span>
+            <form method="post" action="/items/{{ item.id }}/mark" class="inline-form">
+              <input type="hidden" name="action" value="undo">
+              <button type="submit" class="btn-tiny btn-undo">Undo</button>
+            </form>
+            {% else %}
+            <form method="post" action="/items/{{ item.id }}/mark" class="toggle-form">
+              <input type="hidden" name="action" value="{{ 'undo' if item.charge_status == 'charged' else 'paid' }}">
+              <button type="submit" class="paid-circle {{ 'is-checked' if item.charge_status == 'charged' else '' }}"
+                      title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
+                      aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
+            </form>
+            <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+            <div class="item-actions-group">
+            <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
+              <input type="hidden" name="action" value="cancel">
+              <button type="submit" class="btn-x" title="Cancel this item" aria-label="Cancel this item">&times;</button>
+            </form>
+            <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+              <input type="hidden" name="action" value="remove">
+              <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
+            </form>
+            </div>
+            {% endif %}
+          </li>
+          <li class="search-meta-row">
+            <span class="muted search-meta">{{ item.release_date_label }}
+              &middot; <span style="color: {{ item.source_color }};">{{ item.source }}</span>
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% else %}
+    <p class="muted">No matches for these filters.</p>
+    {% endif %}
+  {% else %}
+  <p class="muted">Type a name, pick a shop, or set a date range to start.</p>
+  {% endif %}
+</section>
+
+{% endblock %}

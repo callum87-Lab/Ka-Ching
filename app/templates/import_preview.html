@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Review import{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>Review before adding</h2>
+  </div>
+  <p class="muted item-form-hint">
+    Nothing has been saved yet. Check each row below, fix anything that's wrong,
+    untick anything you don't want, then confirm.
+  </p>
+
+  <div class="preview-meta">
+    {% if preview.parser == 'forbidden_planet' %}
+    <span class="preview-meta-tag">Detected: Forbidden Planet</span>
+    {% if preview.skipped_no_order %}
+    <span class="muted">&middot; {{ preview.skipped_no_order }} item(s) skipped - couldn't tell which order they belonged to</span>
+    {% endif %}
+    {% else %}
+    <span class="preview-meta-tag preview-meta-tag-generic">Shop not recognised automatically - confirm below</span>
+    {% endif %}
+  </div>
+
+  <form method="post" action="/import/confirm" id="preview-form">
+    <input type="hidden" name="parser_type" value="{{ preview.parser }}">
+    <input type="hidden" name="row_count" value="{{ preview.rows|length }}">
+    {% if preview.parser == 'forbidden_planet' %}
+    <input type="hidden" name="order_totals_json" value='{{ preview.order_totals|tojson }}'>
+    {% else %}
+    <div class="form-row preview-shop-row">
+      <label>
+        <span>Shop</span>
+        <input type="text" name="source" list="known-sources" value="{{ preview.source_guess }}" placeholder="Which shop is this from?">
+        <datalist id="known-sources">
+          {% for s in all_sources %}
+          <option value="{{ s }}">
+          {% endfor %}
+        </datalist>
+      </label>
+      {% if preview.order_number %}
+      <label>
+        <span>Order number</span>
+        <input type="text" value="{{ preview.order_number }}" disabled>
+        <input type="hidden" name="order_number" value="{{ preview.order_number }}">
+      </label>
+      {% endif %}
+      {% if preview.shipping %}
+      <label>
+        <span>Shipping detected</span>
+        <input type="text" name="shipping" value="{{ preview.shipping }}">
+      </label>
+      {% endif %}
+    </div>
+    {% if preview.declared_total %}
+    <p class="muted">Order total on the page: <span class="mono">&pound;{{ "%.2f"|format(preview.declared_total) }}</span></p>
+    {% endif %}
+    {% endif %}
+
+    <div id="preview-rows">
+      {% for item in preview.rows %}
+      <div class="preview-row">
+        <label class="preview-keep">
+          <input type="checkbox" name="keep_{{ loop.index0 }}" checked>
+        </label>
+        <input type="text" name="name_{{ loop.index0 }}" value="{{ item.name }}" class="preview-name-input">
+        <input type="number" step="0.01" min="0" name="price_{{ loop.index0 }}" value="{{ item.price }}" class="preview-price-input">
+        <input type="date" name="release_date_{{ loop.index0 }}" value="{{ item.release_date }}" class="preview-date-input">
+        <input type="hidden" name="order_number_{{ loop.index0 }}" value="{{ item.order_number or '' }}">
+        <input type="hidden" name="placed_date_{{ loop.index0 }}" value="{{ item.placed_date }}">
+        <input type="hidden" name="status_{{ loop.index0 }}" value="{{ item.status }}">
+        <input type="hidden" name="charge_status_{{ loop.index0 }}" value="{{ item.charge_status }}">
+        <input type="hidden" name="note_{{ loop.index0 }}" value="{{ item.note }}">
+        {% if item.note or item.duplicate_flag %}
+        <div class="preview-row-note">
+          {% if item.note %}<span class="muted">{{ item.note }}</span>{% endif %}
+          {% if item.duplicate_flag %}<span class="preview-duplicate-flag">&#9888; {{ item.duplicate_flag }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <button type="button" id="add-preview-row-btn" class="btn-add-row">+ Add another row</button>
+
+    <div class="preview-actions">
+      <button type="submit">Confirm &amp; add</button>
+      <a href="/items/new" class="btn-tiny">Cancel</a>
+    </div>
+  </form>
+</section>
+
+<script>
+(function () {
+  const container = document.getElementById('preview-rows');
+  const addBtn = document.getElementById('add-preview-row-btn');
+  const rowCountInput = document.querySelector('input[name="row_count"]');
+  let nextIndex = {{ preview.rows|length }};
+
+  addBtn.addEventListener('click', function () {
+    const row = document.createElement('div');
+    row.className = 'preview-row';
+    row.innerHTML =
+      '<label class="preview-keep"><input type="checkbox" name="keep_' + nextIndex + '" checked></label>' +
+      '<input type="text" name="name_' + nextIndex + '" placeholder="Comic name" class="preview-name-input">' +
+      '<input type="number" step="0.01" min="0" name="price_' + nextIndex + '" placeholder="Price" class="preview-price-input">' +
+      '<input type="date" name="release_date_' + nextIndex + '" class="preview-date-input">' +
+      '<input type="hidden" name="order_number_' + nextIndex + '" value="">' +
+      '<input type="hidden" name="placed_date_' + nextIndex + '" value="">' +
+      '<input type="hidden" name="status_' + nextIndex + '" value="preorder">' +
+      '<input type="hidden" name="charge_status_' + nextIndex + '" value="">' +
+      '<input type="hidden" name="note_' + nextIndex + '" value="">';
+    container.appendChild(row);
+    nextIndex += 1;
+    rowCountInput.value = nextIndex;
+    row.querySelector('.preview-name-input').focus();
+  });
+})();
+</script>
+
+{% endblock %}

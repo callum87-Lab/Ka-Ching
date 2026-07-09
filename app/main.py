@@ -1,13 +1,16 @@
 import asyncio
 import calendar
 import hashlib
+import json
 import logging
 import os
+import shutil
+import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import quote
 
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import RedirectResponse, Response
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -20,6 +23,9 @@ logger = logging.getLogger("kaching")
 
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
+
+APP_VERSION = "2026.07.09.2"
+templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
 DEFAULT_SHIPPING_ESTIMATE = float(os.environ.get("SHIPPING_ESTIMATE", "4.00"))
@@ -91,53 +97,63 @@ def source_color(name: str) -> str:
     return SOURCE_PALETTE[h % len(SOURCE_PALETTE)]
 
 
-def get_shipping_estimate(cur):
+def get_shipping_estimate(cur, source=None):
     """Work out shipping per parcel from the person's own order history where
-    possible, rather than relying on a guessed constant.
+    possible, rather than relying on a guessed constant. Scoped per-shop
+    when a source is given, since different shops charge different amounts.
 
     Preference order:
     1. Exact per-shipment postage figures, captured directly from pasted
-       order-detail pages (Order Summary -> Postage breakdown) - real data,
-       no approximation involved.
-    2. An approximation from order-history pages: the declared order total
-       minus the items' cost, split evenly across however many distinct
-       release dates the order covers (Forbidden Planet splits shipping by
-       release date per their own stated policy).
-    3. DEFAULT_SHIPPING_ESTIMATE, until there's enough real data to trust
-       either of the above.
+       order-detail pages or confirmed on the import review screen - real
+       data, no approximation involved.
+    2. An approximation from Forbidden Planet's order-history pages: the
+       declared order total minus the items' cost, split evenly across
+       however many distinct release dates the order covers. This tier only
+       applies to Forbidden Planet, since it's the only shop whose declared
+       order totals get captured today.
+    3. DEFAULT_SHIPPING_ESTIMATE, until there's enough real data for a shop
+       to trust either of the above.
     """
-    cur.execute("SELECT order_number, amount FROM shipment_postage")
+    query = "SELECT order_number, amount FROM shipment_postage"
+    params = []
+    if source:
+        query += " WHERE source = ?"
+        params.append(source)
+    cur.execute(query, params)
     postage_rows = cur.fetchall()
     exact_samples = [r["amount"] for r in postage_rows if r["amount"] and r["amount"] > 0]
     if len(exact_samples) >= MIN_SHIPPING_SAMPLES:
         return round(sum(exact_samples) / len(exact_samples), 2), "exact", len(exact_samples), len(exact_samples)
 
-    cur.execute(
-        """
-        SELECT i.order_number,
-               COUNT(DISTINCT i.release_date) AS distinct_dates,
-               SUM(i.price) AS items_sum,
-               o.declared_total AS declared_total
-        FROM items i
-        JOIN orders o ON o.order_number = i.order_number
-        WHERE i.order_number IS NOT NULL AND o.declared_total IS NOT NULL
-        GROUP BY i.order_number
-        """
-    )
-    rows = cur.fetchall()
-    samples = []
-    for row in rows:
-        distinct_dates = row["distinct_dates"] or 1
-        implied_total = round(row["declared_total"] - row["items_sum"], 2)
-        if implied_total <= 0:
-            continue
-        per_parcel = round(implied_total / distinct_dates, 2)
-        if 0 < per_parcel <= MAX_PLAUSIBLE_SHIPPING:
-            samples.append(per_parcel)
+    if source is None or source == DEFAULT_SOURCE:
+        cur.execute(
+            """
+            SELECT i.order_number,
+                   COUNT(DISTINCT i.release_date) AS distinct_dates,
+                   SUM(i.price) AS items_sum,
+                   o.declared_total AS declared_total
+            FROM items i
+            JOIN orders o ON o.order_number = i.order_number
+            WHERE i.order_number IS NOT NULL AND o.declared_total IS NOT NULL
+            GROUP BY i.order_number
+            """
+        )
+        rows = cur.fetchall()
+        samples = []
+        for row in rows:
+            distinct_dates = row["distinct_dates"] or 1
+            implied_total = round(row["declared_total"] - row["items_sum"], 2)
+            if implied_total <= 0:
+                continue
+            per_parcel = round(implied_total / distinct_dates, 2)
+            if 0 < per_parcel <= MAX_PLAUSIBLE_SHIPPING:
+                samples.append(per_parcel)
 
-    if len(samples) >= MIN_SHIPPING_SAMPLES:
-        return round(sum(samples) / len(samples), 2), "calibrated", len(samples), len(rows)
-    return DEFAULT_SHIPPING_ESTIMATE, "default", len(samples), len(rows)
+        if len(samples) >= MIN_SHIPPING_SAMPLES:
+            return round(sum(samples) / len(samples), 2), "calibrated", len(samples), len(rows)
+        return DEFAULT_SHIPPING_ESTIMATE, "default", len(samples), len(rows)
+
+    return DEFAULT_SHIPPING_ESTIMATE, "default", len(exact_samples), len(exact_samples)
 
 
 def month_bounds(d: date):
@@ -213,10 +229,37 @@ def split_spent_remaining(items):
     return spent, remaining, spent_count, len(items) - spent_count
 
 
-def split_shipping(groups, shipping_estimate):
-    spent_shipping = sum(shipping_estimate for g in groups if g["all_paid"])
-    remaining_shipping = sum(shipping_estimate for g in groups if not g["all_paid"])
-    return round(spent_shipping, 2), round(remaining_shipping, 2)
+def compute_shipping_for_groups(cur, groups):
+    """Each (release date, shop) pair is a separate physical parcel with its
+    own shipping cost - a Forbidden Planet delivery and a Paper Vanguard
+    delivery landing the same day are two parcels, not one, and each shop
+    may charge a different amount. Returns (total, spent, remaining,
+    shipment_count, primary_rate, primary_source, primary_tier, primary_samples, primary_checked)."""
+    rate_cache = {}
+
+    def rate_for(src):
+        if src not in rate_cache:
+            rate_cache[src] = get_shipping_estimate(cur, src)
+        return rate_cache[src]
+
+    total = spent = remaining = 0.0
+    shipment_count = 0
+    for group in groups:
+        for sg in group["source_groups"]:
+            rate, _, _, _ = rate_for(sg["source"])
+            total += rate
+            shipment_count += 1
+            all_paid = all(i["charge_status"] == "charged" for i in sg["entries"])
+            if all_paid:
+                spent += rate
+            else:
+                remaining += rate
+
+    primary_rate, primary_tier, primary_samples, primary_checked = rate_for(DEFAULT_SOURCE)
+    return (
+        round(total, 2), round(spent, 2), round(remaining, 2), shipment_count,
+        primary_rate, DEFAULT_SOURCE, primary_tier, primary_samples, primary_checked,
+    )
 
 
 def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
@@ -334,6 +377,27 @@ def find_ghost_items(cur):
     return [dict(r) for r in cur.fetchall()]
 
 
+def find_awaiting_charge(cur, today: date):
+    """Items whose release date has already passed but are still sitting
+    unpaid and unmarked - worth a look, since the retailer usually charges
+    right around release day. Could just be a normal short delay, but
+    surfacing it beats only noticing by chance."""
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND charge_status != 'charged'
+          AND release_date IS NOT NULL AND date(release_date) < date(?)
+        ORDER BY release_date ASC
+        """,
+        (today.isoformat(),),
+    )
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        days_late = (today - date.fromisoformat(r["release_date"])).days
+        r["days_late"] = days_late
+    return rows
+
+
 def get_year_to_date(cur, today: date):
     year_start = date(today.year, 1, 1)
     year_end = date(today.year, 12, 31)
@@ -351,6 +415,14 @@ def get_year_to_date(cur, today: date):
     return {"year": today.year, "spent": spent, "total": total, "count": len(rows)}
 
 
+def get_all_time_stats(cur):
+    cur.execute("SELECT charge_status, price FROM items WHERE status != 'cancelled'")
+    rows = cur.fetchall()
+    spent = round(sum(r["price"] for r in rows if r["charge_status"] == "charged"), 2)
+    total = round(sum(r["price"] for r in rows), 2)
+    return {"spent": spent, "total": total, "count": len(rows)}
+
+
 def get_all_sources(cur):
     cur.execute("SELECT DISTINCT source FROM items WHERE status != 'cancelled' ORDER BY source")
     return [r["source"] for r in cur.fetchall()]
@@ -363,8 +435,6 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     today = date.today()
     conn = db.get_db()
     cur = conn.cursor()
-
-    shipping_estimate, shipping_source, shipping_samples, shipping_orders_checked = get_shipping_estimate(cur)
 
     active_source = source if source else None
 
@@ -379,12 +449,12 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     hero_items = fetch_items_between(cur, hero_start, hero_end)
     hero_groups = group_by_date(hero_items)
     hero_comics_total = round(sum(i["price"] for i in hero_items), 2)
-    hero_shipments = len(hero_groups)
-    hero_shipping_total = round(hero_shipments * shipping_estimate, 2)
+    (hero_shipping_total, hero_spent_shipping, hero_remaining_shipping, hero_shipments,
+     shipping_estimate, shipping_primary_source, shipping_source, shipping_samples, shipping_orders_checked
+     ) = compute_shipping_for_groups(cur, hero_groups)
     hero_grand_total = round(hero_comics_total + hero_shipping_total, 2)
 
     hero_spent_comics, hero_remaining_comics, hero_spent_count, hero_remaining_count = split_spent_remaining(hero_items)
-    hero_spent_shipping, hero_remaining_shipping = split_shipping(hero_groups, shipping_estimate)
     hero_spent_total = round(hero_spent_comics + hero_spent_shipping, 2)
     hero_remaining_total = round(hero_remaining_comics + hero_remaining_shipping, 2)
 
@@ -393,7 +463,8 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     next_month_items = fetch_items_between(cur, nm_start, nm_end)
     next_month_groups = group_by_date(next_month_items)
     next_month_comics_total = round(sum(i["price"] for i in next_month_items), 2)
-    next_month_total = round(next_month_comics_total + len(next_month_groups) * shipping_estimate, 2)
+    next_month_shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, next_month_groups)
+    next_month_total = round(next_month_comics_total + next_month_shipping_total, 2)
 
     # --- "This month, by shipment": browsable to any month via ?month=YYYY-MM ---
     if month:
@@ -408,12 +479,11 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     viewed_items = fetch_items_between(cur, v_start, v_end, active_source)
     viewed_groups = group_by_date(viewed_items)
     viewed_comics_total = round(sum(i["price"] for i in viewed_items), 2)
-    viewed_shipments = len(viewed_groups)
-    viewed_shipping_total = round(viewed_shipments * shipping_estimate, 2)
+    (viewed_shipping_total, v_spent_shipping, v_remaining_shipping, viewed_shipments,
+     _, _, _, _, _) = compute_shipping_for_groups(cur, viewed_groups)
     viewed_grand_total = round(viewed_comics_total + viewed_shipping_total, 2)
 
     v_spent_comics, v_remaining_comics, viewed_spent_count, viewed_remaining_count = split_spent_remaining(viewed_items)
-    v_spent_shipping, v_remaining_shipping = split_shipping(viewed_groups, shipping_estimate)
     viewed_spent_total = round(v_spent_comics + v_spent_shipping, 2)
     viewed_remaining_total = round(v_remaining_comics + v_remaining_shipping, 2)
 
@@ -423,14 +493,17 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     is_current_month = (viewed_month.year == today.year and viewed_month.month == today.month)
 
     active_chart_range = chart_range if chart_range in RANGE_CONFIGS else DEFAULT_CHART_RANGE
-    chart_data = build_chart_data(cur, today, active_chart_range)
+    chart_data_all = {key: build_chart_data(cur, today, key) for key in RANGE_CONFIGS}
 
     year_stats = get_year_to_date(cur, today)
+    all_time_stats = get_all_time_stats(cur)
 
     duplicate_groups = find_duplicate_groups(cur)
     ghost_items = find_ghost_items(cur)
+    awaiting_charge = find_awaiting_charge(cur, today)
     all_sources = get_all_sources(cur)
     source_colors = {s: source_color(s) for s in all_sources}
+    source_shipping_rates = {s: get_shipping_estimate(cur, s)[0] for s in all_sources}
 
     cur.execute("SELECT COUNT(*) AS n FROM items")
     total_items_tracked = cur.fetchone()["n"]
@@ -465,16 +538,19 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "next_month_param": next_month_param,
         "viewed_month_param": viewed_month_param,
         "is_current_month": is_current_month,
-        "chart_data": chart_data,
+        "chart_data_all": chart_data_all,
         "range_tabs": RANGE_TABS,
         "active_chart_range": active_chart_range,
         "shipping_estimate": shipping_estimate,
+        "source_shipping_rates": source_shipping_rates,
         "shipping_source": shipping_source,
         "shipping_samples": shipping_samples,
         "shipping_orders_checked": shipping_orders_checked,
         "year_stats": year_stats,
+        "all_time_stats": all_time_stats,
         "duplicate_groups": duplicate_groups,
         "ghost_items": ghost_items,
+        "awaiting_charge": awaiting_charge,
         "all_sources": all_sources,
         "source_colors": source_colors,
         "active_source": active_source,
@@ -710,6 +786,107 @@ def update_item(
     return RedirectResponse(url="/", status_code=303)
 
 
+# --- Search --------------------------------------------------------------------
+
+SEARCH_SORT_OPTIONS = {
+    "date_desc": ("release_date DESC, name", "Release date (newest)"),
+    "date_asc": ("release_date ASC, name", "Release date (oldest)"),
+    "price_desc": ("price DESC, name", "Price (highest)"),
+    "price_asc": ("price ASC, name", "Price (lowest)"),
+    "name_asc": ("name ASC", "Name (A-Z)"),
+}
+
+
+@app.get("/search")
+def search_items(
+    request: Request,
+    q: str | None = None,
+    source: str | None = None,
+    status: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    sort: str | None = None,
+):
+    conn = db.get_db()
+    cur = conn.cursor()
+    all_sources = get_all_sources(cur)
+
+    active_status = status or "all"
+    active_sort = sort if sort in SEARCH_SORT_OPTIONS else "date_desc"
+    has_filter = bool(
+        (q and q.strip()) or source or (status and status != "all") or start_date or end_date
+    )
+
+    results = []
+    spent = remaining = cancelled_total = 0.0
+    cancelled_count = 0
+    match_count = 0
+    truncated = False
+
+    if has_filter:
+        conditions = []
+        params = []
+        if q and q.strip():
+            conditions.append("name LIKE ?")
+            params.append(f"%{q.strip()}%")
+        if source:
+            conditions.append("source = ?")
+            params.append(source)
+        if active_status == "paid":
+            conditions.append("charge_status = 'charged' AND status != 'cancelled'")
+        elif active_status == "unpaid":
+            conditions.append("charge_status != 'charged' AND status != 'cancelled'")
+        elif active_status == "cancelled":
+            conditions.append("status = 'cancelled'")
+        if start_date:
+            conditions.append("release_date >= ?")
+            params.append(start_date)
+        if end_date:
+            conditions.append("release_date <= ?")
+            params.append(end_date)
+
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
+
+        cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
+        all_matches = [dict(r) for r in cur.fetchall()]
+
+        match_count = len(all_matches)
+        spent = round(sum(r["price"] for r in all_matches if r["charge_status"] == "charged" and r["status"] != "cancelled"), 2)
+        remaining = round(sum(r["price"] for r in all_matches if r["charge_status"] != "charged" and r["status"] != "cancelled"), 2)
+        cancelled_total = round(sum(r["price"] for r in all_matches if r["status"] == "cancelled"), 2)
+        cancelled_count = sum(1 for r in all_matches if r["status"] == "cancelled")
+
+        truncated = len(all_matches) > 500
+        results = all_matches[:500]
+        for r in results:
+            r["release_date_label"] = (
+                date.fromisoformat(r["release_date"]).strftime("%d %b %Y") if r["release_date"] else "no date set"
+            )
+            r["source_color"] = source_color(r["source"])
+
+    conn.close()
+    return templates.TemplateResponse("search.html", {
+        "request": request,
+        "q": q or "",
+        "results": results,
+        "has_filter": has_filter,
+        "all_sources": all_sources,
+        "active_source": source or "",
+        "active_status": active_status,
+        "start_date": start_date or "",
+        "end_date": end_date or "",
+        "active_sort": active_sort,
+        "sort_options": SEARCH_SORT_OPTIONS,
+        "match_count": match_count,
+        "spent": spent,
+        "remaining": remaining,
+        "cancelled_total": cancelled_total,
+        "cancelled_count": cancelled_count,
+        "truncated": truncated,
+    })
+
+
 # --- Calendar -----------------------------------------------------------------
 
 @app.get("/calendar")
@@ -848,6 +1025,25 @@ def export_ics():
     )
 
 
+def check_preview_duplicates(cur, preview_items):
+    """For each previewed item, flag whether something with the same name
+    already exists under a DIFFERENT order - a likely accidental double
+    order, worth a second look before confirming. The same name under the
+    SAME order is just a normal re-import refresh and isn't flagged."""
+    for it in preview_items:
+        cur.execute(
+            "SELECT order_number, price, release_date FROM items WHERE name = ? AND status != 'cancelled'",
+            (it["name"],),
+        )
+        existing_rows = [dict(r) for r in cur.fetchall()]
+        others = [r for r in existing_rows if str(r["order_number"]) != str(it["order_number"])]
+        it["duplicate_flag"] = None
+        if others:
+            r = others[0]
+            it["duplicate_flag"] = f"Already tracked - order #{r['order_number']}, £{r['price']:.2f}"
+    return preview_items
+
+
 # --- Import -------------------------------------------------------------------
 
 @app.get("/import")
@@ -858,26 +1054,134 @@ def import_form_redirect():
 
 
 @app.post("/import")
-def import_submit(request: Request, order_text: str = Form(...)):
-    result = parser.import_text(order_text)
-    for c in result.get("release_changes", []):
-        c["old_date_label"] = date.fromisoformat(c["old_date"]).strftime("%d %b %Y") if c["old_date"] else "no date set"
-        c["new_date_label"] = date.fromisoformat(c["new_date"]).strftime("%d %b %Y")
+def import_preview(request: Request, order_text: str = Form(...)):
+    """Parses the pasted text and shows an editable review screen - nothing
+    is written to the database until the person confirms it looks right."""
+    preview = parser.detect_import(order_text)
+
     conn = db.get_db()
     cur = conn.cursor()
+    preview["rows"] = check_preview_duplicates(cur, preview["rows"])
     all_sources = get_all_sources(cur)
     conn.close()
-    return templates.TemplateResponse("add_items.html", {
+
+    return templates.TemplateResponse("import_preview.html", {
         "request": request,
-        "result": result,
+        "preview": preview,
         "all_sources": all_sources,
     })
+
+
+@app.post("/import/confirm")
+async def import_confirm(request: Request):
+    form = await request.form()
+    parser_type = form.get("parser_type", "generic")
+    row_count = int(form.get("row_count", "0") or 0)
+
+    def _str_to_date(s):
+        return date.fromisoformat(s) if s else None
+
+    kept_items = []
+    for i in range(row_count):
+        if not form.get(f"keep_{i}"):
+            continue
+        name = (form.get(f"name_{i}") or "").strip()
+        if not name:
+            continue
+        try:
+            price = float(form.get(f"price_{i}") or "0")
+        except ValueError:
+            continue
+        kept_items.append({
+            "name": name,
+            "price": price,
+            "release_date_raw": form.get(f"release_date_{i}") or "",
+            "order_number": form.get(f"order_number_{i}") or None,
+            "placed_date_raw": form.get(f"placed_date_{i}") or "",
+            "status": form.get(f"status_{i}") or "preorder",
+            "charge_status": form.get(f"charge_status_{i}") or "not_charged",
+            "note": form.get(f"note_{i}") or None,
+        })
+
+    if not kept_items:
+        return RedirectResponse(url="/items/new", status_code=303)
+
+    if parser_type == "forbidden_planet":
+        order_totals_raw = form.get("order_totals_json", "{}")
+        try:
+            order_totals = {k: float(v) for k, v in json.loads(order_totals_raw).items()}
+        except (ValueError, TypeError):
+            order_totals = {}
+        store_items = [
+            {
+                "name": it["name"],
+                "order_number": it["order_number"],
+                "placed_date": _str_to_date(it["placed_date_raw"]),
+                "status": it["status"],
+                "release_date": _str_to_date(it["release_date_raw"]),
+                "charge_status": it["charge_status"] or None,
+                "price": it["price"],
+                "note": it["note"],
+            }
+            for it in kept_items
+        ]
+        result = parser.store_parsed_items(store_items, order_totals)
+        logger.info("IMPORT CONFIRM (Forbidden Planet): %s", result)
+    else:
+        source = (form.get("source") or "").strip() or "Unknown shop"
+        shipping_raw = form.get("shipping", "")
+        order_number = form.get("order_number") or None
+        today = date.today()
+        now = datetime.now(timezone.utc).isoformat()
+
+        conn = db.get_db()
+        cur = conn.cursor()
+        created = []
+        for it in kept_items:
+            release_iso = it["release_date_raw"] or None
+            cur.execute(
+                """
+                INSERT INTO items
+                    (name, order_number, placed_date, status, release_date, charge_status,
+                     price, note, imported_at, manual_override, source)
+                VALUES (?, ?, ?, 'preorder', ?, 'not_charged', ?, ?, ?, 1, ?)
+                """,
+                (it["name"], order_number, today.isoformat(), release_iso, it["price"], it["note"], now, source),
+            )
+            created.append((cur.lastrowid, it["name"], it["price"]))
+
+        if shipping_raw and order_number:
+            try:
+                shipping_val = float(shipping_raw)
+                cur.execute(
+                    """
+                    INSERT INTO shipment_postage (order_number, shipment_index, amount, captured_at, source)
+                    VALUES (?, 0, ?, ?, ?)
+                    ON CONFLICT(order_number, shipment_index) DO UPDATE SET
+                        amount = excluded.amount, captured_at = excluded.captured_at, source = excluded.source
+                    """,
+                    (order_number, shipping_val, now, source),
+                )
+            except ValueError:
+                pass
+
+        conn.commit()
+        conn.close()
+        logger.info("IMPORT CONFIRM (generic, source=%r): created=%s", source, created)
+
+    return RedirectResponse(url="/", status_code=303)
 
 
 # --- Settings / notifications -------------------------------------------------
 
 @app.get("/settings")
-def settings_form(request: Request, test_result: str | None = None, test_error: str | None = None):
+def settings_form(
+    request: Request,
+    test_result: str | None = None,
+    test_error: str | None = None,
+    restore_result: str | None = None,
+    restore_count: int | None = None,
+):
     conn = db.get_db()
     cur = conn.cursor()
     values = notifications.get_all_settings(cur)
@@ -887,6 +1191,8 @@ def settings_form(request: Request, test_result: str | None = None, test_error: 
         "values": values,
         "test_result": test_result,
         "test_error": test_error,
+        "restore_result": restore_result,
+        "restore_count": restore_count,
     })
 
 
@@ -939,6 +1245,59 @@ def test_digest():
     return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
 
 
+@app.get("/settings/backup")
+def download_backup():
+    backup_name = f"kaching-backup-{date.today().isoformat()}.db"
+    return FileResponse(db.DB_PATH, filename=backup_name, media_type="application/octet-stream")
+
+
+@app.post("/settings/restore")
+async def restore_backup(backup_file: UploadFile = File(...)):
+    contents = await backup_file.read()
+
+    # A real SQLite database file always starts with this exact 16-byte header
+    if not contents.startswith(b"SQLite format 3\x00"):
+        logger.warning("BACKUP RESTORE rejected: uploaded file isn't a SQLite database (filename=%s)", backup_file.filename)
+        return RedirectResponse(
+            url=f"/settings?test_error={quote('That file is not a valid database (wrong file type?)')}",
+            status_code=303,
+        )
+
+    tmp_path = f"{db.DB_PATH}.restore-tmp"
+    with open(tmp_path, "wb") as f:
+        f.write(contents)
+
+    # Confirm it's actually a Ka-Ching database (has the items table) before
+    # touching anything live - a valid SQLite file that isn't ours would
+    # otherwise wipe out the real data with something unrelated.
+    try:
+        test_conn = sqlite3.connect(tmp_path)
+        test_cur = test_conn.cursor()
+        test_cur.execute("SELECT COUNT(*) FROM items")
+        item_count = test_cur.fetchone()[0]
+        test_conn.close()
+    except sqlite3.Error as exc:
+        os.remove(tmp_path)
+        logger.warning("BACKUP RESTORE rejected: not a Ka-Ching database (filename=%s, error=%s)", backup_file.filename, exc)
+        return RedirectResponse(
+            url=f"/settings?test_error={quote('That file is a database, but not a Ka-Ching one')}",
+            status_code=303,
+        )
+
+    # Safety copy of whatever's currently live, in case this restore turns
+    # out to be the wrong file - not exposed in the UI, but sits in /data
+    # for manual recovery via docker exec if ever needed.
+    if os.path.exists(db.DB_PATH):
+        safety_path = f"{db.DB_PATH}.before-restore-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        shutil.copy2(db.DB_PATH, safety_path)
+        logger.info("BACKUP RESTORE: saved safety copy of current database to %s", safety_path)
+
+    os.replace(tmp_path, db.DB_PATH)
+    logger.info("BACKUP RESTORE: replaced live database, filename=%s, items=%d", backup_file.filename, item_count)
+
+    return RedirectResponse(url=f"/settings?restore_result=ok&restore_count={item_count}", status_code=303)
+
+
 # --- API ------------------------------------------------------------------
 
 @app.get("/api/summary")
@@ -948,8 +1307,6 @@ def api_summary():
     conn = db.get_db()
     cur = conn.cursor()
 
-    shipping_estimate, _, _, _ = get_shipping_estimate(cur)
-
     week_end = today + timedelta(days=6)
     week_items = fetch_items_between(cur, today, week_end)
 
@@ -957,11 +1314,10 @@ def api_summary():
     month_items = fetch_items_between(cur, m_start, m_end)
     month_groups = group_by_date(month_items)
     month_comics_total = sum(i["price"] for i in month_items)
-    month_shipping_total = len(month_groups) * shipping_estimate
+    month_shipping_total, month_spent_shipping, month_remaining_shipping, _, _, _, _, _, _ = compute_shipping_for_groups(cur, month_groups)
     month_total = round(month_comics_total + month_shipping_total, 2)
 
     month_spent_comics, month_remaining_comics, _, _ = split_spent_remaining(month_items)
-    month_spent_shipping, month_remaining_shipping = split_shipping(month_groups, shipping_estimate)
 
     conn.close()
     return {

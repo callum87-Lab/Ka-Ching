@@ -183,12 +183,12 @@ def parse_order_history(text: str):
     return items, order_totals, skipped_no_order
 
 
-def parse_and_store(text: str):
-    items, order_totals, skipped_no_order = parse_order_history(text)
-    logger.info(
-        "IMPORT PARSE: found %d items, captured %d order totals, skipped %d (no order number): %s",
-        len(items), len(order_totals), len(skipped_no_order), order_totals,
-    )
+def store_parsed_items(items, order_totals):
+    """The storage/refresh logic for Forbidden Planet items - takes an
+    already-parsed items list (which may have been reviewed/edited on the
+    confirm screen first) rather than deriving them fresh from raw text.
+    This is the exact same logic direct import always used; splitting it
+    out just lets the review-and-confirm pipeline reuse it unchanged."""
     conn = db.get_db()
     cur = conn.cursor()
     imported = 0
@@ -266,8 +266,18 @@ def parse_and_store(text: str):
         "updated": updated,
         "skipped": len(items) - imported - updated,
         "order_totals_captured": len(order_totals),
-        "skipped_no_order": len(skipped_no_order),
     }
+
+
+def parse_and_store(text: str):
+    items, order_totals, skipped_no_order = parse_order_history(text)
+    logger.info(
+        "IMPORT PARSE: found %d items, captured %d order totals, skipped %d (no order number): %s",
+        len(items), len(order_totals), len(skipped_no_order), order_totals,
+    )
+    result = store_parsed_items(items, order_totals)
+    result["skipped_no_order"] = len(skipped_no_order)
+    return result
 
 
 # --- Release-date-change notification emails -------------------------------
@@ -434,6 +444,96 @@ def store_shipment_postage(samples):
     return len(samples)
 
 
+def detect_import(text: str):
+    """Tries each known parser in turn and returns a single unified preview
+    structure for the review-and-confirm screen. Never touches the database
+    - this is pure detection, so a bad guess costs nothing until confirmed.
+
+    Forbidden Planet's exact format is tried first since it's the only one
+    that's fully reliable; anything it can't recognise falls through to the
+    generic parser, which still extracts what it safely can (order number,
+    total, shipping, item rows where the structure is clear enough) and
+    leaves the rest blank for the person to fill in themselves."""
+    fp_items, fp_order_totals, fp_skipped = parse_order_history(text)
+    if fp_items:
+        preview_items = [
+            {
+                "name": it["name"],
+                "price": it["price"],
+                "release_date": it["release_date"].isoformat() if it["release_date"] else "",
+                "order_number": it["order_number"],
+                "placed_date": it["placed_date"].isoformat() if it["placed_date"] else "",
+                "status": it["status"],
+                "charge_status": it["charge_status"] or "",
+                "note": it["note"] or "",
+            }
+            for it in fp_items
+        ]
+        return {
+            "parser": "forbidden_planet",
+            "source_guess": "Forbidden Planet",
+            "rows": preview_items,
+            "order_totals": fp_order_totals,
+            "skipped_no_order": len(fp_skipped),
+            "declared_total": None,
+            "shipping": None,
+            "order_number": None,
+        }
+
+    if looks_like_ebay(text):
+        ebay = parse_ebay_order(text)
+        default_status = "dispatched" if ebay["already_delivered"] else "preorder"
+        default_charge = "charged" if ebay["already_delivered"] else "not_charged"
+        preview_items = [
+            {
+                "name": it["name"],
+                "price": it["price"],
+                "release_date": "",
+                "order_number": ebay["order_number"] or "",
+                "placed_date": "",
+                "status": default_status,
+                "charge_status": default_charge,
+                "note": it["note"] or "",
+            }
+            for it in ebay["items"]
+        ]
+        return {
+            "parser": "generic",
+            "source_guess": ebay["source_guess"],
+            "rows": preview_items,
+            "order_totals": {},
+            "skipped_no_order": 0,
+            "declared_total": ebay["declared_total"],
+            "shipping": None,
+            "order_number": ebay["order_number"],
+        }
+
+    generic = parse_generic_order(text)
+    preview_items = [
+        {
+            "name": it["name"],
+            "price": it["price"],
+            "release_date": it["release_date"] or "",
+            "order_number": generic["order_number"] or "",
+            "placed_date": "",
+            "status": "preorder",
+            "charge_status": "",
+            "note": it["note"] or "",
+        }
+        for it in generic["items"]
+    ]
+    return {
+        "parser": "generic",
+        "source_guess": "",
+        "rows": preview_items,
+        "order_totals": {},
+        "skipped_no_order": 0,
+        "declared_total": generic["declared_total"],
+        "shipping": generic["shipping"],
+        "order_number": generic["order_number"],
+    }
+
+
 def import_text(text: str):
     """Single entry point the Import page calls - handles a pasted
     order-history export, a pasted release-date-change email, and pasted
@@ -449,3 +549,200 @@ def import_text(text: str):
     postage_samples = parse_shipment_postage(text)
     result["postage_captured"] = store_shipment_postage(postage_samples)
     return result
+
+
+# --- Generic order confirmation parser ("Shopify-style") --------------------
+#
+# For anything that isn't Forbidden Planet. Built around patterns common to
+# small-shop checkouts generally - most run on shared platforms (Shopify
+# chief among them), so order confirmations tend to share a recognisable
+# shape (Order Number / itemised list / Subtotal / Shipping / Total) even
+# though the exact wording varies shop to shop. This is deliberately a
+# best-effort parser: anything it can't confidently extract is left blank
+# rather than guessed at wrong - the review screen is where a person fills
+# in whatever's missing.
+
+_GENERIC_PRICE_RE = re.compile(r"(?:£|GBP\s?)\s?(\d+\.\d{2})")
+_GENERIC_EXCLUDE_KEYWORDS = ["subtotal", "total", "postage", "p&p", "shipping"]
+_GENERIC_START_ANCHORS = [r"Line Items", r"Items Ordered", r"Item Description.*?Price", r"Order Details"]
+_GENERIC_ORDER_NUM_RE = re.compile(r"(?:Order\s*(?:Number|Ref|#)|Order\s*ID)\s*:?\s*#?\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
+_GENERIC_TOTAL_RE = re.compile(r"\b(?:Grand\s*Total|Total)\b\s*:?\s*(?:£|GBP\s?)\s?(\d+\.\d{2})", re.IGNORECASE)
+_GENERIC_SHIPPING_RE = re.compile(r"(?:Postage\s*&?\s*Packaging|P\s*&\s*P|Shipping|Postage)\s*:?\s*(?:£|GBP\s?)\s?(\d+\.\d{2})", re.IGNORECASE)
+_GENERIC_EXACT_DATE_RE = re.compile(
+    r"(?:Expected Release|Release Date|Ships?)\s*:?\s*(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})",
+    re.IGNORECASE,
+)
+_GENERIC_INFORMAL_NOTE_RE = re.compile(
+    r"\((expected[^)]*|ships?[^)]*|pre-?order[^)]*|in stock[^)]*)\)",
+    re.IGNORECASE,
+)
+
+
+def _generic_find_start(text, first_price_pos):
+    """Prefer the LATEST recognised header that still comes before the first
+    price - avoids stopping at an earlier, less specific anchor and dragging
+    in header-row text as part of the first item's name."""
+    best = None
+    for pat in _GENERIC_START_ANCHORS:
+        m = re.search(pat, text, re.IGNORECASE | re.DOTALL)
+        if m and m.end() <= first_price_pos:
+            if best is None or m.end() > best:
+                best = m.end()
+    return best if best is not None else 0
+
+
+def _generic_clean_name(s):
+    s = re.sub(r"^[\s,;:\-]+(and\s+)?", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"[\s,;:\-]+$", "", s)
+    s = re.sub(r"\s+\d+\s+(In Stock|Pre-?order)\s*$", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"\s{2,}", " ", s).strip()
+    return s
+
+
+# --- eBay order parser -------------------------------------------------------
+#
+# eBay's "Order details" page has a very distinctive, consistent shape
+# regardless of seller - Order number / Sold by / Total up top, then each
+# item repeated as a heading line (twice, back to back - an artifact of
+# eBay's own page layout), followed immediately by "£X.XXUnit price £X.XX"
+# glued together with no space, then "Item number: ...". Not pre-orders, so
+# no release dates - these are completed purchases being logged for record.
+
+_EBAY_ORDER_NUM_RE = re.compile(r"Order number\s*\t?\s*([\w\-]+)", re.IGNORECASE)
+_EBAY_TOTAL_RE = re.compile(r"Total\s*\t?\s*£(\d+\.\d{2})", re.IGNORECASE)
+_EBAY_SELLER_RE = re.compile(r"Sold by\s*\t?\s*(\S+)", re.IGNORECASE)
+_EBAY_ITEM_PRICE_RE = re.compile(r"£(\d+\.\d{2})\s*Unit price", re.IGNORECASE)
+_EBAY_SKIP_EXACT = {"Item details", "incl.", "Buyer Protection", "Buy again", "More actions", "Track package"}
+
+
+def looks_like_ebay(text: str) -> bool:
+    return bool(re.search(r"Item number:\s*\d+", text)) and bool(_EBAY_ORDER_NUM_RE.search(text))
+
+
+def parse_ebay_order(text: str):
+    """Returns {order_number, declared_total, source_guess, items: [{name,
+    price, release_date, note}]}. Pure parsing, never touches the database."""
+    order_match = _EBAY_ORDER_NUM_RE.search(text)
+    order_number = order_match.group(1) if order_match else None
+
+    total_match = _EBAY_TOTAL_RE.search(text)
+    declared_total = float(total_match.group(1)) if total_match else None
+
+    seller_match = _EBAY_SELLER_RE.search(text)
+    seller = seller_match.group(1) if seller_match else None
+    source_guess = f"eBay - {seller}" if seller else "eBay"
+
+    already_delivered = "Delivered" in text or "delivered" in text.lower()
+
+    idx = text.find("Item details")
+    item_section = text[idx:] if idx != -1 else text
+    lines = [l.strip() for l in item_section.splitlines()]
+
+    items = []
+    pending_name = None
+    for line in lines:
+        if not line or line in _EBAY_SKIP_EXACT:
+            continue
+        price_match = _EBAY_ITEM_PRICE_RE.search(line)
+        if price_match:
+            if pending_name:
+                items.append({
+                    "name": pending_name,
+                    "price": float(price_match.group(1)),
+                    "release_date": None,
+                    "note": None,
+                })
+                pending_name = None
+            continue
+        if line.startswith("Item number") or line.startswith("Return window"):
+            continue
+        if line != pending_name:
+            pending_name = line
+
+    return {
+        "order_number": order_number,
+        "declared_total": declared_total,
+        "source_guess": source_guess,
+        "already_delivered": already_delivered,
+        "items": items,
+    }
+
+
+def parse_generic_order(text: str):
+    """Returns {order_number, declared_total, shipping, items: [{name, price,
+    release_date, note}]}. Never touches the database - pure parsing."""
+    order_match = _GENERIC_ORDER_NUM_RE.search(text)
+    order_number = order_match.group(1) if order_match else None
+
+    total_match = _GENERIC_TOTAL_RE.search(text)
+    declared_total = float(total_match.group(1)) if total_match else None
+
+    shipping_match = _GENERIC_SHIPPING_RE.search(text)
+    shipping = float(shipping_match.group(1)) if shipping_match else None
+
+    price_matches = list(_GENERIC_PRICE_RE.finditer(text))
+    items = []
+    if price_matches:
+        start = _generic_find_start(text, price_matches[0].start())
+        cursor = start
+        for i, m in enumerate(price_matches):
+            context_before = text[max(0, m.start() - 40):m.start()].lower()
+            if any(kw in context_before for kw in _GENERIC_EXCLUDE_KEYWORDS):
+                cursor = m.end()
+                continue
+
+            prefix = text[cursor:m.start()]
+            release_date = None
+            note = None
+
+            dm = _GENERIC_EXACT_DATE_RE.search(prefix)
+            im = _GENERIC_INFORMAL_NOTE_RE.search(prefix)
+            name_source = prefix
+            if dm:
+                paren = re.search(r"\([^)]*" + re.escape(dm.group(0)) + r"[^)]*\)", prefix, re.IGNORECASE)
+                if paren:
+                    name_source = prefix[:paren.start()] + prefix[paren.end():]
+                try:
+                    release_date = datetime.strptime(
+                        f"{dm.group(1)} {dm.group(2)} {dm.group(3)}", "%d %B %Y"
+                    ).date().isoformat()
+                except ValueError:
+                    pass
+            elif im:
+                name_source = prefix[:im.start()] + prefix[im.end():]
+                note = im.group(1).strip()
+            else:
+                # Only look past the price if there's a clear comma to stop
+                # at - without one, there's no safe boundary and we'd risk
+                # stealing the NEXT item's own note instead.
+                comma_pos = text.find(",", m.end())
+                if comma_pos != -1 and comma_pos - m.end() < 80:
+                    suffix = text[m.end():comma_pos]
+                    dm2 = _GENERIC_EXACT_DATE_RE.search(suffix)
+                    im2 = _GENERIC_INFORMAL_NOTE_RE.search(suffix)
+                    if dm2:
+                        try:
+                            release_date = datetime.strptime(
+                                f"{dm2.group(1)} {dm2.group(2)} {dm2.group(3)}", "%d %B %Y"
+                            ).date().isoformat()
+                        except ValueError:
+                            pass
+                    elif im2:
+                        note = im2.group(1).strip()
+
+            name = _generic_clean_name(name_source)
+            cursor = m.end()
+            if name:
+                items.append({
+                    "name": name,
+                    "price": float(m.group(1)),
+                    "release_date": release_date,
+                    "note": note,
+                })
+
+    return {
+        "order_number": order_number,
+        "declared_total": declared_total,
+        "shipping": shipping,
+        "items": items,
+    }

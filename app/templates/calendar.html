@@ -63,14 +63,12 @@
       </div>
       <ul class="item-list item-list-readonly">
         {% for sg in group.source_groups %}
-        {% if group.source_groups|length > 1 %}
         <li class="cal-source-divider">
           <span class="source-label" style="color: {{ sg.color }};">
             <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
           </span>
           <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
         </li>
-        {% endif %}
         {% for item in sg.entries %}
         <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }}">
           <span class="item-name">{{ item.name }}{% if item.charge_status == 'charged' %} <span class="readonly-paid-tag">paid</span>{% endif %}</span>

@@ -100,14 +100,55 @@ by re-importing (a missing order number can't be matched against anything).
 If you were tracking a comic and it looked like you owned it twice with only
 one order to show for it, this was almost certainly why.
 
-This is now fixed at the source: an item with no known order number is
-skipped entirely rather than recorded with bad data, and the import banner
-will warn you if this happens ("N items skipped - couldn't tell which order
-they belonged to"), with full detail in `docker logs pullcost` under
-"SKIPPED item". Any ghost rows from before this fix won't clean themselves
-up automatically — the dashboard now runs a standing check for exactly this
-(see "If something looks wrong" below) and will surface any that are still
-sitting there, with a direct **Edit** or **Remove** for each one.
+## How importing actually works now
+
+Pasting an order no longer saves anything straight away. Instead:
+
+1. **Ka-Ching! tries to recognise what you pasted**, in order: Forbidden
+   Planet's exact format first (the only one that's fully reliable), then
+   eBay's order-detail format (also a real dedicated parser, since eBay's
+   page shape is consistent regardless of seller - detects the order
+   number, seller, total, and every item and price; since these aren't
+   pre-orders, items get no release date and are marked paid/dispatched
+   automatically if the order shows as delivered), then a generic parser
+   built around patterns common to small-shop checkouts generally (most
+   run on shared platforms like Shopify, so confirmations tend to share a
+   recognisable shape - Order Number / itemised list / Subtotal / Shipping
+   / Total - even when the exact wording differs).
+2. **You land on a review screen** showing exactly what it found - name,
+   price, and release date per item, all editable, plus the shop, order
+   number, and shipping if detected. Nothing has been written to the
+   database at this point.
+3. **Anything it couldn't confidently work out is left blank**, never
+   guessed at - an item with only "expected in stock late August" rather
+   than an actual date gets no release date, so you fill that in yourself
+   rather than Ka-Ching! inventing one.
+4. **Possible duplicates are flagged right on this screen** - if something
+   with the same name already exists under a different order number, it's
+   called out before you've committed to anything, not after.
+5. **Untick anything you don't want, fix anything that's wrong, add a row
+   by hand if something got missed, then confirm.** Only then does anything
+   actually get saved.
+
+For a shop Ka-Ching! doesn't recognise as Forbidden Planet, you'll be asked
+to confirm which shop it's from on the review screen - type it once, and it
+becomes a known option in the shop dropdown everywhere else in the app from
+then on. Detected shipping gets stored as that shop's own real shipping
+figure, feeding into...
+
+## Per-shop shipping calibration
+
+Different shops charge different amounts for postage, so shipping is now
+calculated separately per shop rather than one blended number applied to
+everyone. Each shop works through the same three-tier preference as before
+(exact figures first, then Forbidden Planet's own calibration from declared
+order totals, then a default estimate) - it's just scoped to that shop's own
+data now, so a shop you've only used once won't skew the numbers for
+Forbidden Planet or vice versa.
+
+This is also where the review screen mentioned above adds real value -
+now that a parsing mistake shows up on-screen before anything's saved,
+rather than needing to be caught after the fact.
 
 ## Running it
 
@@ -204,6 +245,42 @@ Two buttons let you confirm it's actually working before relying on it:
 This all runs inside the container itself — no cron job to set up, no
 external scheduler. It just needs the container running once a day at the
 time you pick.
+
+## A few smaller extras
+
+- **Search** — find any comic you've ever tracked, filterable by shop, paid
+  status, or a custom date range, with sort options and a running total
+  (spent / still due) for whatever's currently filtered — not locked to the
+  current week or month like the dashboard.
+- **All-time totals** — alongside "this year so far" on the dashboard,
+  there's now a lifetime total across everything ever tracked.
+- **Data backup and restore** — a "Download backup" button on the Settings
+  page gives you the whole database as a single file, separate from GitHub
+  (which never sees your real order data). A matching "Restore backup"
+  upload puts it back — it checks the file is genuinely a Ka-Ching database
+  before touching anything, and automatically keeps a safety copy of
+  whatever was live just before a restore (sitting in `/data` as
+  `pullcost.db.before-restore-<timestamp>`, not shown in the UI, but there
+  if a restore ever needs undoing manually).
+- **Install to home screen** — Ka-Ching! can be added to your phone's home
+  screen like a normal app (look for "Add to Home Screen" or an install
+  icon in your browser). Still the same container underneath, just opens
+  full-screen with its own icon instead of a browser tab.
+- **Awaiting charge** — a dashboard warning for anything whose release date
+  has already passed but is still sitting unpaid and unmarked. Usually just
+  a normal short delay before the retailer charges, but worth a look if
+  something's been sitting there a while.
+- **Version number** — the footer now shows which build is currently
+  running, so "did the update actually land" is a glance instead of a
+  guessing game.
+- **Shop label always shows** — every item now shows which shop it's from,
+  even when everything on a given day is from the same place. Previously
+  this only showed up when a day had comics from more than one shop.
+- **Chart tabs no longer reload the page** — clicking Week/Month/6M used to
+  send you back to the top of the dashboard. All three versions of the
+  chart now load at once (hidden until picked) and switching between them
+  happens instantly in the browser, with no reload and no lost scroll
+  position. Your last-picked range is also remembered between visits.
 
 Once more than one shop is being tracked, a small filter row appears above
 "This week" (All shops / each shop by name), and any day with releases from

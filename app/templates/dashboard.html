@@ -86,6 +86,47 @@
 </section>
 {% endif %}
 
+{% if awaiting_charge %}
+<section class="block">
+  <div class="block-head">
+    <h2 class="warning-head">&#9200; Awaiting charge ({{ awaiting_charge|length }})</h2>
+  </div>
+  <p class="muted ghost-hint">
+    These released a while ago but are still sitting unpaid and unmarked.
+    Usually just a normal short delay before the retailer charges &mdash;
+    worth a check if any of these are sitting here a while.
+  </p>
+  <div class="groups">
+    <div class="group group-warning">
+      <ul class="item-list">
+        {% for item in awaiting_charge %}
+        <li>
+          <form method="post" action="/items/{{ item.id }}/mark" class="toggle-form">
+            <input type="hidden" name="action" value="paid">
+            <button type="submit" class="paid-circle" title="Mark as paid" aria-label="Mark as paid"></button>
+          </form>
+          <a href="/items/{{ item.id }}/edit" class="item-name-link">
+            <span class="item-name">{{ item.name }} <span class="search-status-tag">{{ item.days_late }}d late</span></span>
+          </a>
+          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <div class="item-actions-group">
+          <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
+            <input type="hidden" name="action" value="cancel">
+            <button type="submit" class="btn-x" title="Cancel this item" aria-label="Cancel this item">&times;</button>
+          </form>
+          <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+            <input type="hidden" name="action" value="remove">
+            <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
+          </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <section class="hero">
   <div class="price-stamp">
     <span class="price-stamp-label">Still due &middot; {{ current_month_label }}</span>
@@ -125,6 +166,11 @@
     <span class="mono">&pound;{{ "%.2f"|format(year_stats.total) }}</span> tracked total across
     <span class="mono">{{ year_stats.count }}</span> issue{{ "s" if year_stats.count != 1 else "" }} this year.
   </p>
+  <p class="hero-line muted">
+    All time: <span class="mono">&pound;{{ "%.2f"|format(all_time_stats.spent) }}</span> spent &middot;
+    <span class="mono">&pound;{{ "%.2f"|format(all_time_stats.total) }}</span> tracked total across
+    <span class="mono">{{ all_time_stats.count }}</span> issue{{ "s" if all_time_stats.count != 1 else "" }}.
+  </p>
 </section>
 
 {% if all_sources|length > 1 %}
@@ -154,12 +200,10 @@
       </div>
       {% for sg in group.source_groups %}
       <div class="source-subgroup">
-        {% if group.source_groups|length > 1 %}
         <div class="source-label" style="color: {{ sg.color }};">
           <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
           <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
         </div>
-        {% endif %}
         <ul class="item-list">
           {% for item in sg.entries %}
           <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }}">
@@ -217,12 +261,10 @@
       </div>
       {% for sg in group.source_groups %}
       <div class="source-subgroup">
-        {% if group.source_groups|length > 1 %}
         <div class="source-label" style="color: {{ sg.color }};">
           <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
           <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
         </div>
-        {% endif %}
         <ul class="item-list">
           {% for item in sg.entries %}
           <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }}">
@@ -247,9 +289,9 @@
           </li>
           {% endfor %}
         </ul>
+        <div class="group-ship mono">+ &pound;{{ "%.2f"|format(source_shipping_rates.get(sg.source, shipping_estimate)) }} est. shipping ({{ sg.source }}){% if group.all_paid %} - paid{% endif %}</div>
       </div>
       {% endfor %}
-      <div class="group-ship mono">+ &pound;{{ "%.2f"|format(shipping_estimate) }} est. shipping{% if group.all_paid %} (paid){% endif %}</div>
     </div>
     {% endfor %}
   </div>
@@ -285,14 +327,14 @@
 <section class="block">
   <div class="block-head chart-head">
     <h2>Spend trend</h2>
-    <div class="range-tabs">
+    <div class="range-tabs" id="chart-tabs">
       {% for key, label in range_tabs %}
-      <a href="/?chart_range={{ key }}&month={{ viewed_month_param }}"
-         class="range-tab {{ 'active' if key == active_chart_range else '' }}">{{ label }}</a>
+      <button type="button" class="range-tab {{ 'active' if key == active_chart_range else '' }}" data-range="{{ key }}">{{ label }}</button>
       {% endfor %}
     </div>
   </div>
-  <div class="chart">
+  {% for key, chart_data in chart_data_all.items() %}
+  <div class="chart" data-chart-range="{{ key }}" {{ '' if key == active_chart_range else 'style="display:none;"' }}>
     {% for c in chart_data %}
     <div class="chart-col">
       <div class="chart-bar-track">
@@ -305,7 +347,40 @@
     </div>
     {% endfor %}
   </div>
+  {% endfor %}
 </section>
+
+<script>
+(function () {
+  var tabsContainer = document.getElementById('chart-tabs');
+  if (!tabsContainer) return;
+
+  var STORAGE_KEY = 'kaching-chart-range';
+  var saved = null;
+  try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+
+  function showRange(range) {
+    document.querySelectorAll('.chart[data-chart-range]').forEach(function (el) {
+      el.style.display = (el.dataset.chartRange === range) ? '' : 'none';
+    });
+    tabsContainer.querySelectorAll('.range-tab').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.range === range);
+    });
+  }
+
+  if (saved && document.querySelector('.chart[data-chart-range="' + saved + '"]')) {
+    showRange(saved);
+  }
+
+  tabsContainer.addEventListener('click', function (e) {
+    var btn = e.target.closest('.range-tab');
+    if (!btn) return;
+    var range = btn.dataset.range;
+    showRange(range);
+    try { localStorage.setItem(STORAGE_KEY, range); } catch (e) {}
+  });
+})();
+</script>
 
 {% endif %}
 {% endblock %}

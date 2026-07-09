@@ -98,6 +98,38 @@
   </p>
 </section>
 
+<section class="block">
+  <div class="block-head">
+    <h2>Data backup</h2>
+  </div>
+  <p class="muted item-form-hint">
+    Downloads the whole tracked database as a single file &mdash; every
+    comic, every manual tick, everything. Separate from GitHub on purpose,
+    since GitHub never sees your real order data.
+  </p>
+  <a href="/settings/backup" class="btn-tiny btn-test">Download backup</a>
+
+  <div class="restore-section">
+    {% if restore_result == 'ok' %}
+    <div class="result-banner">Restored &mdash; {{ restore_count }} item(s) loaded from that backup.</div>
+    {% endif %}
+
+    <p class="muted item-form-hint restore-warning">
+      &#9888; Restoring <strong>replaces everything currently tracked</strong> with
+      whatever's in the file you upload. There's no in-app undo for this &mdash;
+      download a fresh backup first if you want to keep what's here now.
+    </p>
+    <form method="post" action="/settings/restore" enctype="multipart/form-data" class="item-edit-form"
+          onsubmit="return confirm('This replaces everything currently tracked with the contents of this file. This cannot be undone from within the app. Continue?');">
+      <label>
+        <span>Restore from backup file</span>
+        <input type="file" name="backup_file" accept=".db" required>
+      </label>
+      <button type="submit" class="btn-remove-all">Restore backup</button>
+    </form>
+  </div>
+</section>
+
 <script>
 (function () {
   const select = document.getElementById('provider-select');

@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS shipment_postage (
     shipment_index INTEGER NOT NULL,
     amount REAL NOT NULL,
     captured_at TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'Forbidden Planet',
     PRIMARY KEY (order_number, shipment_index)
 );
 
@@ -49,15 +50,20 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 """
 
-# Columns added after the initial release. Listed here so an existing
-# database (from before this feature existed) gets upgraded in place
-# instead of needing to be deleted and re-imported from scratch.
-MIGRATION_COLUMNS = [
-    ("manual_override", "INTEGER NOT NULL DEFAULT 0"),
-    ("prev_status", "TEXT"),
-    ("prev_charge_status", "TEXT"),
-    ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
-]
+# Columns added after each table's initial release. Listed here so an
+# existing database gets upgraded in place instead of needing to be deleted
+# and re-imported from scratch.
+MIGRATIONS = {
+    "items": [
+        ("manual_override", "INTEGER NOT NULL DEFAULT 0"),
+        ("prev_status", "TEXT"),
+        ("prev_charge_status", "TEXT"),
+        ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
+    ],
+    "shipment_postage": [
+        ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
+    ],
+}
 
 
 def get_db():
@@ -69,10 +75,12 @@ def get_db():
 
 
 def _migrate(conn):
-    existing = {row["name"] for row in conn.execute("PRAGMA table_info(items)")}
-    for col_name, col_def in MIGRATION_COLUMNS:
-        if col_name not in existing:
-            conn.execute(f"ALTER TABLE items ADD COLUMN {col_name} {col_def}")
+    for table, columns in MIGRATIONS.items():
+        cur = conn.execute(f"PRAGMA table_info({table})")
+        existing = {row["name"] for row in cur.fetchall()}
+        for col_name, col_def in columns:
+            if col_name not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_def}")
 
 
 def init_db():
