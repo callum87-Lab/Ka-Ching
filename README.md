@@ -111,11 +111,15 @@ Pasting an order no longer saves anything straight away. Instead:
    number, seller, total, and every item and price; since these aren't
    pre-orders, items default to the order's own delivery date, or its
    placed date if it hasn't been delivered yet, and are marked
-   paid/dispatched automatically if the order shows as delivered), then a
-   generic parser built around patterns common to small-shop checkouts
-   generally (most run on shared platforms like Shopify, so confirmations
-   tend to share a recognisable shape - Order Number / itemised list /
-   Subtotal / Shipping / Total - even when the exact wording differs).
+   paid/dispatched automatically if the order shows as delivered. Shipping
+   isn't a guess either - eBay's own Total already includes postage, so
+   subtracting the sum of the items gives the exact amount paid for
+   shipping, feeding straight into that seller's own shipping calibration),
+   then a generic parser built around patterns common to small-shop
+   checkouts generally (most run on shared platforms like Shopify, so
+   confirmations tend to share a recognisable shape - Order Number /
+   itemised list / Subtotal / Shipping / Total - even when the exact
+   wording differs).
 2. **You land on a review screen** showing exactly what it found - name,
    price, and release date per item, all editable, plus the shop, order
    number, and shipping if detected. Nothing has been written to the

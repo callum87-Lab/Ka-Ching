@@ -504,7 +504,7 @@ def detect_import(text: str):
             "order_totals": {},
             "skipped_no_order": 0,
             "declared_total": ebay["declared_total"],
-            "shipping": None,
+            "shipping": ebay["shipping"],
             "order_number": ebay["order_number"],
         }
 
@@ -608,6 +608,8 @@ def _generic_clean_name(s):
 # glued together with no space, then "Item number: ...". Not pre-orders, so
 # no release dates - these are completed purchases being logged for record.
 
+_EBAY_MAX_PLAUSIBLE_SHIPPING = 15.00
+
 _EBAY_ORDER_NUM_RE = re.compile(r"Order number\s*\t?\s*([\w\-]+)", re.IGNORECASE)
 _EBAY_TOTAL_RE = re.compile(r"Total\s*\t?\s*£(\d+\.\d{2})", re.IGNORECASE)
 _EBAY_SELLER_RE = re.compile(r"Sold by\s*\t?\s*(\S+)", re.IGNORECASE)
@@ -676,11 +678,23 @@ def parse_ebay_order(text: str):
         if line != pending_name:
             pending_name = line
 
+    # eBay's own Total already includes postage, and every item's price is
+    # already known - so the shipping cost isn't a guess, it's simple
+    # subtraction: Total minus the sum of items is exactly what was paid
+    # for postage, no separate "Postage:" line needed.
+    implied_shipping = None
+    if declared_total is not None and items:
+        items_sum = round(sum(it["price"] for it in items), 2)
+        diff = round(declared_total - items_sum, 2)
+        if 0 < diff <= _EBAY_MAX_PLAUSIBLE_SHIPPING:
+            implied_shipping = diff
+
     return {
         "order_number": order_number,
         "declared_total": declared_total,
         "source_guess": source_guess,
         "already_delivered": already_delivered,
+        "shipping": implied_shipping,
         "items": items,
     }
 
