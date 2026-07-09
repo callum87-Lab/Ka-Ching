@@ -20,11 +20,11 @@
       <img src="/static/img/logo.png?v={{ app_version }}" alt="Ka-Ching!" class="wordmark-logo">
     </a>
     <nav class="topnav">
-      <a href="/" class="nav-btn {{ 'active' if request.url.path == '/' else '' }}"><img src="/static/img/nav-dashboard.png?v={{ app_version }}" alt="Dashboard"></a>
-      <a href="/calendar" class="nav-btn {{ 'active' if request.url.path == '/calendar' else '' }}"><img src="/static/img/nav-calendar.png?v={{ app_version }}" alt="Calendar"></a>
-      <a href="/items/new" class="nav-btn {{ 'active' if request.url.path == '/items/new' else '' }}"><img src="/static/img/nav-add.png?v={{ app_version }}" alt="Add"></a>
-      <a href="/search" class="nav-btn {{ 'active' if request.url.path == '/search' else '' }}"><img src="/static/img/nav-search.png?v={{ app_version }}" alt="Search"></a>
-      <a href="/settings" class="nav-btn {{ 'active' if request.url.path == '/settings' else '' }}"><img src="/static/img/nav-settings.png?v={{ app_version }}" alt="Settings"></a>
+      <a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">Dashboard</a>
+      <a href="/calendar" class="{{ 'active' if request.url.path == '/calendar' else '' }}">Calendar</a>
+      <a href="/items/new" class="{{ 'active' if request.url.path == '/items/new' else '' }}">+ Add</a>
+      <a href="/search" class="{{ 'active' if request.url.path == '/search' else '' }}">Search</a>
+      <a href="/settings" class="{{ 'active' if request.url.path == '/settings' else '' }}">Settings</a>
     </nav>
   </header>
   <main class="content">
