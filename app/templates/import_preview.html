@@ -17,6 +17,11 @@
     {% if preview.skipped_no_order %}
     <span class="muted">&middot; {{ preview.skipped_no_order }} item(s) skipped - couldn't tell which order they belonged to</span>
     {% endif %}
+    {% elif preview.multi_order %}
+    <span class="preview-meta-tag">Detected: {{ preview.order_count }} separate eBay orders</span>
+    <span class="muted">&middot; each row below is tagged with its own shop - check they look right</span>
+    {% elif preview.source_guess %}
+    <span class="preview-meta-tag">Detected: {{ preview.source_guess }}</span>
     {% else %}
     <span class="preview-meta-tag preview-meta-tag-generic">Shop not recognised automatically - confirm below</span>
     {% endif %}
@@ -28,44 +33,30 @@
     {% if preview.parser == 'forbidden_planet' %}
     <input type="hidden" name="order_totals_json" value='{{ preview.order_totals|tojson }}'>
     {% else %}
-    <div class="form-row preview-shop-row">
-      <label>
-        <span>Shop</span>
-        <input type="text" name="source" list="known-sources" value="{{ preview.source_guess }}" placeholder="Which shop is this from?">
-        <datalist id="known-sources">
-          {% for s in all_sources %}
-          <option value="{{ s }}">
-          {% endfor %}
-        </datalist>
-      </label>
-      {% if preview.order_number %}
-      <label>
-        <span>Order number</span>
-        <input type="text" value="{{ preview.order_number }}" disabled>
-        <input type="hidden" name="order_number" value="{{ preview.order_number }}">
-      </label>
-      {% endif %}
-      {% if preview.shipping %}
-      <label>
-        <span>Shipping detected</span>
-        <input type="text" name="shipping" value="{{ preview.shipping }}">
-      </label>
-      {% endif %}
-    </div>
+    <input type="hidden" name="order_shipping_json" value='{{ preview.order_shipping_map|tojson }}'>
     {% if preview.declared_total %}
     <p class="muted">Order total on the page: <span class="mono">&pound;{{ "%.2f"|format(preview.declared_total) }}</span></p>
     {% endif %}
     {% endif %}
 
+    <datalist id="known-sources">
+      {% for s in all_sources %}
+      <option value="{{ s }}">
+      {% endfor %}
+    </datalist>
+
     <div id="preview-rows">
       {% for item in preview.rows %}
-      <div class="preview-row">
+      <div class="preview-row {{ 'preview-row-generic' if preview.parser != 'forbidden_planet' else '' }}">
         <label class="preview-keep">
           <input type="checkbox" name="keep_{{ loop.index0 }}" checked>
         </label>
         <input type="text" name="name_{{ loop.index0 }}" value="{{ item.name }}" class="preview-name-input">
         <input type="number" step="0.01" min="0" name="price_{{ loop.index0 }}" value="{{ item.price }}" class="preview-price-input">
         <input type="date" name="release_date_{{ loop.index0 }}" value="{{ item.release_date }}" class="preview-date-input">
+        {% if preview.parser != 'forbidden_planet' %}
+        <input type="text" name="source_{{ loop.index0 }}" value="{{ item.source }}" list="known-sources" placeholder="Shop" class="preview-source-input">
+        {% endif %}
         <input type="hidden" name="order_number_{{ loop.index0 }}" value="{{ item.order_number or '' }}">
         <input type="hidden" name="placed_date_{{ loop.index0 }}" value="{{ item.placed_date }}">
         <input type="hidden" name="status_{{ loop.index0 }}" value="{{ item.status }}">
@@ -95,16 +86,18 @@
   const container = document.getElementById('preview-rows');
   const addBtn = document.getElementById('add-preview-row-btn');
   const rowCountInput = document.querySelector('input[name="row_count"]');
+  const isForbiddenPlanet = {{ 'true' if preview.parser == 'forbidden_planet' else 'false' }};
   let nextIndex = {{ preview.rows|length }};
 
   addBtn.addEventListener('click', function () {
     const row = document.createElement('div');
-    row.className = 'preview-row';
+    row.className = 'preview-row' + (isForbiddenPlanet ? '' : ' preview-row-generic');
     row.innerHTML =
       '<label class="preview-keep"><input type="checkbox" name="keep_' + nextIndex + '" checked></label>' +
       '<input type="text" name="name_' + nextIndex + '" placeholder="Comic name" class="preview-name-input">' +
       '<input type="number" step="0.01" min="0" name="price_' + nextIndex + '" placeholder="Price" class="preview-price-input">' +
       '<input type="date" name="release_date_' + nextIndex + '" class="preview-date-input">' +
+      (isForbiddenPlanet ? '' : '<input type="text" name="source_' + nextIndex + '" list="known-sources" placeholder="Shop" class="preview-source-input">') +
       '<input type="hidden" name="order_number_' + nextIndex + '" value="">' +
       '<input type="hidden" name="placed_date_' + nextIndex + '" value="">' +
       '<input type="hidden" name="status_' + nextIndex + '" value="preorder">' +

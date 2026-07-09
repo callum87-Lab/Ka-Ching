@@ -2,6 +2,17 @@
 {% block title %}Ka-Ching! &middot; Search{% endblock %}
 {% block content %}
 
+<form id="bulk-form" method="post" action="/items/bulk-action">
+  <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+  <input type="hidden" name="bulk_action" id="bulk-action-input" value="">
+</form>
+<div class="bulk-toolbar" id="bulk-toolbar">
+  <span id="bulk-count" class="mono">0 selected</span>
+  <button type="button" class="btn-tiny btn-test" onclick="submitBulk('paid')">Mark paid</button>
+  <button type="button" class="btn-tiny" onclick="submitBulk('cancel')">Cancel</button>
+  <button type="button" class="btn-remove-all" onclick="submitBulk('remove')">Remove</button>
+</div>
+
 <section class="block">
   <div class="block-head">
     <h2>Search</h2>
@@ -77,11 +88,13 @@
             </a>
             <span class="item-price mono muted">&pound;{{ "%.2f"|format(item.price) }}</span>
             <form method="post" action="/items/{{ item.id }}/mark" class="inline-form">
+              <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="undo">
               <button type="submit" class="btn-tiny btn-undo">Undo</button>
             </form>
             {% else %}
             <form method="post" action="/items/{{ item.id }}/mark" class="toggle-form">
+              <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="{{ 'undo' if item.charge_status == 'charged' else 'paid' }}">
               <button type="submit" class="paid-circle {{ 'is-checked' if item.charge_status == 'charged' else '' }}"
                       title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
@@ -90,11 +103,14 @@
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
+            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
+              <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="cancel">
               <button type="submit" class="btn-x" title="Cancel this item" aria-label="Cancel this item">&times;</button>
             </form>
             <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+              <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="remove">
               <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
             </form>

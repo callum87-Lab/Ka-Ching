@@ -478,34 +478,58 @@ def detect_import(text: str):
             "declared_total": None,
             "shipping": None,
             "order_number": None,
+            "multi_order": False,
+            "order_shipping_map": {},
         }
 
     if looks_like_ebay(text):
-        ebay = parse_ebay_order(text)
-        default_status = "dispatched" if ebay["already_delivered"] else "preorder"
-        default_charge = "charged" if ebay["already_delivered"] else "not_charged"
-        preview_items = [
-            {
-                "name": it["name"],
-                "price": it["price"],
-                "release_date": it["release_date"] or "",
-                "order_number": ebay["order_number"] or "",
-                "placed_date": "",
-                "status": default_status,
-                "charge_status": default_charge,
-                "note": it["note"] or "",
-            }
-            for it in ebay["items"]
-        ]
+        chunks = split_ebay_orders(text)
+        preview_items = []
+        order_shipping_map = {}
+        sellers_seen = set()
+        combined_declared_total = 0.0
+        first_order_number = None
+
+        for chunk in chunks:
+            ebay = parse_ebay_order(chunk)
+            if not ebay["items"]:
+                continue
+            if first_order_number is None:
+                first_order_number = ebay["order_number"]
+            default_status = "dispatched" if ebay["already_delivered"] else "preorder"
+            default_charge = "charged" if ebay["already_paid"] else "not_charged"
+            sellers_seen.add(ebay["source_guess"])
+            if ebay["declared_total"]:
+                combined_declared_total += ebay["declared_total"]
+            if ebay["order_number"] and ebay["shipping"]:
+                order_shipping_map[ebay["order_number"]] = ebay["shipping"]
+
+            for it in ebay["items"]:
+                preview_items.append({
+                    "name": it["name"],
+                    "price": it["price"],
+                    "release_date": it["release_date"] or "",
+                    "order_number": ebay["order_number"] or "",
+                    "placed_date": "",
+                    "status": default_status,
+                    "charge_status": default_charge,
+                    "note": it["note"] or "",
+                    "source": ebay["source_guess"],
+                })
+
+        multi_order = len(chunks) > 1
         return {
             "parser": "generic",
-            "source_guess": ebay["source_guess"],
+            "source_guess": next(iter(sellers_seen)) if len(sellers_seen) == 1 else "",
             "rows": preview_items,
             "order_totals": {},
             "skipped_no_order": 0,
-            "declared_total": ebay["declared_total"],
-            "shipping": ebay["shipping"],
-            "order_number": ebay["order_number"],
+            "declared_total": round(combined_declared_total, 2) if combined_declared_total else None,
+            "shipping": None if multi_order else next(iter(order_shipping_map.values()), None),
+            "order_shipping_map": order_shipping_map,
+            "order_number": first_order_number if not multi_order else None,
+            "multi_order": multi_order,
+            "order_count": len(chunks),
         }
 
     generic = parse_generic_order(text)
@@ -519,6 +543,7 @@ def detect_import(text: str):
             "status": "preorder",
             "charge_status": "",
             "note": it["note"] or "",
+            "source": "",
         }
         for it in generic["items"]
     ]
@@ -531,6 +556,11 @@ def detect_import(text: str):
         "declared_total": generic["declared_total"],
         "shipping": generic["shipping"],
         "order_number": generic["order_number"],
+        "multi_order": False,
+        "order_shipping_map": (
+            {generic["order_number"]: generic["shipping"]}
+            if generic["order_number"] and generic["shipping"] else {}
+        ),
     }
 
 
@@ -617,10 +647,37 @@ _EBAY_ITEM_PRICE_RE = re.compile(r"£(\d+\.\d{2})\s*Unit price", re.IGNORECASE)
 _EBAY_SKIP_EXACT = {"Item details", "incl.", "Buyer Protection", "Buy again", "More actions", "Track package"}
 _EBAY_PLACED_RE = re.compile(r"Time placed\s*\t?\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 _EBAY_DELIVERED_RE = re.compile(r"Delivered on\s+[A-Za-z]+,?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
+_EBAY_PAID_RE = re.compile(r"Paid on\s+\d{1,2}\s+[A-Za-z]+", re.IGNORECASE)
 
 
 def looks_like_ebay(text: str) -> bool:
     return bool(re.search(r"Item number:\s*\d+", text)) and bool(_EBAY_ORDER_NUM_RE.search(text))
+
+
+def split_ebay_orders(text: str):
+    """A bulk eBay purchase-history paste often contains several separate
+    orders back to back, each with its own order number, seller, and total
+    - not just one. Splits the raw text into one chunk per order so each
+    can be parsed independently, rather than treating everything as a
+    single order (which would wrongly attribute every item to whichever
+    seller happened to appear first, and produce nonsense shipping math)."""
+    matches = list(_EBAY_ORDER_NUM_RE.finditer(text))
+    if len(matches) <= 1:
+        return [text]
+    # Each order starts a little before its "Order number" line (to catch
+    # "Order info" / "Time placed" sitting just above it) and runs up to
+    # the start of the next order's block.
+    chunks = []
+    for i, m in enumerate(matches):
+        chunk_start = text.rfind("Order info", 0, m.start())
+        if chunk_start == -1:
+            chunk_start = m.start()
+        chunk_end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        chunk_end = text.rfind("Order info", chunk_start, chunk_end) if i + 1 < len(matches) else len(text)
+        if i + 1 < len(matches) and chunk_end <= chunk_start:
+            chunk_end = matches[i + 1].start()
+        chunks.append(text[chunk_start:chunk_end])
+    return chunks
 
 
 def parse_ebay_order(text: str):
@@ -636,14 +693,19 @@ def parse_ebay_order(text: str):
     seller = seller_match.group(1) if seller_match else None
     source_guess = f"eBay - {seller}" if seller else "eBay"
 
-    already_delivered = "Delivered" in text or "delivered" in text.lower()
+    # "Delivered" as a bare word can appear as a future/pending step label
+    # in the tracking timeline ("Delivered / -Upcoming step, Delivered")
+    # even when it hasn't happened yet - only a "Delivered on <date>" with
+    # an actual date attached means it's genuinely happened.
+    delivered_match = _EBAY_DELIVERED_RE.search(text)
+    already_delivered = delivered_match is not None
+    already_paid = _EBAY_PAID_RE.search(text) is not None
 
     # eBay orders aren't pre-orders, so there's no "release date" in the FP
     # sense - but the order itself has a real, unambiguous date attached
     # (when it was delivered, or failing that when it was placed), so use
     # that rather than leaving every item blank for no reason.
     default_date = None
-    delivered_match = _EBAY_DELIVERED_RE.search(text)
     if delivered_match:
         d = parse_date(delivered_match.group(1))
         default_date = d.isoformat() if d else None
@@ -694,6 +756,7 @@ def parse_ebay_order(text: str):
         "declared_total": declared_total,
         "source_guess": source_guess,
         "already_delivered": already_delivered,
+        "already_paid": already_paid,
         "shipping": implied_shipping,
         "items": items,
     }

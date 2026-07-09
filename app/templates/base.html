@@ -38,6 +38,38 @@
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/static/sw.js').catch(function () {});
 }
+
+(function () {
+  const toolbar = document.getElementById('bulk-toolbar');
+  if (!toolbar) return;
+  const countSpan = document.getElementById('bulk-count');
+  const actionInput = document.getElementById('bulk-action-input');
+  const bulkForm = document.getElementById('bulk-form');
+
+  function updateToolbar() {
+    const checked = document.querySelectorAll('.bulk-select:checked');
+    if (checked.length > 0) {
+      toolbar.classList.add('visible');
+      countSpan.textContent = checked.length + ' selected';
+    } else {
+      toolbar.classList.remove('visible');
+    }
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('bulk-select')) {
+      updateToolbar();
+    }
+  });
+
+  window.submitBulk = function (action) {
+    const checked = document.querySelectorAll('.bulk-select:checked');
+    if (checked.length === 0) return;
+    if (action === 'remove' && !confirm('Remove ' + checked.length + ' item(s) permanently? This cannot be undone.')) return;
+    actionInput.value = action;
+    bulkForm.submit();
+  };
+})();
 </script>
 </body>
 </html>

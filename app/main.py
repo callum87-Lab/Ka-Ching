@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.09.14"
+APP_VERSION = "2026.07.09.16"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -618,7 +618,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
 
 
 @app.post("/items/{item_id}/mark")
-def mark_item(item_id: int, action: str = Form(...)):
+def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(None)):
     conn = db.get_db()
     cur = conn.cursor()
 
@@ -686,11 +686,11 @@ def mark_item(item_id: int, action: str = Form(...)):
     logger.info("MARK result: item_id=%s action=%s rowcount=%s after=%s", item_id, action, rowcount, after_dict)
 
     conn.close()
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url=next or "/", status_code=303)
 
 
 @app.post("/duplicates/dismiss")
-def dismiss_duplicate(name: str = Form(...), release_date: str = Form(...)):
+def dismiss_duplicate(name: str = Form(...), release_date: str = Form(...), next: str | None = Form(None)):
     conn = db.get_db()
     cur = conn.cursor()
     cur.execute(
@@ -699,7 +699,54 @@ def dismiss_duplicate(name: str = Form(...), release_date: str = Form(...)):
     )
     conn.commit()
     conn.close()
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url=next or "/", status_code=303)
+
+
+@app.post("/items/bulk-action")
+def bulk_item_action(
+    item_ids: list[str] = Form(...),
+    bulk_action: str = Form(...),
+    next: str | None = Form(None),
+):
+    conn = db.get_db()
+    cur = conn.cursor()
+    now_ids = [int(i) for i in item_ids if i.isdigit()]
+
+    if bulk_action == "remove":
+        cur.executemany("DELETE FROM items WHERE id = ?", [(i,) for i in now_ids])
+        logger.info("BULK ACTION: removed %d items: %s", cur.rowcount, now_ids)
+    elif bulk_action == "cancel":
+        cur.executemany(
+            """
+            UPDATE items
+            SET prev_status = CASE WHEN manual_override = 0 THEN status ELSE prev_status END,
+                prev_charge_status = CASE WHEN manual_override = 0 THEN charge_status ELSE prev_charge_status END,
+                status = 'cancelled',
+                manual_override = 1
+            WHERE id = ?
+            """,
+            [(i,) for i in now_ids],
+        )
+        logger.info("BULK ACTION: cancelled %d items: %s", len(now_ids), now_ids)
+    elif bulk_action == "paid":
+        cur.executemany(
+            """
+            UPDATE items
+            SET prev_status = CASE WHEN manual_override = 0 THEN status ELSE prev_status END,
+                prev_charge_status = CASE WHEN manual_override = 0 THEN charge_status ELSE prev_charge_status END,
+                charge_status = 'charged',
+                manual_override = 1
+            WHERE id = ?
+            """,
+            [(i,) for i in now_ids],
+        )
+        logger.info("BULK ACTION: marked %d items paid: %s", len(now_ids), now_ids)
+    else:
+        logger.warning("BULK ACTION: unknown action=%s, no changes made", bulk_action)
+
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next or "/", status_code=303)
 
 
 @app.post("/ghost-items/remove-all")
@@ -1209,6 +1256,7 @@ async def import_confirm(request: Request):
             "status": form.get(f"status_{i}") or "preorder",
             "charge_status": form.get(f"charge_status_{i}") or "not_charged",
             "note": form.get(f"note_{i}") or None,
+            "source": (form.get(f"source_{i}") or "").strip(),
         })
 
     if not kept_items:
@@ -1236,46 +1284,57 @@ async def import_confirm(request: Request):
         result = parser.store_parsed_items(store_items, order_totals)
         logger.info("IMPORT CONFIRM (Forbidden Planet): %s", result)
     else:
-        source = (form.get("source") or "").strip() or "Unknown shop"
-        shipping_raw = form.get("shipping", "")
-        order_number = form.get("order_number") or None
+        order_shipping_raw = form.get("order_shipping_json", "{}")
+        try:
+            order_shipping_map = {k: float(v) for k, v in json.loads(order_shipping_raw).items()}
+        except (ValueError, TypeError):
+            order_shipping_map = {}
+
         today = date.today()
         now = datetime.now(timezone.utc).isoformat()
 
         conn = db.get_db()
         cur = conn.cursor()
         created = []
+        order_sources = {}
         for it in kept_items:
+            item_source = it["source"] or "Unknown shop"
             release_iso = it["release_date_raw"] or None
             cur.execute(
                 """
                 INSERT INTO items
                     (name, order_number, placed_date, status, release_date, charge_status,
                      price, note, imported_at, manual_override, source)
-                VALUES (?, ?, ?, 'preorder', ?, 'not_charged', ?, ?, ?, 1, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
                 """,
-                (it["name"], order_number, today.isoformat(), release_iso, it["price"], it["note"], now, source),
+                (
+                    it["name"], it["order_number"], today.isoformat(), it["status"] or "preorder",
+                    release_iso, it["charge_status"] or "not_charged", it["price"], it["note"], now, item_source,
+                ),
             )
-            created.append((cur.lastrowid, it["name"], it["price"]))
+            created.append((cur.lastrowid, it["name"], it["price"], item_source))
+            if it["order_number"] and it["order_number"] not in order_sources:
+                order_sources[it["order_number"]] = item_source
 
-        if shipping_raw and order_number:
-            try:
-                shipping_val = float(shipping_raw)
-                cur.execute(
-                    """
-                    INSERT INTO shipment_postage (order_number, shipment_index, amount, captured_at, source)
-                    VALUES (?, 0, ?, ?, ?)
-                    ON CONFLICT(order_number, shipment_index) DO UPDATE SET
-                        amount = excluded.amount, captured_at = excluded.captured_at, source = excluded.source
-                    """,
-                    (order_number, shipping_val, now, source),
-                )
-            except ValueError:
-                pass
+        # One shipment_postage sample per distinct order among the kept
+        # rows, tagged to that order's own shop - covers both a single
+        # order and a bulk paste spanning several different orders/sellers.
+        for order_number, shipping_val in order_shipping_map.items():
+            if order_number not in order_sources:
+                continue
+            cur.execute(
+                """
+                INSERT INTO shipment_postage (order_number, shipment_index, amount, captured_at, source)
+                VALUES (?, 0, ?, ?, ?)
+                ON CONFLICT(order_number, shipment_index) DO UPDATE SET
+                    amount = excluded.amount, captured_at = excluded.captured_at, source = excluded.source
+                """,
+                (order_number, shipping_val, now, order_sources[order_number]),
+            )
 
         conn.commit()
         conn.close()
-        logger.info("IMPORT CONFIRM (generic, source=%r): created=%s", source, created)
+        logger.info("IMPORT CONFIRM (generic): created=%s shipping=%s", created, order_shipping_map)
 
     return RedirectResponse(url="/", status_code=303)
 

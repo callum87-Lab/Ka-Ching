@@ -114,7 +114,12 @@ Pasting an order no longer saves anything straight away. Instead:
    paid/dispatched automatically if the order shows as delivered. Shipping
    isn't a guess either - eBay's own Total already includes postage, so
    subtracting the sum of the items gives the exact amount paid for
-   shipping, feeding straight into that seller's own shipping calibration),
+   shipping, feeding straight into that seller's own shipping calibration.
+   A bulk eBay purchase-history paste often contains several separate
+   orders back to back - Ka-Ching! splits these apart automatically, so
+   each item ends up tagged with its own correct seller, order number,
+   and shipping figure rather than everything getting lumped into
+   whichever order happened to be first),
    then a generic parser built around patterns common to small-shop
    checkouts generally (most run on shared platforms like Shopify, so
    confirmations tend to share a recognisable shape - Order Number /
@@ -294,6 +299,15 @@ time you pick.
 - **Version number** — the footer now shows which build is currently
   running, so "did the update actually land" is a glance instead of a
   guessing game.
+- **No more losing your place** — marking something paid, cancelling, or
+  removing an item used to always bounce you back to today's month or a
+  blank search. Now it returns you to exactly where you were - same month,
+  same search filters - so cleaning things up as you browse doesn't mean
+  re-navigating from scratch after every click.
+- **Bulk select** — a small checkbox on every item (dashboard and search)
+  lets you select several at once; a toolbar appears with Mark paid,
+  Cancel, and Remove, applying to everything selected in one go instead of
+  one click-confirm-reload cycle per item.
 - **Shop label always shows** — every item now shows which shop it's from,
   even when everything on a given day is from the same place. Previously
   this only showed up when a day had comics from more than one shop.
