@@ -488,7 +488,7 @@ def detect_import(text: str):
             {
                 "name": it["name"],
                 "price": it["price"],
-                "release_date": "",
+                "release_date": it["release_date"] or "",
                 "order_number": ebay["order_number"] or "",
                 "placed_date": "",
                 "status": default_status,
@@ -613,6 +613,8 @@ _EBAY_TOTAL_RE = re.compile(r"Total\s*\t?\s*£(\d+\.\d{2})", re.IGNORECASE)
 _EBAY_SELLER_RE = re.compile(r"Sold by\s*\t?\s*(\S+)", re.IGNORECASE)
 _EBAY_ITEM_PRICE_RE = re.compile(r"£(\d+\.\d{2})\s*Unit price", re.IGNORECASE)
 _EBAY_SKIP_EXACT = {"Item details", "incl.", "Buyer Protection", "Buy again", "More actions", "Track package"}
+_EBAY_PLACED_RE = re.compile(r"Time placed\s*\t?\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
+_EBAY_DELIVERED_RE = re.compile(r"Delivered on\s+[A-Za-z]+,?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 
 
 def looks_like_ebay(text: str) -> bool:
@@ -634,6 +636,21 @@ def parse_ebay_order(text: str):
 
     already_delivered = "Delivered" in text or "delivered" in text.lower()
 
+    # eBay orders aren't pre-orders, so there's no "release date" in the FP
+    # sense - but the order itself has a real, unambiguous date attached
+    # (when it was delivered, or failing that when it was placed), so use
+    # that rather than leaving every item blank for no reason.
+    default_date = None
+    delivered_match = _EBAY_DELIVERED_RE.search(text)
+    if delivered_match:
+        d = parse_date(delivered_match.group(1))
+        default_date = d.isoformat() if d else None
+    if default_date is None:
+        placed_match = _EBAY_PLACED_RE.search(text)
+        if placed_match:
+            d = parse_date(placed_match.group(1))
+            default_date = d.isoformat() if d else None
+
     idx = text.find("Item details")
     item_section = text[idx:] if idx != -1 else text
     lines = [l.strip() for l in item_section.splitlines()]
@@ -649,7 +666,7 @@ def parse_ebay_order(text: str):
                 items.append({
                     "name": pending_name,
                     "price": float(price_match.group(1)),
-                    "release_date": None,
+                    "release_date": default_date,
                     "note": None,
                 })
                 pending_name = None
