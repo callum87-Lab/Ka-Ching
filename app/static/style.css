@@ -66,11 +66,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 
 .topbar {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  padding: 12px 4px 10px;
+  gap: 14px;
+  padding: 20px 4px 16px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 32px;
 }
@@ -88,7 +87,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   filter: drop-shadow(0 0 10px rgba(47, 216, 255, 0.35));
 }
 
-.topnav { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.topnav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; }
 .nav-btn {
   display: inline-flex;
   padding: 2px;
@@ -98,7 +97,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .nav-btn img {
   display: block;
-  height: 40px;
+  height: 58px;
   width: auto;
 }
 .nav-btn:hover {
@@ -1056,8 +1055,8 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 
 @media (max-width: 560px) {
   .wordmark-logo { height: 110px; }
-  .topnav { gap: 3px; }
-  .nav-btn img { height: 30px; }
+  .topnav { gap: 6px; }
+  .nav-btn img { height: 42px; }
   .hero { flex-direction: column; align-items: flex-start; }
   .price-stamp { width: 140px; height: 140px; }
   .chart { height: 130px; }
