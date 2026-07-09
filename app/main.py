@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.09.16"
+APP_VERSION = "2026.07.09.17"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -234,13 +234,22 @@ def split_spent_remaining(items):
 
 def compute_shipping_for_groups(cur, groups):
     """Each (release date, shop) pair is a separate physical parcel with its
-    own shipping cost - a Forbidden Planet delivery and a Paper Vanguard
-    delivery landing the same day are two parcels, not one, and each shop
-    may charge a different amount. Returns (total, spent, remaining,
-    shipment_count, primary_rate, primary_source, primary_tier, primary_samples, primary_checked)."""
+    own shipping cost. Uses the EXACT postage for that specific order when
+    it's known (real data captured from the order itself), rather than a
+    shop-average estimate - shipping genuinely varies order to order
+    (item count, weight, free-shipping thresholds), especially on eBay, so
+    an average across a seller's past orders isn't a reliable stand-in for
+    what a given order actually cost. Estimates only apply when the exact
+    figure for that particular order isn't available at all.
+
+    Returns (total, spent, remaining, shipment_count, primary_rate,
+    primary_source, primary_tier, primary_samples, primary_checked)."""
+    cur.execute("SELECT order_number, amount FROM shipment_postage")
+    exact_by_order = {r["order_number"]: r["amount"] for r in cur.fetchall()}
+
     rate_cache = {}
 
-    def rate_for(src):
+    def estimate_for(src):
         if src not in rate_cache:
             rate_cache[src] = get_shipping_estimate(cur, src)
         return rate_cache[src]
@@ -249,7 +258,15 @@ def compute_shipping_for_groups(cur, groups):
     shipment_count = 0
     for group in groups:
         for sg in group["source_groups"]:
-            rate, _, _, _ = rate_for(sg["source"])
+            order_numbers = {e["order_number"] for e in sg["entries"] if e["order_number"]}
+            known = [exact_by_order[o] for o in order_numbers if o in exact_by_order]
+
+            if order_numbers and len(known) == len(order_numbers):
+                # Every order behind this shipment has its real postage on record
+                rate = round(sum(known), 2)
+            else:
+                rate, _, _, _ = estimate_for(sg["source"])
+
             total += rate
             shipment_count += 1
             all_paid = all(i["charge_status"] == "charged" for i in sg["entries"])
@@ -258,11 +275,39 @@ def compute_shipping_for_groups(cur, groups):
             else:
                 remaining += rate
 
-    primary_rate, primary_tier, primary_samples, primary_checked = rate_for(DEFAULT_SOURCE)
+    primary_rate, primary_tier, primary_samples, primary_checked = estimate_for(DEFAULT_SOURCE)
     return (
         round(total, 2), round(spent, 2), round(remaining, 2), shipment_count,
         primary_rate, DEFAULT_SOURCE, primary_tier, primary_samples, primary_checked,
     )
+
+
+def annotate_group_shipping(cur, groups):
+    """Attaches the correct shipping amount to each source-group within
+    date-groups, for direct display - exact per-order postage when known,
+    an estimate only when it genuinely isn't. Mirrors the same logic
+    compute_shipping_for_groups uses for the totals, so what's shown next
+    to each shipment always matches what's counted in the numbers above it."""
+    cur.execute("SELECT order_number, amount FROM shipment_postage")
+    exact_by_order = {r["order_number"]: r["amount"] for r in cur.fetchall()}
+    rate_cache = {}
+
+    def estimate_for(src):
+        if src not in rate_cache:
+            rate_cache[src] = get_shipping_estimate(cur, src)
+        return rate_cache[src]
+
+    for group in groups:
+        for sg in group["source_groups"]:
+            order_numbers = {e["order_number"] for e in sg["entries"] if e["order_number"]}
+            known = [exact_by_order[o] for o in order_numbers if o in exact_by_order]
+            if order_numbers and len(known) == len(order_numbers):
+                sg["shipping_amount"] = round(sum(known), 2)
+                sg["shipping_is_exact"] = True
+            else:
+                sg["shipping_amount"] = estimate_for(sg["source"])[0]
+                sg["shipping_is_exact"] = False
+    return groups
 
 
 def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
@@ -529,6 +574,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     v_start, v_end = month_bounds(viewed_month)
     viewed_items = fetch_items_between(cur, v_start, v_end, active_source)
     viewed_groups = group_by_date(viewed_items)
+    annotate_group_shipping(cur, viewed_groups)
     viewed_comics_total = round(sum(i["price"] for i in viewed_items), 2)
     (viewed_shipping_total, v_spent_shipping, v_remaining_shipping, viewed_shipments,
      _, _, _, _, _) = compute_shipping_for_groups(cur, viewed_groups)

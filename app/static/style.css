@@ -337,6 +337,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   cursor: pointer;
 }
 
+#viewed-month { scroll-margin-top: 70px; }
+
 /* ---- Item rows ---- */
 
 .item-list { list-style: none; margin: 0; padding: 0; }

@@ -277,12 +277,12 @@
   {% endif %}
 </section>
 
-<section class="block">
+<section class="block" id="viewed-month">
   <div class="block-head month-nav-head">
     <div class="month-nav">
-      <a href="/?month={{ prev_month_param }}&chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-btn" aria-label="Previous month">&larr;</a>
+      <a href="/?month={{ prev_month_param }}&chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}#viewed-month" class="month-nav-btn" aria-label="Previous month">&larr;</a>
       <h2>{{ viewed_month_label }}, by shipment</h2>
-      <a href="/?month={{ next_month_param }}&chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-btn" aria-label="Next month">&rarr;</a>
+      <a href="/?month={{ next_month_param }}&chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}#viewed-month" class="month-nav-btn" aria-label="Next month">&rarr;</a>
       {% if not is_current_month %}
       <a href="/?chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-today">Today</a>
       {% endif %}
@@ -332,7 +332,7 @@
           </li>
           {% endfor %}
         </ul>
-        <div class="group-ship mono">+ &pound;{{ "%.2f"|format(source_shipping_rates.get(sg.source, shipping_estimate)) }} est. shipping ({{ sg.source }}){% if group.all_paid %} - paid{% endif %}</div>
+        <div class="group-ship mono">+ &pound;{{ "%.2f"|format(sg.shipping_amount) }} {{ 'shipping' if sg.shipping_is_exact else 'est. shipping' }} ({{ sg.source }}){% if group.all_paid %} - paid{% endif %}</div>
       </div>
       {% endfor %}
     </div>

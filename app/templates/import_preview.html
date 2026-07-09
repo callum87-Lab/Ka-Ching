@@ -37,6 +37,14 @@
     {% if preview.declared_total %}
     <p class="muted">Order total on the page: <span class="mono">&pound;{{ "%.2f"|format(preview.declared_total) }}</span></p>
     {% endif %}
+    {% if preview.order_shipping_map %}
+    <p class="muted preview-shipping-detected">
+      Shipping detected (exact, from the order's own total):
+      {% for order_num, amount in preview.order_shipping_map.items() %}
+      <span class="mono">&pound;{{ "%.2f"|format(amount) }}</span>{% if not loop.last %},{% endif %}
+      {% endfor %}
+    </p>
+    {% endif %}
     {% endif %}
 
     <datalist id="known-sources">

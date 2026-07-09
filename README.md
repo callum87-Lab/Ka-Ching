@@ -146,19 +146,29 @@ becomes a known option in the shop dropdown everywhere else in the app from
 then on. Detected shipping gets stored as that shop's own real shipping
 figure, feeding into...
 
-## Per-shop shipping calibration
+## Shipping - exact per order first, estimates only as a fallback
 
-Different shops charge different amounts for postage, so shipping is now
-calculated separately per shop rather than one blended number applied to
-everyone. Each shop works through the same three-tier preference as before
-(exact figures first, then Forbidden Planet's own calibration from declared
-order totals, then a default estimate) - it's just scoped to that shop's own
-data now, so a shop you've only used once won't skew the numbers for
-Forbidden Planet or vice versa.
+Different shops charge different amounts for postage, and - especially on
+eBay - the same seller can charge completely different shipping from one
+order to the next, depending on item count, weight, or a free-shipping
+threshold. Averaging a seller's past orders would be actively misleading
+here, so it isn't done: whenever the *exact* postage for a specific order
+is known (which it always is for a properly-imported eBay order, and for
+Forbidden Planet order-detail pages with a postage breakdown), that real
+figure is used directly for that order, immediately - no waiting for
+several orders to build up an average.
+
+An estimate only ever applies as a fallback, for orders where the real
+figure genuinely isn't known - Forbidden Planet pre-orders imported from
+the order-history page alone (no exact postage line), calibrated from that
+shop's declared order totals once there's enough data, or the flat default
+if there's nothing to calibrate from yet.
 
 This is also where the review screen mentioned above adds real value -
 now that a parsing mistake shows up on-screen before anything's saved,
-rather than needing to be caught after the fact.
+rather than needing to be caught after the fact. The exact shipping figure
+detected for an order shows there too, so it's visible immediately rather
+than only provable by checking the database.
 
 ## Running it
 
@@ -308,6 +318,11 @@ time you pick.
   lets you select several at once; a toolbar appears with Mark paid,
   Cancel, and Remove, applying to everything selected in one go instead of
   one click-confirm-reload cycle per item.
+- **Month arrows stay where you were** — browsing to a different month
+  still reloads the page (that part needs a real page load, since it's
+  genuinely different data), but it now lands you back at that section
+  instead of the very top of the page, so there's no more scrolling down
+  again after every click.
 - **Shop label always shows** — every item now shows which shop it's from,
   even when everything on a given day is from the same place. Previously
   this only showed up when a day had comics from more than one shop.
