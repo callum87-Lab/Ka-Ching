@@ -173,11 +173,11 @@
   </p>
 </section>
 
-{% if all_sources|length > 1 %}
+{% if filter_tab_sources|length > 1 %}
 <div class="source-filter-row">
   <a href="/?month={{ viewed_month_param }}&chart_range={{ active_chart_range }}"
      class="range-tab {{ 'active' if not active_source else '' }}">All shops</a>
-  {% for s in all_sources %}
+  {% for s in filter_tab_sources %}
   <a href="/?month={{ viewed_month_param }}&chart_range={{ active_chart_range }}&source={{ s }}"
      class="range-tab {{ 'active' if active_source == s else '' }}">{{ s }}</a>
   {% endfor %}
@@ -235,6 +235,9 @@
   </div>
   {% else %}
   <p class="muted">Nothing due in the next 7 days.</p>
+  {% if is_ebay_filter %}
+  <p class="muted ebay-filter-hint">eBay orders are usually already paid and delivered, so they won't show up here often &mdash; try <a href="/search?source=eBay">Search</a> to browse your full eBay history instead.</p>
+  {% endif %}
   {% endif %}
 </section>
 
@@ -297,6 +300,9 @@
   </div>
   {% else %}
   <p class="muted">Nothing due in {{ viewed_month_label }}.</p>
+  {% if is_ebay_filter %}
+  <p class="muted ebay-filter-hint">eBay orders are usually already paid and delivered, so they won't show up here often &mdash; try <a href="/search?source=eBay">Search</a> to browse your full eBay history instead.</p>
+  {% endif %}
   {% endif %}
 </section>
 

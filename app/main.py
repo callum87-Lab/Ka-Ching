@@ -24,7 +24,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.09.11"
+APP_VERSION = "2026.07.09.12"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -179,8 +179,9 @@ def fetch_items_between(cur, start: date, end: date, source: str | None = None):
     """
     params = [start.isoformat(), end.isoformat()]
     if source:
-        query += " AND source = ?"
-        params.append(source)
+        clause, extra_params = source_filter_sql(source)
+        query += f" AND {clause}"
+        params.extend(extra_params)
     query += " ORDER BY release_date, name"
     cur.execute(query, params)
     return [dict(r) for r in cur.fetchall()]
@@ -428,6 +429,41 @@ def get_all_sources(cur):
     return [r["source"] for r in cur.fetchall()]
 
 
+def source_tab_group(source: str) -> str:
+    """Groups per-seller eBay sources ('eBay - sad_lemon_comics', 'eBay -
+    bearsgames', ...) into one 'eBay' entry for filter tabs - a separate
+    tab per eBay seller gets unwieldy fast, and the specific seller still
+    shows in the grouped item lists themselves, just not as its own tab."""
+    if source == "eBay" or source.startswith("eBay -"):
+        return "eBay"
+    return source
+
+
+def is_ebay_group(source: str | None) -> bool:
+    return source == "eBay"
+
+
+def get_filter_tab_sources(cur):
+    """Top-level shop groups for the filter tabs - see source_tab_group."""
+    raw = get_all_sources(cur)
+    groups = []
+    seen = set()
+    for s in raw:
+        g = source_tab_group(s)
+        if g not in seen:
+            seen.add(g)
+            groups.append(g)
+    return groups
+
+
+def source_filter_sql(source: str):
+    """Returns (sql_fragment, extra_params) for filtering items by source.
+    'eBay' is treated as a group covering every per-seller eBay source."""
+    if is_ebay_group(source):
+        return "(source = 'eBay' OR source LIKE 'eBay -%')", []
+    return "source = ?", [source]
+
+
 # --- Dashboard ---------------------------------------------------------------
 
 @app.get("/")
@@ -502,6 +538,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     ghost_items = find_ghost_items(cur)
     awaiting_charge = find_awaiting_charge(cur, today)
     all_sources = get_all_sources(cur)
+    filter_tab_sources = get_filter_tab_sources(cur)
     source_colors = {s: source_color(s) for s in all_sources}
     source_shipping_rates = {s: get_shipping_estimate(cur, s)[0] for s in all_sources}
 
@@ -552,8 +589,10 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "ghost_items": ghost_items,
         "awaiting_charge": awaiting_charge,
         "all_sources": all_sources,
+        "filter_tab_sources": filter_tab_sources,
         "source_colors": source_colors,
         "active_source": active_source,
+        "is_ebay_filter": is_ebay_group(active_source) if active_source else False,
         "total_items_tracked": total_items_tracked,
         "has_any_data": total_items_tracked > 0,
         "recently_cancelled": recently_cancelled,
@@ -809,7 +848,7 @@ def search_items(
 ):
     conn = db.get_db()
     cur = conn.cursor()
-    all_sources = get_all_sources(cur)
+    all_sources = get_filter_tab_sources(cur)
 
     active_status = status or "all"
     active_sort = sort if sort in SEARCH_SORT_OPTIONS else "date_desc"
@@ -830,8 +869,9 @@ def search_items(
             conditions.append("name LIKE ?")
             params.append(f"%{q.strip()}%")
         if source:
-            conditions.append("source = ?")
-            params.append(source)
+            clause, extra_params = source_filter_sql(source)
+            conditions.append(clause)
+            params.extend(extra_params)
         if active_status == "paid":
             conditions.append("charge_status = 'charged' AND status != 'cancelled'")
         elif active_status == "unpaid":

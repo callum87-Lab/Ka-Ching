@@ -179,6 +179,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 .hero-line { margin: 0 0 6px; font-size: 14.5px; }
 .hero-line.muted { font-size: 13.5px; }
 .shipping-note { margin-top: 10px; font-size: 12px; }
+.ebay-filter-hint { margin-top: 6px; }
+.ebay-filter-hint a { color: var(--neon-blue); }
 
 /* ---- Blocks / groups ---- */
 

@@ -109,12 +109,13 @@ Pasting an order no longer saves anything straight away. Instead:
    eBay's order-detail format (also a real dedicated parser, since eBay's
    page shape is consistent regardless of seller - detects the order
    number, seller, total, and every item and price; since these aren't
-   pre-orders, items get no release date and are marked paid/dispatched
-   automatically if the order shows as delivered), then a generic parser
-   built around patterns common to small-shop checkouts generally (most
-   run on shared platforms like Shopify, so confirmations tend to share a
-   recognisable shape - Order Number / itemised list / Subtotal / Shipping
-   / Total - even when the exact wording differs).
+   pre-orders, items default to the order's own delivery date, or its
+   placed date if it hasn't been delivered yet, and are marked
+   paid/dispatched automatically if the order shows as delivered), then a
+   generic parser built around patterns common to small-shop checkouts
+   generally (most run on shared platforms like Shopify, so confirmations
+   tend to share a recognisable shape - Order Number / itemised list /
+   Subtotal / Shipping / Total - even when the exact wording differs).
 2. **You land on a review screen** showing exactly what it found - name,
    price, and release date per item, all editable, plus the shop, order
    number, and shipping if detected. Nothing has been written to the
@@ -221,6 +222,15 @@ date and shop once, then add every comic from that same order as its own row
 (name + price) before submitting — one shipment, one form, rather than
 repeating the whole form per comic. Click any item's name on the dashboard to
 edit those same details later, one at a time.
+
+**eBay purchases from different sellers share one filter tab.** Each seller
+still gets its own colour and label within the grouped item lists (so you can
+tell "Sad Lemon Comics" apart from "Bearsgames" at a glance), but the shop
+filter row shows a single combined "eBay" tab rather than one per seller,
+which got unwieldy fast. Since eBay orders are typically already paid and
+delivered, filtering to eBay on the dashboard's forward-looking views (This
+Week, This Month) will usually turn up nothing due — a note there points to
+Search instead, which covers your full purchase history across all time.
 
 ## Notifications
 
