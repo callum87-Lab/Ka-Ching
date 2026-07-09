@@ -4,27 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Ka-Ching!{% endblock %}</title>
-<link rel="icon" type="image/png" href="/static/img/logo.png">
+<link rel="icon" type="image/png" href="/static/img/logo.png?v={{ app_version }}">
 <link rel="manifest" href="/static/manifest.json">
 <meta name="theme-color" content="#2fd8ff">
-<link rel="apple-touch-icon" href="/static/img/icon-192.png">
+<link rel="apple-touch-icon" href="/static/img/icon-192.png?v={{ app_version }}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ka-Ching!">
-<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/style.css?v={{ app_version }}">
 </head>
 <body>
 <div class="frame">
   <header class="topbar">
     <a class="wordmark" href="/">
-      <img src="/static/img/banner.png" alt="Ka-Ching!" class="wordmark-logo">
+      <img src="/static/img/banner.png?v={{ app_version }}" alt="Ka-Ching!" class="wordmark-logo">
     </a>
     <nav class="topnav">
-      <a href="/" class="nav-btn {{ 'active' if request.url.path == '/' else '' }}"><img src="/static/img/nav-dashboard.png" alt="Dashboard"></a>
-      <a href="/calendar" class="nav-btn {{ 'active' if request.url.path == '/calendar' else '' }}"><img src="/static/img/nav-calendar.png" alt="Calendar"></a>
-      <a href="/items/new" class="nav-btn {{ 'active' if request.url.path == '/items/new' else '' }}"><img src="/static/img/nav-add.png" alt="Add"></a>
-      <a href="/search" class="nav-btn {{ 'active' if request.url.path == '/search' else '' }}"><img src="/static/img/nav-search.png" alt="Search"></a>
-      <a href="/settings" class="nav-btn {{ 'active' if request.url.path == '/settings' else '' }}"><img src="/static/img/nav-settings.png" alt="Settings"></a>
+      <a href="/" class="nav-btn {{ 'active' if request.url.path == '/' else '' }}"><img src="/static/img/nav-dashboard.png?v={{ app_version }}" alt="Dashboard"></a>
+      <a href="/calendar" class="nav-btn {{ 'active' if request.url.path == '/calendar' else '' }}"><img src="/static/img/nav-calendar.png?v={{ app_version }}" alt="Calendar"></a>
+      <a href="/items/new" class="nav-btn {{ 'active' if request.url.path == '/items/new' else '' }}"><img src="/static/img/nav-add.png?v={{ app_version }}" alt="Add"></a>
+      <a href="/search" class="nav-btn {{ 'active' if request.url.path == '/search' else '' }}"><img src="/static/img/nav-search.png?v={{ app_version }}" alt="Search"></a>
+      <a href="/settings" class="nav-btn {{ 'active' if request.url.path == '/settings' else '' }}"><img src="/static/img/nav-settings.png?v={{ app_version }}" alt="Settings"></a>
     </nav>
   </header>
   <main class="content">

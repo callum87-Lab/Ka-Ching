@@ -97,7 +97,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .nav-btn img {
   display: block;
-  height: 84px;
+  height: 120px;
   width: auto;
 }
 .nav-btn:hover {
@@ -1056,7 +1056,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 @media (max-width: 560px) {
   .wordmark-logo { height: 140px; }
   .topnav { gap: 6px; }
-  .nav-btn img { height: 56px; }
+  .nav-btn img { height: 78px; }
   .hero { flex-direction: column; align-items: flex-start; }
   .price-stamp { width: 140px; height: 140px; }
   .chart { height: 130px; }
