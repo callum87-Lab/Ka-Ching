@@ -81,7 +81,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .wordmark:hover { text-decoration: none; }
 .wordmark-logo {
-  height: 200px;
+  height: 230px;
   width: auto;
   display: block;
   filter: drop-shadow(0 0 10px rgba(47, 216, 255, 0.35));
@@ -97,7 +97,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .nav-btn img {
   display: block;
-  height: 58px;
+  height: 84px;
   width: auto;
 }
 .nav-btn:hover {
@@ -1054,9 +1054,9 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 /* ---- Responsive ---- */
 
 @media (max-width: 560px) {
-  .wordmark-logo { height: 110px; }
+  .wordmark-logo { height: 140px; }
   .topnav { gap: 6px; }
-  .nav-btn img { height: 42px; }
+  .nav-btn img { height: 56px; }
   .hero { flex-direction: column; align-items: flex-start; }
   .price-stamp { width: 140px; height: 140px; }
   .chart { height: 130px; }
