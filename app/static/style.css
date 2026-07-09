@@ -81,7 +81,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .wordmark:hover { text-decoration: none; }
 .wordmark-logo {
-  height: 200px;
+  height: 260px;
   width: auto;
   display: block;
   filter: drop-shadow(0 0 10px rgba(47, 216, 255, 0.35));
@@ -1052,7 +1052,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 /* ---- Responsive ---- */
 
 @media (max-width: 560px) {
-  .wordmark-logo { height: 110px; }
+  .wordmark-logo { height: 140px; }
   .topnav { gap: 6px; }
   .nav-btn img { height: 78px; }
   .hero { flex-direction: column; align-items: flex-start; }
