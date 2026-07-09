@@ -20,6 +20,7 @@
   {% endif %}
 
   <form method="post" action="/settings" class="item-edit-form" id="settings-form">
+    <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <label>
       <span>Provider</span>
       <select name="notify_provider" id="provider-select">
@@ -96,6 +97,31 @@
     you'd get tomorrow (or says "nothing releasing" if the day's quiet) &mdash;
     useful for checking the format without waiting for the scheduled time.
   </p>
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <h2>Budget</h2>
+  </div>
+  <p class="muted item-form-hint">
+    Set a monthly target and the dashboard shows how close this month's
+    forecast total is to it. Leave blank to hide the progress bar entirely.
+  </p>
+  <form method="post" action="/settings" class="item-edit-form">
+    <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
+    <input type="hidden" name="notify_hour" value="{{ values.notify_hour }}">
+    <input type="hidden" name="ntfy_url" value="{{ values.ntfy_url }}">
+    <input type="hidden" name="ntfy_topic" value="{{ values.ntfy_topic }}">
+    <input type="hidden" name="gotify_url" value="{{ values.gotify_url }}">
+    <input type="hidden" name="gotify_token" value="{{ values.gotify_token }}">
+    <input type="hidden" name="telegram_bot_token" value="{{ values.telegram_bot_token }}">
+    <input type="hidden" name="telegram_chat_id" value="{{ values.telegram_chat_id }}">
+    <label>
+      <span>Monthly budget (&pound;)</span>
+      <input type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00">
+    </label>
+    <button type="submit">Save settings</button>
+  </form>
 </section>
 
 <section class="block">

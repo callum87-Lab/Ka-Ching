@@ -1,6 +1,8 @@
 import asyncio
 import calendar
+import csv
 import hashlib
+import io
 import json
 import logging
 import os
@@ -24,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.09.12"
+APP_VERSION = "2026.07.09.13"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -490,6 +492,19 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
      ) = compute_shipping_for_groups(cur, hero_groups)
     hero_grand_total = round(hero_comics_total + hero_shipping_total, 2)
 
+    monthly_budget_raw = notifications.get_setting(cur, "monthly_budget", "")
+    monthly_budget = None
+    budget_pct = None
+    budget_bar_pct = None
+    if monthly_budget_raw:
+        try:
+            monthly_budget = float(monthly_budget_raw)
+            if monthly_budget > 0:
+                budget_pct = round((hero_grand_total / monthly_budget) * 100, 1)
+                budget_bar_pct = min(100, budget_pct)
+        except ValueError:
+            monthly_budget = None
+
     hero_spent_comics, hero_remaining_comics, hero_spent_count, hero_remaining_count = split_spent_remaining(hero_items)
     hero_spent_total = round(hero_spent_comics + hero_spent_shipping, 2)
     hero_remaining_total = round(hero_remaining_comics + hero_remaining_shipping, 2)
@@ -564,6 +579,9 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "hero_spent_total": hero_spent_total,
         "hero_remaining_total": hero_remaining_total,
         "hero_grand_total": hero_grand_total,
+        "monthly_budget": monthly_budget,
+        "budget_pct": budget_pct,
+        "budget_bar_pct": budget_bar_pct,
         "hero_spent_count": hero_spent_count,
         "next_month_total": next_month_total,
         "viewed_month_label": viewed_month.strftime("%B %Y"),
@@ -836,6 +854,34 @@ SEARCH_SORT_OPTIONS = {
 }
 
 
+def build_search_query(q, source, status, start_date, end_date):
+    """Returns (where_clause, params) shared by the search page and CSV
+    export, so both stay in sync with exactly the same filtering logic."""
+    conditions = []
+    params = []
+    if q and q.strip():
+        conditions.append("name LIKE ?")
+        params.append(f"%{q.strip()}%")
+    if source:
+        clause, extra_params = source_filter_sql(source)
+        conditions.append(clause)
+        params.extend(extra_params)
+    if status == "paid":
+        conditions.append("charge_status = 'charged' AND status != 'cancelled'")
+    elif status == "unpaid":
+        conditions.append("charge_status != 'charged' AND status != 'cancelled'")
+    elif status == "cancelled":
+        conditions.append("status = 'cancelled'")
+    if start_date:
+        conditions.append("release_date >= ?")
+        params.append(start_date)
+    if end_date:
+        conditions.append("release_date <= ?")
+        params.append(end_date)
+    where_clause = " AND ".join(conditions) if conditions else "1=1"
+    return where_clause, params
+
+
 @app.get("/search")
 def search_items(
     request: Request,
@@ -863,29 +909,7 @@ def search_items(
     truncated = False
 
     if has_filter:
-        conditions = []
-        params = []
-        if q and q.strip():
-            conditions.append("name LIKE ?")
-            params.append(f"%{q.strip()}%")
-        if source:
-            clause, extra_params = source_filter_sql(source)
-            conditions.append(clause)
-            params.extend(extra_params)
-        if active_status == "paid":
-            conditions.append("charge_status = 'charged' AND status != 'cancelled'")
-        elif active_status == "unpaid":
-            conditions.append("charge_status != 'charged' AND status != 'cancelled'")
-        elif active_status == "cancelled":
-            conditions.append("status = 'cancelled'")
-        if start_date:
-            conditions.append("release_date >= ?")
-            params.append(start_date)
-        if end_date:
-            conditions.append("release_date <= ?")
-            params.append(end_date)
-
-        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        where_clause, params = build_search_query(q, source, active_status, start_date, end_date)
         order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
 
         cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
@@ -925,6 +949,50 @@ def search_items(
         "cancelled_count": cancelled_count,
         "truncated": truncated,
     })
+
+
+@app.get("/search/export.csv")
+def export_search_csv(
+    q: str | None = None,
+    source: str | None = None,
+    status: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    sort: str | None = None,
+):
+    """Downloads whatever's currently filtered on the search page as a CSV
+    file - reuses the exact same query-building logic, so the export always
+    matches what's on screen."""
+    active_status = status or "all"
+    active_sort = sort if sort in SEARCH_SORT_OPTIONS else "date_desc"
+
+    conn = db.get_db()
+    cur = conn.cursor()
+    where_clause, params = build_search_query(q, source, active_status, start_date, end_date)
+    order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
+    cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number"])
+    for r in rows:
+        writer.writerow([
+            r["name"],
+            f"{r['price']:.2f}",
+            r["release_date"] or "",
+            r["source"],
+            r["status"],
+            "Yes" if r["charge_status"] == "charged" else "No",
+            r["order_number"] or "",
+        ])
+
+    return Response(
+        content=buffer.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename=kaching-export-{date.today().isoformat()}.csv"},
+    )
 
 
 # --- Calendar -----------------------------------------------------------------
@@ -1246,6 +1314,7 @@ def save_settings(
     gotify_token: str = Form(""),
     telegram_bot_token: str = Form(""),
     telegram_chat_id: str = Form(""),
+    monthly_budget: str = Form(""),
 ):
     notifications.save_settings({
         "notify_provider": notify_provider,
@@ -1256,8 +1325,9 @@ def save_settings(
         "gotify_token": gotify_token.strip(),
         "telegram_bot_token": telegram_bot_token.strip(),
         "telegram_chat_id": telegram_chat_id.strip(),
+        "monthly_budget": monthly_budget.strip(),
     })
-    logger.info("SETTINGS SAVED: provider=%s notify_hour=%s", notify_provider, notify_hour)
+    logger.info("SETTINGS SAVED: provider=%s notify_hour=%s monthly_budget=%s", notify_provider, notify_hour, monthly_budget)
     return RedirectResponse(url="/settings", status_code=303)
 
 

@@ -154,6 +154,17 @@
       <span class="mono">{{ shipping_orders_checked }}</span> tracked orders had usable shipping data so far (need at least 3)
       {% endif %}
     </p>
+    {% if monthly_budget %}
+    <div class="budget-bar-wrap">
+      <div class="budget-bar-track">
+        <div class="budget-bar-fill {{ 'over' if budget_pct > 100 else ('near' if budget_pct >= 80 else '') }}" style="width: {{ budget_bar_pct }}%;"></div>
+      </div>
+      <span class="budget-bar-label muted">
+        &pound;{{ "%.2f"|format(hero_grand_total) }} of &pound;{{ "%.2f"|format(monthly_budget) }} budget
+        ({{ "%.0f"|format(budget_pct) }}%{% if budget_pct > 100 %} &mdash; over{% endif %})
+      </span>
+    </div>
+    {% endif %}
   </div>
 </section>
 

@@ -16,6 +16,7 @@ SETTINGS_KEYS = [
     "gotify_token",
     "telegram_bot_token",
     "telegram_chat_id",
+    "monthly_budget",       # "" or a number, e.g. "80.00"
 ]
 
 DEFAULTS = {

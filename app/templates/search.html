@@ -63,6 +63,8 @@
       {% if cancelled_count %}
       <span class="muted">+ {{ cancelled_count }} cancelled (&pound;{{ "%.2f"|format(cancelled_total) }}, not counted above)</span>
       {% endif %}
+      <a class="btn-tiny btn-test search-csv-btn"
+         href="/search/export.csv?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}">Download CSV</a>
     </div>
     <div class="groups">
       <div class="group">

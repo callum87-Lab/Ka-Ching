@@ -258,6 +258,13 @@ time you pick.
 
 ## A few smaller extras
 
+- **Monthly budget bar** — set a target on the Settings page and the
+  dashboard shows a progress bar for how close this month's forecast total
+  is to it, colour-shifting from green to amber to pink as you approach or
+  pass it. Leave it blank to hide the bar entirely.
+- **CSV export** — a "Download CSV" button on the Search page exports
+  whatever's currently filtered (same name/shop/status/date-range filters)
+  as a spreadsheet-ready file.
 - **Search** — find any comic you've ever tracked, filterable by shop, paid
   status, or a custom date range, with sort options and a running total
   (spent / still due) for whatever's currently filtered — not locked to the
