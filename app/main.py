@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.09.17"
+APP_VERSION = "2026.07.10.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -310,32 +310,139 @@ def annotate_group_shipping(cur, groups):
     return groups
 
 
+def _smooth_svg_path(points):
+    """Cubic-bezier path through a series of points using Catmull-Rom-derived
+    control points, for a smooth curve rather than sharp straight segments."""
+    d = f"M{points[0][0]},{points[0][1]}"
+    for i in range(len(points) - 1):
+        p0 = points[i - 1] if i > 0 else points[i]
+        p1 = points[i]
+        p2 = points[i + 1]
+        p3 = points[i + 2] if i + 2 < len(points) else p2
+        c1x = round(p1[0] + (p2[0] - p0[0]) / 6, 1)
+        c1y = round(p1[1] + (p2[1] - p0[1]) / 6, 1)
+        c2x = round(p2[0] - (p3[0] - p1[0]) / 6, 1)
+        c2y = round(p2[1] - (p3[1] - p1[1]) / 6, 1)
+        d += f" C{c1x},{c1y} {c2x},{c2y} {p2[0]},{p2[1]}"
+    return d
+
+
+def render_trend_svg(chart_data, range_key):
+    """Self-contained SVG spend-trend chart - no external chart library, so
+    the dashboard never needs to reach the internet to render it. A smooth
+    gradient area for total spend (comics + shipping, matching the hero's
+    own figures), with a thin bar strip beneath for item count per period -
+    a second real metric, not decoration. Hover reveals the exact
+    breakdown; handled by a small shared script in base.html."""
+    if len(chart_data) < 2:
+        return ""
+
+    W, H = 900, 230
+    pad_l, pad_r, pad_top, area_h, gap, bars_h = 44, 16, 14, 128, 10, 34
+    n = len(chart_data)
+    plot_w = W - pad_l - pad_r
+    step = plot_w / (n - 1)
+
+    max_total = max((c["total"] for c in chart_data), default=0) or 1
+    max_count = max((c["count"] for c in chart_data), default=0) or 1
+
+    def x_at(i):
+        return round(pad_l + i * step, 1)
+
+    def y_at(total):
+        return round(pad_top + area_h - (total / max_total) * area_h, 1)
+
+    points = [(x_at(i), y_at(c["total"])) for i, c in enumerate(chart_data)]
+    line_path = _smooth_svg_path(points)
+    baseline_y = pad_top + area_h
+    area_path = f"{line_path} L{points[-1][0]},{baseline_y} L{points[0][0]},{baseline_y} Z"
+
+    grad_id = f"trendgrad-{range_key}"
+    bars_top = pad_top + area_h + gap
+    label_y = bars_top + bars_h + 16
+    bar_w = min(18.0, step * 0.5)
+
+    parts = [
+        f'<svg viewBox="0 0 {W} {H}" class="trend-svg" preserveAspectRatio="none" '
+        f'role="img" aria-label="Spend trend over time, with item counts below">',
+        f'<defs><linearGradient id="{grad_id}" x1="0" y1="0" x2="0" y2="1">'
+        f'<stop offset="0%" stop-color="var(--neon-blue)" stop-opacity="0.45"/>'
+        f'<stop offset="100%" stop-color="var(--neon-blue)" stop-opacity="0.02"/>'
+        f'</linearGradient></defs>',
+    ]
+
+    for frac in (0, 0.5, 1):
+        gy = round(pad_top + area_h * (1 - frac), 1)
+        parts.append(f'<line x1="{pad_l}" y1="{gy}" x2="{W - pad_r}" y2="{gy}" '
+                      f'stroke="var(--border)" stroke-width="1"/>')
+
+    parts.append(f'<path d="{area_path}" fill="url(#{grad_id})" stroke="none"/>')
+    parts.append(f'<path d="{line_path}" fill="none" stroke="var(--neon-blue)" '
+                  f'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>')
+
+    for i, c in enumerate(chart_data):
+        bx = x_at(i)
+        bh = round((c["count"] / max_count) * bars_h, 1) if max_count else 0
+        by = round(bars_top + bars_h - bh, 1)
+        parts.append(f'<rect x="{round(bx - bar_w / 2, 1)}" y="{by}" width="{round(bar_w, 1)}" '
+                      f'height="{bh}" rx="2" fill="var(--neon-violet)" opacity="0.55"/>')
+
+    for i, c in enumerate(chart_data):
+        weight = "700" if c["is_current"] else "400"
+        color = "var(--neon-blue)" if c["is_current"] else "var(--text-muted)"
+        parts.append(f'<text x="{x_at(i)}" y="{label_y}" text-anchor="middle" font-size="12" '
+                      f'font-weight="{weight}" fill="{color}">{c["label"]}</text>')
+
+    hit_w = round(step, 1)
+    for i, c in enumerate(chart_data):
+        cx, cy = points[i]
+        zx = round(cx - hit_w / 2, 1)
+        parts.append(
+            f'<rect class="trend-hit" x="{zx}" y="0" width="{hit_w}" height="{bars_top + bars_h}" '
+            f'fill="transparent" data-label="{c["label"]}" data-total="{c["total"]:.2f}" '
+            f'data-comics="{c["comics_total"]:.2f}" data-shipping="{c["shipping_total"]:.2f}" '
+            f'data-count="{c["count"]}" data-cx="{cx}" data-cy="{cy}"/>'
+        )
+
+    parts.append('<line class="trend-guide" y1="14" x2="0" stroke="var(--neon-blue)" '
+                 f'stroke-width="1" stroke-dasharray="3,3" opacity="0.4" style="display:none;" y2="{bars_top + bars_h}"/>')
+    parts.append('<circle class="trend-dot" r="4.5" fill="var(--neon-blue)" '
+                 'stroke="var(--bg-1)" stroke-width="2" style="display:none;"/>')
+    parts.append('</svg>')
+    return "".join(parts)
+
+
 def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
     cfg = RANGE_CONFIGS.get(range_key, RANGE_CONFIGS[DEFAULT_CHART_RANGE])
     unit = cfg["unit"]
     chart = []
 
-    def sum_between(start: date, end: date):
+    def totals_between(start: date, end: date):
         cur.execute(
             """
-            SELECT COALESCE(SUM(price), 0) AS total, COUNT(*) AS n
-            FROM items
+            SELECT * FROM items
             WHERE status != 'cancelled'
               AND date(COALESCE(release_date, placed_date)) BETWEEN date(?) AND date(?)
             """,
             (start.isoformat(), end.isoformat()),
         )
-        return cur.fetchone()
+        period_items = [dict(r) for r in cur.fetchall()]
+        comics_total = round(sum(i["price"] for i in period_items), 2)
+        groups = group_by_date(period_items)
+        shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
+        return comics_total, shipping_total, len(period_items)
 
     if unit == "week":
         for delta in range(-cfg["back"], cfg["forward"] + 1):
             w_start = today + timedelta(days=delta * 7)
             w_end = w_start + timedelta(days=6)
-            row = sum_between(w_start, w_end)
+            comics_total, shipping_total, n = totals_between(w_start, w_end)
             chart.append({
                 "label": w_start.strftime("%d %b"),
-                "total": round(row["total"], 2),
-                "count": row["n"],
+                "comics_total": comics_total,
+                "shipping_total": shipping_total,
+                "total": round(comics_total + shipping_total, 2),
+                "count": n,
                 "is_current": delta == 0,
                 "is_future": delta > 0,
             })
@@ -343,11 +450,13 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
         for delta in range(-cfg["back"], cfg["forward"] + 1):
             m_start = shift_month(today, delta)
             m_end = m_start.replace(day=calendar.monthrange(m_start.year, m_start.month)[1])
-            row = sum_between(m_start, m_end)
+            comics_total, shipping_total, n = totals_between(m_start, m_end)
             chart.append({
                 "label": m_start.strftime("%b"),
-                "total": round(row["total"], 2),
-                "count": row["n"],
+                "comics_total": comics_total,
+                "shipping_total": shipping_total,
+                "total": round(comics_total + shipping_total, 2),
+                "count": n,
                 "is_current": delta == 0,
                 "is_future": delta > 0,
             })
@@ -591,6 +700,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
 
     active_chart_range = chart_range if chart_range in RANGE_CONFIGS else DEFAULT_CHART_RANGE
     chart_data_all = {key: build_chart_data(cur, today, key) for key in RANGE_CONFIGS}
+    chart_svg_all = {key: render_trend_svg(data, key) for key, data in chart_data_all.items()}
 
     year_stats = get_year_to_date(cur, today)
     all_time_stats = get_all_time_stats(cur)
@@ -640,6 +750,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "viewed_month_param": viewed_month_param,
         "is_current_month": is_current_month,
         "chart_data_all": chart_data_all,
+        "chart_svg_all": chart_svg_all,
         "range_tabs": RANGE_TABS,
         "active_chart_range": active_chart_range,
         "shipping_estimate": shipping_estimate,

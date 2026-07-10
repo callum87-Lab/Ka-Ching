@@ -331,6 +331,13 @@ time you pick.
   chart now load at once (hidden until picked) and switching between them
   happens instantly in the browser, with no reload and no lost scroll
   position. Your last-picked range is also remembered between visits.
+- **Spend trend chart, redesigned** — a smooth gradient area for total
+  spend (comics + shipping, now correctly matching the hero's own
+  figures - previously the chart only counted comics), with a second thin
+  bar strip beneath showing how many comics released each period. Hover
+  any point for the exact breakdown - comics, shipping, total, and item
+  count. Hand-built in plain SVG, so it works with no internet connection
+  and no external library, same as everything else here.
 
 Once more than one shop is being tracked, a small filter row appears above
 "This week" (All shops / each shop by name), and any day with releases from

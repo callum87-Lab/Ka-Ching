@@ -380,21 +380,18 @@
       {% endfor %}
     </div>
   </div>
-  {% for key, chart_data in chart_data_all.items() %}
+  {% for key, svg in chart_svg_all.items() %}
   <div class="chart" data-chart-range="{{ key }}" {{ '' if key == active_chart_range else 'style="display:none;"' }}>
-    {% for c in chart_data %}
-    <div class="chart-col">
-      <div class="chart-bar-track">
-        <div class="chart-bar {{ 'current' if c.is_current else ('future' if c.is_future else 'past') }}"
-             style="height: {{ c.height_pct }}%;"
-             title="&pound;{{ '%.2f'|format(c.total) }}"></div>
-      </div>
-      <span class="chart-total mono">&pound;{{ "%.0f"|format(c.total) }}</span>
-      <span class="chart-label">{{ c.label }}</span>
-    </div>
-    {% endfor %}
+    {{ svg|safe }}
   </div>
   {% endfor %}
+  <div class="trend-tooltip" id="trend-tooltip" style="display:none;">
+    <div class="trend-tooltip-label"></div>
+    <div class="trend-tooltip-row"><span>Comics</span><span class="trend-tooltip-comics mono"></span></div>
+    <div class="trend-tooltip-row"><span>Shipping</span><span class="trend-tooltip-shipping mono"></span></div>
+    <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
+    <div class="trend-tooltip-count"></div>
+  </div>
 </section>
 
 <script>
@@ -426,6 +423,47 @@
     showRange(range);
     try { localStorage.setItem(STORAGE_KEY, range); } catch (e) {}
   });
+
+  var tooltip = document.getElementById('trend-tooltip');
+  document.querySelectorAll('.trend-svg').forEach(function (svg) {
+    var dot = svg.querySelector('.trend-dot');
+    var guide = svg.querySelector('.trend-guide');
+    svg.querySelectorAll('.trend-hit').forEach(function (hit) {
+      hit.addEventListener('mouseenter', function () { showTooltip(hit, svg, dot, guide); });
+      hit.addEventListener('mousemove', function (e) { positionTooltip(e); });
+      hit.addEventListener('mouseleave', function () {
+        tooltip.style.display = 'none';
+        dot.style.display = 'none';
+        guide.style.display = 'none';
+      });
+    });
+  });
+
+  function showTooltip(hit, svg, dot, guide) {
+    var d = hit.dataset;
+    tooltip.querySelector('.trend-tooltip-label').textContent = d.label;
+    tooltip.querySelector('.trend-tooltip-comics').textContent = '\u00a3' + d.comics;
+    tooltip.querySelector('.trend-tooltip-shipping').textContent = '\u00a3' + d.shipping;
+    tooltip.querySelector('.trend-tooltip-total .mono').textContent = '\u00a3' + d.total;
+    tooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' comic' : ' comics') + ' this period';
+    tooltip.style.display = 'block';
+
+    var cx = parseFloat(d.cx), cy = parseFloat(d.cy);
+    dot.setAttribute('cx', cx);
+    dot.setAttribute('cy', cy);
+    dot.style.display = '';
+    guide.setAttribute('x1', cx);
+    guide.setAttribute('x2', cx);
+    guide.style.display = '';
+  }
+
+  function positionTooltip(e) {
+    var rect = document.querySelector('.frame').getBoundingClientRect();
+    var x = e.clientX - rect.left + 14;
+    var y = e.clientY - rect.top - 10;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  }
 })();
 </script>
 
