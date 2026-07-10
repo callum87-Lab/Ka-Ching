@@ -133,6 +133,10 @@
     comic, every manual tick, everything. Separate from GitHub on purpose,
     since GitHub never sees your real order data.
   </p>
+  <p class="muted db-stats-line">
+    <span class="mono">{{ item_count }}</span> item{{ 's' if item_count != 1 else '' }} tracked
+    &middot; database file is <span class="mono">{{ db_size_label }}</span>
+  </p>
   <a href="/settings/backup" class="btn-tiny btn-test">Download backup</a>
 
   <div class="restore-section">

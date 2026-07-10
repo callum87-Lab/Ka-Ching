@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.10.2"
+APP_VERSION = "2026.07.10.3"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1091,6 +1091,71 @@ def build_search_query(q, source, status, start_date, end_date):
     return where_clause, params
 
 
+@app.get("/insights")
+def insights_page(request: Request):
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM items WHERE status != 'cancelled'")
+    all_items = [dict(r) for r in cur.fetchall()]
+    dated_items = [i for i in all_items if i["release_date"]]
+
+    by_month = {}
+    for it in dated_items:
+        month_key = it["release_date"][:7]
+        by_month.setdefault(month_key, []).append(it)
+
+    month_stats = []
+    for month_key, items in by_month.items():
+        comics_total = round(sum(i["price"] for i in items), 2)
+        groups = group_by_date(items)
+        shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
+        month_stats.append({
+            "month_key": month_key,
+            "total": round(comics_total + shipping_total, 2),
+            "count": len(items),
+        })
+
+    top_month = max(month_stats, key=lambda m: m["total"]) if month_stats else None
+    if top_month:
+        top_month["label"] = datetime.strptime(top_month["month_key"], "%Y-%m").strftime("%B %Y")
+
+    priciest_item = max(all_items, key=lambda i: i["price"]) if all_items else None
+    if priciest_item:
+        priciest_item["release_date_label"] = (
+            date.fromisoformat(priciest_item["release_date"]).strftime("%d %b %Y")
+            if priciest_item["release_date"] else "no date set"
+        )
+
+    by_shop = {}
+    for it in all_items:
+        by_shop.setdefault(it["source"], []).append(it)
+    shop_stats = []
+    for source, items in by_shop.items():
+        comics_total = round(sum(i["price"] for i in items), 2)
+        dated_shop_items = [i for i in items if i["release_date"]]
+        groups = group_by_date(dated_shop_items)
+        shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
+        shop_stats.append({
+            "source": source,
+            "color": source_color(source),
+            "total": round(comics_total + shipping_total, 2),
+            "count": len(items),
+        })
+    shop_stats.sort(key=lambda s: -s["total"])
+    max_shop_total = max((s["total"] for s in shop_stats), default=0) or 1
+    for s in shop_stats:
+        s["pct"] = round((s["total"] / max_shop_total) * 100, 1)
+
+    conn.close()
+    return templates.TemplateResponse("insights.html", {
+        "request": request,
+        "top_month": top_month,
+        "priciest_item": priciest_item,
+        "shop_stats": shop_stats,
+        "has_data": bool(all_items),
+    })
+
+
 @app.get("/search")
 def search_items(
     request: Request,
@@ -1207,7 +1272,7 @@ def export_search_csv(
 # --- Calendar -----------------------------------------------------------------
 
 @app.get("/calendar")
-def calendar_view(request: Request, month: str | None = None):
+def calendar_view(request: Request, month: str | None = None, source: str | None = None):
     today = date.today()
     if month:
         try:
@@ -1220,7 +1285,8 @@ def calendar_view(request: Request, month: str | None = None):
     v_start, v_end = month_bounds(viewed_month)
     conn = db.get_db()
     cur = conn.cursor()
-    items = fetch_items_between(cur, v_start, v_end)
+    items = fetch_items_between(cur, v_start, v_end, source)
+    filter_tab_sources = get_filter_tab_sources(cur)
     conn.close()
 
     by_date = {}
@@ -1254,6 +1320,7 @@ def calendar_view(request: Request, month: str | None = None):
 
     prev_month_param = shift_month(viewed_month, -1).strftime("%Y-%m")
     next_month_param = shift_month(viewed_month, 1).strftime("%Y-%m")
+    viewed_month_param = viewed_month.strftime("%Y-%m")
     is_current_month = (viewed_month.year == today.year and viewed_month.month == today.month)
 
     return templates.TemplateResponse("calendar.html", {
@@ -1264,6 +1331,9 @@ def calendar_view(request: Request, month: str | None = None):
         "prev_month_param": prev_month_param,
         "next_month_param": next_month_param,
         "is_current_month": is_current_month,
+        "filter_tab_sources": filter_tab_sources,
+        "active_source": source or "",
+        "viewed_month_param": viewed_month_param,
     })
 
 
@@ -1514,7 +1584,16 @@ def settings_form(
     conn = db.get_db()
     cur = conn.cursor()
     values = notifications.get_all_settings(cur)
+    cur.execute("SELECT COUNT(*) AS n FROM items")
+    item_count = cur.fetchone()["n"]
     conn.close()
+
+    try:
+        db_size_bytes = os.path.getsize(db.DB_PATH)
+        db_size_label = f"{db_size_bytes / 1024 / 1024:.2f} MB" if db_size_bytes >= 1024 * 1024 else f"{db_size_bytes / 1024:.1f} KB"
+    except OSError:
+        db_size_label = "unknown"
+
     return templates.TemplateResponse("settings.html", {
         "request": request,
         "values": values,
@@ -1522,6 +1601,8 @@ def settings_form(
         "test_error": test_error,
         "restore_result": restore_result,
         "restore_count": restore_count,
+        "item_count": item_count,
+        "db_size_label": db_size_label,
     })
 
 

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Insights{% endblock %}
+{% block content %}
+
+<section class="block">
+  <div class="block-head">
+    <h2>Insights</h2>
+  </div>
+
+  {% if not has_data %}
+  <p class="muted">Nothing tracked yet &mdash; insights will show up here once you've got some comics with release dates on record.</p>
+  {% else %}
+
+  <div class="insight-cards">
+    {% if top_month %}
+    <div class="insight-card">
+      <span class="insight-card-label">Most expensive month ever</span>
+      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(top_month.total) }}</span>
+      <span class="insight-card-sub">{{ top_month.label }} &middot; {{ top_month.count }} issue{{ "s" if top_month.count != 1 else "" }}</span>
+    </div>
+    {% endif %}
+
+    {% if priciest_item %}
+    <div class="insight-card">
+      <span class="insight-card-label">Priciest single issue</span>
+      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(priciest_item.price) }}</span>
+      <span class="insight-card-sub">
+        <a href="/items/{{ priciest_item.id }}/edit">{{ priciest_item.name }}</a>
+        &middot; {{ priciest_item.release_date_label }}
+      </span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="block-head insight-shop-head">
+    <h2>Spend by shop, all time</h2>
+  </div>
+  <div class="insight-shop-list">
+    {% for s in shop_stats %}
+    <div class="insight-shop-row">
+      <div class="insight-shop-label">
+        <span class="source-dot" style="background: {{ s.color }};"></span>
+        <span>{{ s.source }}</span>
+      </div>
+      <div class="insight-shop-bar-track">
+        <div class="insight-shop-bar-fill" style="width: {{ s.pct }}%; background: {{ s.color }};"></div>
+      </div>
+      <span class="insight-shop-total mono">&pound;{{ "%.2f"|format(s.total) }}</span>
+      <span class="insight-shop-count muted">{{ s.count }} issue{{ "s" if s.count != 1 else "" }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% endif %}
+</section>
+
+{% endblock %}

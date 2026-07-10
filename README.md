@@ -277,6 +277,13 @@ time you pick.
 
 ## A few smaller extras
 
+- **Insights page** — most expensive month ever, priciest single issue
+  tracked, and spend by shop across all time, each shop's real shipping
+  worked in the same exact-first way as everywhere else.
+- **Shop filter on the Calendar page** — same filter tabs as the dashboard,
+  carried through month navigation so switching months doesn't reset it.
+- **Database size and item count on Settings**, next to the backup button.
+
 - **Monthly budget bar** — set a target on the Settings page and the
   dashboard shows a progress bar for how close this month's forecast total
   is to it, colour-shifting from green to amber to pink as you approach or

@@ -5,15 +5,26 @@
 <section class="block">
   <div class="block-head month-nav-head">
     <div class="month-nav">
-      <a href="/calendar?month={{ prev_month_param }}" class="month-nav-btn" aria-label="Previous month">&larr;</a>
+      <a href="/calendar?month={{ prev_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-btn" aria-label="Previous month">&larr;</a>
       <h2>{{ viewed_month_label }}</h2>
-      <a href="/calendar?month={{ next_month_param }}" class="month-nav-btn" aria-label="Next month">&rarr;</a>
+      <a href="/calendar?month={{ next_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-btn" aria-label="Next month">&rarr;</a>
       {% if not is_current_month %}
-      <a href="/calendar" class="month-nav-today">Today</a>
+      <a href="/calendar{% if active_source %}?source={{ active_source }}{% endif %}" class="month-nav-today">Today</a>
       {% endif %}
     </div>
     <a href="/calendar/export.ics" class="btn-tiny btn-export">Download .ics</a>
   </div>
+
+  {% if filter_tab_sources|length > 1 %}
+  <div class="source-filter-row">
+    <a href="/calendar?month={{ viewed_month_param }}"
+       class="range-tab {{ 'active' if not active_source else '' }}">All shops</a>
+    {% for s in filter_tab_sources %}
+    <a href="/calendar?month={{ viewed_month_param }}&source={{ s }}"
+       class="range-tab {{ 'active' if active_source == s else '' }}">{{ s }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <div class="cal-grid">
     <div class="cal-weekday">Mon</div>
