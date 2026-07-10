@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.10.1"
+APP_VERSION = "2026.07.10.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -428,7 +428,12 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
         )
         period_items = [dict(r) for r in cur.fetchall()]
         comics_total = round(sum(i["price"] for i in period_items), 2)
-        groups = group_by_date(period_items)
+        # group_by_date groups by release_date, so only items that actually
+        # have one can go through it - an item with no release date yet
+        # (counted here via its placed date instead) has no shipment date
+        # to group shipping by, but its price still counts toward the total.
+        dated_items = [i for i in period_items if i["release_date"]]
+        groups = group_by_date(dated_items)
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
         return comics_total, shipping_total, len(period_items)
 
