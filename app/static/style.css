@@ -924,7 +924,21 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .insight-shop-bar-fill { height: 100%; border-radius: 5px; }
 .insight-shop-total { text-align: right; font-size: 14px; }
-.insight-shop-count { font-size: 12px; text-align: right; }
+.insight-shop-expandable { cursor: pointer; }
+.insight-expand-arrow { font-size: 11px; color: var(--text-muted); width: 12px; display: inline-block; }
+.insight-seller-count { font-size: 12px; }
+.insight-shop-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0 8px 28px;
+  border-left: 2px solid var(--border);
+  margin-left: 6px;
+}
+.insight-shop-subrow { grid-template-columns: 160px 1fr 90px 80px; }
+.insight-chart-wrap { position: relative; }
+.shop-bar-svg { width: 100%; height: auto; display: block; }
+.shop-bar-hit { cursor: crosshair; }
 
 #comic-rows {
   display: flex;

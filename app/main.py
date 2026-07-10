@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.10.3"
+APP_VERSION = "2026.07.10.4"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1091,6 +1091,74 @@ def build_search_query(q, source, status, start_date, end_date):
     return where_clause, params
 
 
+def _svg_escape(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def render_shop_bar_svg(shop_stats):
+    """Self-contained SVG bar chart for spend-by-shop, all time - matches
+    the same gradient-and-hover visual language as the dashboard's trend
+    chart, just as horizontal bars instead of a line over time, since this
+    is a single all-time total per shop rather than a series."""
+    if not shop_stats:
+        return ""
+
+    W = 900
+    row_h, gap = 34, 10
+    pad_l, pad_r, pad_top = 4, 4, 4
+    label_col_w = 150
+    n = len(shop_stats)
+    H = pad_top + n * row_h + (n - 1) * gap + 4
+    max_total = max((s["total"] for s in shop_stats), default=0) or 1
+    bar_max_w = W - pad_l - pad_r - label_col_w
+
+    parts = [
+        f'<svg viewBox="0 0 {W} {H}" class="shop-bar-svg" preserveAspectRatio="none" '
+        f'role="img" aria-label="Spend by shop, all time">',
+        "<defs>",
+    ]
+    for i, s in enumerate(shop_stats):
+        parts.append(
+            f'<linearGradient id="shopgrad-{i}" x1="0" y1="0" x2="1" y2="0">'
+            f'<stop offset="0%" stop-color="{s["color"]}" stop-opacity="0.9"/>'
+            f'<stop offset="100%" stop-color="{s["color"]}" stop-opacity="0.35"/>'
+            f"</linearGradient>"
+        )
+    parts.append("</defs>")
+
+    for i, s in enumerate(shop_stats):
+        y = round(pad_top + i * (row_h + gap), 1)
+        bar_area_x = pad_l + label_col_w
+        bw = round((s["total"] / max_total) * bar_max_w, 1) if max_total else 0
+        cy = round(y + row_h / 2 + 4.5, 1)
+        name = _svg_escape(s["source"])
+        parts.append(
+            f'<text x="{pad_l}" y="{cy}" font-size="13" fill="var(--text)">{name}</text>'
+        )
+        parts.append(
+            f'<rect x="{bar_area_x}" y="{y}" width="{bar_max_w}" height="{row_h}" rx="6" fill="var(--surface)"/>'
+        )
+        parts.append(
+            f'<rect x="{bar_area_x}" y="{y}" width="{bw}" height="{row_h}" rx="6" fill="url(#shopgrad-{i})"/>'
+        )
+        parts.append(
+            f'<text x="{bar_area_x + bar_max_w - 8}" y="{cy}" font-size="13" text-anchor="end" '
+            f'fill="var(--text)" font-family="var(--font-mono, monospace)">&#163;{s["total"]:.2f}</text>'
+        )
+        parts.append(
+            f'<rect x="{bar_area_x}" y="{y}" width="{bar_max_w}" height="{row_h}" fill="transparent" '
+            f'class="shop-bar-hit" data-label="{name}" data-total="{s["total"]:.2f}" data-count="{s["count"]}"/>'
+        )
+
+    parts.append("</svg>")
+    return "".join(parts)
+
+
 @app.get("/insights")
 def insights_page(request: Request):
     conn = db.get_db()
@@ -1129,22 +1197,50 @@ def insights_page(request: Request):
     by_shop = {}
     for it in all_items:
         by_shop.setdefault(it["source"], []).append(it)
-    shop_stats = []
+    raw_shop_stats = []
     for source, items in by_shop.items():
         comics_total = round(sum(i["price"] for i in items), 2)
         dated_shop_items = [i for i in items if i["release_date"]]
         groups = group_by_date(dated_shop_items)
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
-        shop_stats.append({
+        raw_shop_stats.append({
             "source": source,
             "color": source_color(source),
             "total": round(comics_total + shipping_total, 2),
             "count": len(items),
         })
+
+    # Group per-seller eBay entries into one row (a list with hundreds of
+    # eBay sellers would be unreadable), keeping the individual sellers
+    # available as an expandable sub-list rather than losing that detail.
+    grouped = {}
+    for s in raw_shop_stats:
+        group_name = source_tab_group(s["source"])
+        if group_name not in grouped:
+            grouped[group_name] = {
+                "source": group_name,
+                "color": source_color(group_name),
+                "total": 0.0,
+                "count": 0,
+                "sub_shops": [],
+            }
+        grouped[group_name]["total"] += s["total"]
+        grouped[group_name]["count"] += s["count"]
+        if group_name != s["source"]:
+            grouped[group_name]["sub_shops"].append(s)
+
+    shop_stats = list(grouped.values())
+    for s in shop_stats:
+        s["total"] = round(s["total"], 2)
+        s["sub_shops"].sort(key=lambda x: -x["total"])
     shop_stats.sort(key=lambda s: -s["total"])
     max_shop_total = max((s["total"] for s in shop_stats), default=0) or 1
     for s in shop_stats:
         s["pct"] = round((s["total"] / max_shop_total) * 100, 1)
+        for sub in s["sub_shops"]:
+            sub["pct"] = round((sub["total"] / max_shop_total) * 100, 1)
+
+    shop_bar_svg = render_shop_bar_svg(shop_stats)
 
     conn.close()
     return templates.TemplateResponse("insights.html", {
@@ -1152,6 +1248,7 @@ def insights_page(request: Request):
         "top_month": top_month,
         "priciest_item": priciest_item,
         "shop_stats": shop_stats,
+        "shop_bar_svg": shop_bar_svg,
         "has_data": bool(all_items),
     })
 

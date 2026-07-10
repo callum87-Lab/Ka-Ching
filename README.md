@@ -279,7 +279,11 @@ time you pick.
 
 - **Insights page** — most expensive month ever, priciest single issue
   tracked, and spend by shop across all time, each shop's real shipping
-  worked in the same exact-first way as everywhere else.
+  worked in the same exact-first way as everywhere else. eBay sellers are
+  grouped into one row (same as everywhere else in the app) - click it to
+  expand and see each seller's own individual total. A chart view underneath
+  shows the same shop totals as gradient bars, matching the dashboard's
+  chart style, with hover for exact figures.
 - **Shop filter on the Calendar page** — same filter tabs as the dashboard,
   carried through month navigation so switching months doesn't reset it.
 - **Database size and item count on Settings**, next to the backup button.

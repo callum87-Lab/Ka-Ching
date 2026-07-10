@@ -37,10 +37,12 @@
   </div>
   <div class="insight-shop-list">
     {% for s in shop_stats %}
-    <div class="insight-shop-row">
+    <div class="insight-shop-row {{ 'insight-shop-expandable' if s.sub_shops else '' }}" {% if s.sub_shops %}data-toggle-target="shop-detail-{{ loop.index0 }}"{% endif %}>
       <div class="insight-shop-label">
+        {% if s.sub_shops %}<span class="insight-expand-arrow">&#9656;</span>{% endif %}
         <span class="source-dot" style="background: {{ s.color }};"></span>
         <span>{{ s.source }}</span>
+        {% if s.sub_shops %}<span class="muted insight-seller-count">({{ s.sub_shops|length }} seller{{ "s" if s.sub_shops|length != 1 else "" }})</span>{% endif %}
       </div>
       <div class="insight-shop-bar-track">
         <div class="insight-shop-bar-fill" style="width: {{ s.pct }}%; background: {{ s.color }};"></div>
@@ -48,10 +50,83 @@
       <span class="insight-shop-total mono">&pound;{{ "%.2f"|format(s.total) }}</span>
       <span class="insight-shop-count muted">{{ s.count }} issue{{ "s" if s.count != 1 else "" }}</span>
     </div>
+    {% if s.sub_shops %}
+    <div class="insight-shop-detail" id="shop-detail-{{ loop.index0 }}" style="display: none;">
+      {% for sub in s.sub_shops %}
+      <div class="insight-shop-row insight-shop-subrow">
+        <div class="insight-shop-label">
+          <span class="source-dot" style="background: {{ sub.color }};"></span>
+          <span>{{ sub.source }}</span>
+        </div>
+        <div class="insight-shop-bar-track">
+          <div class="insight-shop-bar-fill" style="width: {{ sub.pct }}%; background: {{ sub.color }};"></div>
+        </div>
+        <span class="insight-shop-total mono">&pound;{{ "%.2f"|format(sub.total) }}</span>
+        <span class="insight-shop-count muted">{{ sub.count }} issue{{ "s" if sub.count != 1 else "" }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% endfor %}
   </div>
 
+  {% if shop_bar_svg %}
+  <div class="block-head insight-shop-head">
+    <h2>Spend by shop, chart view</h2>
+  </div>
+  <div class="chart insight-chart-wrap">
+    {{ shop_bar_svg|safe }}
+    <div class="trend-tooltip" id="shop-chart-tooltip" style="display: none;">
+      <div class="trend-tooltip-label" id="shop-tt-label"></div>
+      <div class="trend-tooltip-row trend-tooltip-total">
+        <span>Total</span><span class="mono" id="shop-tt-total"></span>
+      </div>
+      <div class="trend-tooltip-count" id="shop-tt-count"></div>
+    </div>
+  </div>
+  {% endif %}
+
   {% endif %}
 </section>
+
+<script>
+(function () {
+  document.querySelectorAll('.insight-shop-expandable').forEach(function (row) {
+    row.addEventListener('click', function () {
+      var target = document.getElementById(row.getAttribute('data-toggle-target'));
+      var arrow = row.querySelector('.insight-expand-arrow');
+      if (!target) return;
+      var isOpen = target.style.display !== 'none';
+      target.style.display = isOpen ? 'none' : 'flex';
+      if (arrow) arrow.innerHTML = isOpen ? '&#9656;' : '&#9662;';
+    });
+  });
+
+  var tooltip = document.getElementById('shop-chart-tooltip');
+  if (tooltip) {
+    var label = document.getElementById('shop-tt-label');
+    var totalEl = document.getElementById('shop-tt-total');
+    var countEl = document.getElementById('shop-tt-count');
+    document.querySelectorAll('.shop-bar-hit').forEach(function (hit) {
+      hit.addEventListener('mouseenter', function () {
+        label.textContent = hit.getAttribute('data-label');
+        totalEl.textContent = '£' + hit.getAttribute('data-total');
+        var count = hit.getAttribute('data-count');
+        countEl.textContent = count + (count === '1' ? ' issue' : ' issues');
+        tooltip.style.display = 'block';
+      });
+      hit.addEventListener('mousemove', function (e) {
+        var wrap = hit.closest('.insight-chart-wrap');
+        var rect = wrap.getBoundingClientRect();
+        tooltip.style.left = (e.clientX - rect.left + 14) + 'px';
+        tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+      });
+      hit.addEventListener('mouseleave', function () {
+        tooltip.style.display = 'none';
+      });
+    });
+  }
+})();
+</script>
 
 {% endblock %}
