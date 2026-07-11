@@ -410,24 +410,6 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .section-body.collapsed { display: none; }
 
-.delivered-form { margin: 0; display: contents; }
-.delivered-toggle {
-  background: none;
-  border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  font-size: 12px;
-  padding: 3px 5px;
-  cursor: pointer;
-  opacity: 0.5;
-  line-height: 1;
-}
-.delivered-toggle:hover { opacity: 0.8; }
-.delivered-toggle.is-delivered {
-  opacity: 1;
-  border-color: var(--neon-green);
-  background: rgba(60, 242, 166, 0.12);
-}
-
 .track-copy-btn {
   background: none;
   border: 1px solid var(--border-strong);
@@ -1031,8 +1013,6 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .insight-top-title-name { color: var(--text); }
 .insight-chart-wrap { position: relative; }
-.shop-bar-svg { width: 100%; height: auto; display: block; }
-.shop-bar-hit { cursor: crosshair; }
 
 #comic-rows {
   display: flex;

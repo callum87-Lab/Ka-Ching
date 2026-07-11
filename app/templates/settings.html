@@ -169,33 +169,19 @@
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
     <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
-    <div class="form-row">
-      <label>
-        <span>Currency symbol</span>
-        <select name="currency_symbol">
-          <option value="gbp" {{ 'selected' if values.currency_symbol == 'gbp' else '' }}>&pound; GBP</option>
-          <option value="usd" {{ 'selected' if values.currency_symbol == 'usd' else '' }}>$ USD</option>
-          <option value="eur" {{ 'selected' if values.currency_symbol == 'eur' else '' }}>&euro; EUR</option>
-        </select>
-      </label>
-      <label>
-        <span>Default landing page</span>
-        <select name="default_landing_page">
-          <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
-          <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
-          <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
-          <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
-        </select>
-      </label>
-    </div>
+    <label>
+      <span>Default landing page</span>
+      <select name="default_landing_page">
+        <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
+        <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
+        <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
+        <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
+      </select>
+    </label>
     <label class="checkbox-row">
       <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }}>
       <span>Automatic daily backup (kept alongside the database, last 7 days retained)</span>
     </label>
-    <p class="muted item-form-hint">
-      Currency symbol is saved but not yet shown throughout every page &mdash;
-      today it only affects this setting itself. Worth knowing before relying on it.
-    </p>
     <button type="submit">Save settings</button>
   </form>
 </section>

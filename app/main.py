@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.11.5"
+APP_VERSION = "2026.07.11.6"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -925,14 +925,6 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
             """,
             (item_id,),
         )
-    elif action == "toggle_delivered":
-        cur.execute("SELECT status FROM items WHERE id = ?", (item_id,))
-        row = cur.fetchone()
-        new_status = "dispatched" if (row and row["status"] == "delivered") else "delivered"
-        cur.execute(
-            "UPDATE items SET status = ?, manual_override = 1 WHERE id = ?",
-            (new_status, item_id),
-        )
     elif action == "remove":
         # Permanent delete - for bad data (duplicate line items, parsing
         # artifacts) rather than a real-world cancellation. No Undo.
@@ -1224,65 +1216,6 @@ def _svg_escape(text: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
-
-
-def render_shop_bar_svg(shop_stats):
-    """Self-contained SVG bar chart for spend-by-shop, all time - matches
-    the same gradient-and-hover visual language as the dashboard's trend
-    chart, just as horizontal bars instead of a line over time, since this
-    is a single all-time total per shop rather than a series."""
-    if not shop_stats:
-        return ""
-
-    W = 900
-    row_h, gap = 34, 10
-    pad_l, pad_r, pad_top = 4, 4, 4
-    label_col_w = 150
-    n = len(shop_stats)
-    H = pad_top + n * row_h + (n - 1) * gap + 4
-    max_total = max((s["total"] for s in shop_stats), default=0) or 1
-    bar_max_w = W - pad_l - pad_r - label_col_w
-
-    parts = [
-        f'<svg viewBox="0 0 {W} {H}" class="shop-bar-svg" preserveAspectRatio="none" '
-        f'role="img" aria-label="Spend by shop, all time">',
-        "<defs>",
-    ]
-    for i, s in enumerate(shop_stats):
-        parts.append(
-            f'<linearGradient id="shopgrad-{i}" x1="0" y1="0" x2="1" y2="0">'
-            f'<stop offset="0%" stop-color="{s["color"]}" stop-opacity="0.9"/>'
-            f'<stop offset="100%" stop-color="{s["color"]}" stop-opacity="0.35"/>'
-            f"</linearGradient>"
-        )
-    parts.append("</defs>")
-
-    for i, s in enumerate(shop_stats):
-        y = round(pad_top + i * (row_h + gap), 1)
-        bar_area_x = pad_l + label_col_w
-        bw = round((s["total"] / max_total) * bar_max_w, 1) if max_total else 0
-        cy = round(y + row_h / 2 + 4.5, 1)
-        name = _svg_escape(s["source"])
-        parts.append(
-            f'<text x="{pad_l}" y="{cy}" font-size="13" fill="var(--text)">{name}</text>'
-        )
-        parts.append(
-            f'<rect x="{bar_area_x}" y="{y}" width="{bar_max_w}" height="{row_h}" rx="6" fill="var(--surface)"/>'
-        )
-        parts.append(
-            f'<rect x="{bar_area_x}" y="{y}" width="{bw}" height="{row_h}" rx="6" fill="url(#shopgrad-{i})"/>'
-        )
-        parts.append(
-            f'<text x="{bar_area_x + bar_max_w - 8}" y="{cy}" font-size="13" text-anchor="end" '
-            f'fill="var(--text)" font-family="var(--font-mono, monospace)">&#163;{s["total"]:.2f}</text>'
-        )
-        parts.append(
-            f'<rect x="{bar_area_x}" y="{y}" width="{bar_max_w}" height="{row_h}" fill="transparent" '
-            f'class="shop-bar-hit" data-label="{name}" data-total="{s["total"]:.2f}" data-count="{s["count"]}"/>'
-        )
-
-    parts.append("</svg>")
-    return "".join(parts)
 
 
 @app.get("/insights")

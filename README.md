@@ -296,9 +296,9 @@ time you pick.
   one-off file.
 - **More Settings**: notification quiet-days toggle (stay silent or send a
   health-check ping), budget cycle (monthly/weekly/28-day) with optional
-  rollover of unused budget, currency symbol and default landing page
-  preferences, automatic daily backups (last 7 kept), and a factory reset
-  (type-to-confirm, wipes tracked items only - settings are kept).
+  rollover of unused budget, default landing page preference, automatic
+  daily backups (last 7 kept), and a factory reset (type-to-confirm, wipes
+  tracked items only - settings are kept).
 - **Mobile bottom nav bar** — single row, thumb-reach, instead of wrapping
   onto two lines.
 - **Tracking number** — optional field on the manual add/edit forms, and
