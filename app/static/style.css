@@ -747,6 +747,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   margin: -4px 0 12px;
 }
 .search-view-label strong { color: var(--text); }
+.about-meta { font-size: 13px; color: var(--text-muted); margin-top: -4px; }
+.about-meta a { color: var(--neon-blue); }
 .search-order-link { color: var(--neon-blue); }
 
 .search-totals {
@@ -1351,14 +1353,14 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
     gap: 2px;
     background: var(--surface-raised);
     border-top: 1px solid var(--border-strong);
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 4px calc(10px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.35);
   }
   .topnav a {
     flex: 1;
     text-align: center;
-    font-size: 9.5px;
-    padding: 7px 2px;
+    font-size: 11.5px;
+    padding: 10px 2px;
     clip-path: none;
     border: none;
     background: none;
@@ -1369,7 +1371,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
     color: var(--neon-blue);
     box-shadow: none;
   }
-  .frame { padding-bottom: 56px; }
+  .frame { padding-bottom: 72px; }
   .hero { flex-direction: column; align-items: flex-start; }
   .hero-detail { flex-basis: auto; min-width: 0; }
   .price-stamp { width: 140px; height: 140px; }
