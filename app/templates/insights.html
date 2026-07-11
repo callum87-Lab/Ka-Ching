@@ -30,7 +30,70 @@
       </span>
     </div>
     {% endif %}
+
+    <div class="insight-card">
+      <span class="insight-card-label">Total issues tracked</span>
+      <span class="insight-card-value mono">{{ total_issues }}</span>
+      <span class="insight-card-sub">&pound;{{ "%.2f"|format(total_all_spend) }} total, all time</span>
+    </div>
+
+    <div class="insight-card">
+      <span class="insight-card-label">Average per month</span>
+      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(avg_per_month) }}</span>
+      <span class="insight-card-sub">&pound;{{ "%.2f"|format(avg_per_issue) }} average per issue</span>
+    </div>
+
+    <div class="insight-card">
+      <span class="insight-card-label">Pre-order vs released</span>
+      <span class="insight-card-value mono">{{ preorder_pct }}%</span>
+      <span class="insight-card-sub">{{ preorder_count }} still pre-order &middot; {{ released_count }} released/dispatched</span>
+    </div>
+
+    <div class="insight-card">
+      <span class="insight-card-label">Shipping vs cover price</span>
+      <span class="insight-card-value mono">{{ shipping_ratio_pct }}%</span>
+      <span class="insight-card-sub">of comic spend goes to postage</span>
+    </div>
+
+    {% if cancelled_saved %}
+    <div class="insight-card">
+      <span class="insight-card-label">Saved by cancelling</span>
+      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(cancelled_saved) }}</span>
+      <span class="insight-card-sub">across everything you've dropped</span>
+    </div>
+    {% endif %}
   </div>
+
+  {% if top_titles %}
+  <div class="block-head insight-shop-head">
+    <h2>Top 3 most expensive titles</h2>
+  </div>
+  <div class="insight-top-titles">
+    {% for t in top_titles %}
+    <div class="insight-top-title-row">
+      <span class="insight-top-title-rank">{{ loop.index }}</span>
+      <a href="/items/{{ t.id }}/edit" class="insight-top-title-name">{{ t.name }}</a>
+      <span class="mono">&pound;{{ "%.2f"|format(t.price) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if twelve_month_svg %}
+  <div class="block-head insight-shop-head">
+    <h2>12-month spend trend</h2>
+  </div>
+  <div class="chart insight-chart-wrap">
+    {{ twelve_month_svg|safe }}
+    <div class="trend-tooltip" id="trend-tooltip" style="display: none;">
+      <div class="trend-tooltip-label"></div>
+      <div class="trend-tooltip-row"><span>Comics</span><span class="mono trend-tooltip-comics"></span></div>
+      <div class="trend-tooltip-row"><span>Shipping</span><span class="mono trend-tooltip-shipping"></span></div>
+      <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
+      <div class="trend-tooltip-count"></div>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="block-head insight-shop-head">
     <h2>Spend by shop, all time</h2>
@@ -123,6 +186,46 @@
       });
       hit.addEventListener('mouseleave', function () {
         tooltip.style.display = 'none';
+      });
+    });
+  }
+  var trendTooltip = document.getElementById('trend-tooltip');
+  if (trendTooltip) {
+    document.querySelectorAll('.trend-svg').forEach(function (svg) {
+      var dot = svg.querySelector('.trend-dot');
+      var guide = svg.querySelector('.trend-guide');
+      svg.querySelectorAll('.trend-hit').forEach(function (hit) {
+        function show() {
+          var d = hit.dataset;
+          trendTooltip.querySelector('.trend-tooltip-label').textContent = d.label;
+          trendTooltip.querySelector('.trend-tooltip-comics').textContent = '\u00a3' + d.comics;
+          trendTooltip.querySelector('.trend-tooltip-shipping').textContent = '\u00a3' + d.shipping;
+          trendTooltip.querySelector('.trend-tooltip-total .mono').textContent = '\u00a3' + d.total;
+          trendTooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' comic' : ' comics') + ' this month';
+          trendTooltip.style.display = 'block';
+          var cx = parseFloat(d.cx), cy = parseFloat(d.cy);
+          if (dot) { dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.style.display = ''; }
+          if (guide) { guide.setAttribute('x1', cx); guide.setAttribute('x2', cx); guide.style.display = ''; }
+        }
+        function move(e) {
+          var wrap = hit.closest('.insight-chart-wrap');
+          var rect = wrap.getBoundingClientRect();
+          trendTooltip.style.left = (e.clientX - rect.left + 14) + 'px';
+          trendTooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+        }
+        hit.addEventListener('mouseenter', show);
+        hit.addEventListener('mousemove', move);
+        hit.addEventListener('mouseleave', function () {
+          trendTooltip.style.display = 'none';
+          if (dot) dot.style.display = 'none';
+          if (guide) guide.style.display = 'none';
+        });
+        hit.addEventListener('touchstart', function (e) {
+          e.preventDefault();
+          show();
+          var t = e.touches[0];
+          move({ clientX: t.clientX, clientY: t.clientY });
+        }, { passive: false });
       });
     });
   }

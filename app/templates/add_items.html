@@ -1,8 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Ka-Ching! &middot; Add / Import{% endblock %}
+{% block title %}Ka-Ching! &middot; Log Orders{% endblock %}
 {% block content %}
 
-<section class="block">
+<div class="logorders-tabs">
+  <button type="button" class="logorders-tab active" data-target="tab-paste">Paste Invoice</button>
+  <button type="button" class="logorders-tab" data-target="tab-manual">Manual Entry</button>
+</div>
+
+<section class="block logorders-panel" id="tab-manual" style="display: none;">
   <div class="block-head">
     <h2>Add items</h2>
   </div>
@@ -21,6 +26,16 @@
           <option value="{{ s }}">
           {% endfor %}
         </datalist>
+      </label>
+    </div>
+    <div class="form-row">
+      <label>
+        <span>Order / invoice # <span class="muted">(optional)</span></span>
+        <input type="text" name="order_number" placeholder="e.g. 05-13811-02460">
+      </label>
+      <label>
+        <span>Shipping cost (&pound;) <span class="muted">(optional)</span></span>
+        <input type="number" name="shipping_cost" step="0.01" min="0" placeholder="e.g. 4.00">
       </label>
     </div>
 
@@ -44,21 +59,23 @@
 
   <p class="muted item-form-hint">
     Set the release date and shop once, then add every comic from that same
-    order before submitting &mdash; one shipment, one form.
+    order before submitting &mdash; one shipment, one form. The order number
+    and shipping cost are both optional, but adding them lets that shop's
+    shipping figure be exact rather than an estimate.
   </p>
 </section>
 
-<section class="block">
+<section class="block logorders-panel" id="tab-paste">
   <div class="block-head">
     <h2>Import order history</h2>
   </div>
   <p class="muted import-hint">
-    Copy your order history page (Forbidden Planet or similar) and paste the whole thing below &mdash;
-    addresses, card details and pagination are ignored automatically. Items you've already ticked
-    "paid" or "cancelled" yourself are left alone; everything else gets refreshed to match
-    what the retailer's currently showing, so it's safe to paste the same page again next month.
-    You can also paste one of Forbidden Planet's "revised release date" emails straight in &mdash;
-    it'll update just that item's date without needing a full re-import.
+    Copy your order history page (Forbidden Planet, eBay, or similar) and paste the whole thing
+    below &mdash; addresses, card details and pagination are ignored automatically. Items you've
+    already ticked "paid" or "cancelled" yourself are left alone; everything else gets refreshed
+    to match what the retailer's currently showing, so it's safe to paste the same page again
+    next month. You can also paste one of Forbidden Planet's "revised release date" emails
+    straight in &mdash; it'll update just that item's date without needing a full re-import.
   </p>
 
   {% if result %}
@@ -91,6 +108,12 @@
   </div>
   {% endif %}
   {% endif %}
+
+  <div class="parser-hint-row">
+    <span class="muted">Detected automatically, but if you know which shop this is:</span>
+    <button type="button" class="parser-hint-btn" data-hint="Forbidden Planet order history page">Forbidden Planet</button>
+    <button type="button" class="parser-hint-btn" data-hint="eBay order-detail page">eBay</button>
+  </div>
 
   <form method="post" action="/import" class="import-form">
     <textarea name="order_text" rows="16" placeholder="Paste order history here..." required></textarea>
@@ -126,6 +149,26 @@
       }
     }
   });
+
+  document.querySelectorAll('.logorders-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.logorders-tab').forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('.logorders-panel').forEach(function (p) { p.style.display = 'none'; });
+      tab.classList.add('active');
+      document.getElementById(tab.getAttribute('data-target')).style.display = 'block';
+    });
+  });
+
+  document.querySelectorAll('.parser-hint-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.parser-hint-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  {% if result %}
+  document.querySelector('[data-target="tab-paste"]').click();
+  {% endif %}
 })();
 </script>
 

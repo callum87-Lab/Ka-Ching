@@ -22,7 +22,7 @@
     <nav class="topnav">
       <a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">Dashboard</a>
       <a href="/calendar" class="{{ 'active' if request.url.path == '/calendar' else '' }}">Calendar</a>
-      <a href="/items/new" class="{{ 'active' if request.url.path == '/items/new' else '' }}">+ Add</a>
+      <a href="/items/new" class="{{ 'active' if request.url.path == '/items/new' else '' }}">Log Orders</a>
       <a href="/search" class="{{ 'active' if request.url.path == '/search' else '' }}">Search</a>
       <a href="/insights" class="{{ 'active' if request.url.path == '/insights' else '' }}">Insights</a>
       <a href="/settings" class="{{ 'active' if request.url.path == '/settings' else '' }}">Settings</a>
@@ -61,6 +61,15 @@ if ('serviceWorker' in navigator) {
     if (e.target.classList.contains('bulk-select')) {
       updateToolbar();
     }
+  });
+
+  document.querySelectorAll('.item-actions-group').forEach(function (grp) {
+    var toggle = grp.querySelector('.actions-drawer-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      grp.classList.toggle('drawer-open');
+    });
   });
 
   window.submitBulk = function (action) {

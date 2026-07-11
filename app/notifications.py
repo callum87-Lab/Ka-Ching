@@ -17,12 +17,24 @@ SETTINGS_KEYS = [
     "telegram_bot_token",
     "telegram_chat_id",
     "monthly_budget",       # "" or a number, e.g. "80.00"
+    "notify_on_quiet_days", # "yes" | "no" - send a "nothing due" digest on quiet days, or stay silent
+    "budget_cycle",         # "monthly" | "weekly" | "28day"
+    "budget_rollover",      # "yes" | "no"
+    "currency_symbol",      # "gbp" | "usd" | "eur"
+    "default_landing_page", # "dashboard" | "calendar" | "search" | "add"
+    "auto_backup",          # "yes" | "no"
 ]
 
 DEFAULTS = {
     "notify_provider": "none",
     "notify_hour": "8",
     "ntfy_url": "https://ntfy.sh",
+    "notify_on_quiet_days": "no",
+    "budget_cycle": "monthly",
+    "budget_rollover": "no",
+    "currency_symbol": "gbp",
+    "default_landing_page": "dashboard",
+    "auto_backup": "no",
 }
 
 
@@ -137,7 +149,8 @@ def check_and_notify_tomorrow(force: bool = False):
     items = [dict(r) for r in cur.fetchall()]
 
     if not items:
-        if force:
+        notify_on_quiet = get_setting(cur, "notify_on_quiet_days", "no") == "yes"
+        if force or notify_on_quiet:
             ok, err = send_via_configured_provider(cur, "Ka-Ching!", "Nothing releasing tomorrow.")
             conn.close()
             return (ok, err)

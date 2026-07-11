@@ -21,6 +21,11 @@
 
   <form method="post" action="/settings" class="item-edit-form" id="settings-form">
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
+    <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
+    <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
+    <input type="hidden" name="currency_symbol" value="{{ values.currency_symbol }}">
+    <input type="hidden" name="default_landing_page" value="{{ values.default_landing_page }}">
+    <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
     <label>
       <span>Provider</span>
       <select name="notify_provider" id="provider-select">
@@ -79,6 +84,11 @@
       </select>
     </label>
 
+    <label class="checkbox-row">
+      <input type="checkbox" name="notify_on_quiet_days" value="yes" {{ 'checked' if values.notify_on_quiet_days == 'yes' else '' }}>
+      <span>Also send a "nothing due tomorrow" ping on quiet days, to confirm notifications are still working</span>
+    </label>
+
     <button type="submit">Save settings</button>
   </form>
 
@@ -116,11 +126,99 @@
     <input type="hidden" name="gotify_token" value="{{ values.gotify_token }}">
     <input type="hidden" name="telegram_bot_token" value="{{ values.telegram_bot_token }}">
     <input type="hidden" name="telegram_chat_id" value="{{ values.telegram_chat_id }}">
-    <label>
-      <span>Monthly budget (&pound;)</span>
-      <input type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00">
+    <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
+    <input type="hidden" name="currency_symbol" value="{{ values.currency_symbol }}">
+    <input type="hidden" name="default_landing_page" value="{{ values.default_landing_page }}">
+    <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
+    <div class="form-row">
+      <label>
+        <span>Monthly budget (&pound;)</span>
+        <input type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00">
+      </label>
+      <label>
+        <span>Budget cycle</span>
+        <select name="budget_cycle">
+          <option value="monthly" {{ 'selected' if values.budget_cycle == 'monthly' else '' }}>Monthly</option>
+          <option value="weekly" {{ 'selected' if values.budget_cycle == 'weekly' else '' }}>Weekly</option>
+          <option value="28day" {{ 'selected' if values.budget_cycle == '28day' else '' }}>28-day rolling</option>
+        </select>
+      </label>
+    </div>
+    <label class="checkbox-row">
+      <input type="checkbox" name="budget_rollover" value="yes" {{ 'checked' if values.budget_rollover == 'yes' else '' }}>
+      <span>Roll over unused budget into the next cycle (monthly only)</span>
     </label>
     <button type="submit">Save settings</button>
+  </form>
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <h2>General preferences</h2>
+  </div>
+  <form method="post" action="/settings" class="item-edit-form">
+    <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
+    <input type="hidden" name="notify_hour" value="{{ values.notify_hour }}">
+    <input type="hidden" name="ntfy_url" value="{{ values.ntfy_url }}">
+    <input type="hidden" name="ntfy_topic" value="{{ values.ntfy_topic }}">
+    <input type="hidden" name="gotify_url" value="{{ values.gotify_url }}">
+    <input type="hidden" name="gotify_token" value="{{ values.gotify_token }}">
+    <input type="hidden" name="telegram_bot_token" value="{{ values.telegram_bot_token }}">
+    <input type="hidden" name="telegram_chat_id" value="{{ values.telegram_chat_id }}">
+    <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
+    <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
+    <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
+    <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
+    <div class="form-row">
+      <label>
+        <span>Currency symbol</span>
+        <select name="currency_symbol">
+          <option value="gbp" {{ 'selected' if values.currency_symbol == 'gbp' else '' }}>&pound; GBP</option>
+          <option value="usd" {{ 'selected' if values.currency_symbol == 'usd' else '' }}>$ USD</option>
+          <option value="eur" {{ 'selected' if values.currency_symbol == 'eur' else '' }}>&euro; EUR</option>
+        </select>
+      </label>
+      <label>
+        <span>Default landing page</span>
+        <select name="default_landing_page">
+          <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
+          <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
+          <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
+          <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
+        </select>
+      </label>
+    </div>
+    <label class="checkbox-row">
+      <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }}>
+      <span>Automatic daily backup (kept alongside the database, last 7 days retained)</span>
+    </label>
+    <p class="muted item-form-hint">
+      Currency symbol is saved but not yet shown throughout every page &mdash;
+      today it only affects this setting itself. Worth knowing before relying on it.
+    </p>
+    <button type="submit">Save settings</button>
+  </form>
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <h2>Danger zone</h2>
+  </div>
+  {% if reset_result == 'done' %}
+  <div class="result-banner">Factory reset complete &mdash; all tracked items and order data cleared. Settings above were kept.</div>
+  {% endif %}
+  <p class="muted item-form-hint">
+    Wipes every tracked comic, order, and shipping record. Your notification,
+    budget, and other settings above are kept. There's no undo &mdash;
+    download a backup first if there's anything here worth keeping.
+  </p>
+  <form method="post" action="/settings/factory-reset" class="item-edit-form"
+        onsubmit="return confirm('This permanently deletes every tracked item and order. This cannot be undone. Continue?');">
+    <label>
+      <span>Type RESET to confirm</span>
+      <input type="text" name="confirm" placeholder="RESET" required>
+    </label>
+    <button type="submit" class="btn-remove-all">Factory reset</button>
   </form>
 </section>
 

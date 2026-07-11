@@ -277,13 +277,43 @@ time you pick.
 
 ## A few smaller extras
 
+- **Collapsible sections** — This Week and By Shipment can be collapsed on
+  the dashboard; Calendar's daily release list is a per-day accordion that
+  auto-expands the nearest upcoming date, and tapping a day in the grid
+  jumps straight to (and opens) its details below.
+- **Mobile action drawer** — on narrow screens, the bulk checkbox, cancel,
+  and remove buttons tuck behind a small "&#8942;" toggle per row instead
+  of always taking up space.
+- **Arrived/Delivered toggle** — once something's marked paid, a small
+  parcel icon lets you flag it as delivered, reusing the existing status
+  field rather than adding new data.
+- **Log Orders** (renamed from "+ Add") — Paste Invoice / Manual Entry tabs,
+  optional order number and shipping cost fields on the manual form (feeds
+  straight into that shop's exact shipping figure), and quick-select shop
+  hints above the paste box.
+- **Search** now also matches order numbers and shop names, not just comic
+  titles; This Month/This Year quick date buttons; clicking an order number
+  in a result isolates every other item from that same order.
+- **Live calendar subscription** — "Subscribe (live)" alongside the .ics
+  download, for calendar apps that support an updating feed rather than a
+  one-off file.
+- **More Settings**: notification quiet-days toggle (stay silent or send a
+  health-check ping), budget cycle (monthly/weekly/28-day) with optional
+  rollover of unused budget, currency symbol and default landing page
+  preferences, automatic daily backups (last 7 kept), and a factory reset
+  (type-to-confirm, wipes tracked items only - settings are kept).
+- **Mobile bottom nav bar** — single row, thumb-reach, instead of wrapping
+  onto two lines.
 - **Insights page** — most expensive month ever, priciest single issue
-  tracked, and spend by shop across all time, each shop's real shipping
-  worked in the same exact-first way as everywhere else. eBay sellers are
-  grouped into one row (same as everywhere else in the app) - click it to
-  expand and see each seller's own individual total. A chart view underneath
-  shows the same shop totals as gradient bars, matching the dashboard's
-  chart style, with hover for exact figures.
+  tracked, total issues tracked, average spend per month and per issue,
+  pre-order vs released split, money saved by cancelling, shipping as a
+  percentage of cover price, top 3 most expensive titles, a 12-month
+  rolling spend trend, and spend by shop across all time, each shop's real
+  shipping worked in the same exact-first way as everywhere else. eBay
+  sellers are grouped into one row (same as everywhere else in the app) -
+  click it to expand and see each seller's own individual total. A chart
+  view underneath shows the same shop totals as gradient bars, matching
+  the dashboard's chart style, with hover for exact figures.
 - **Shop filter on the Calendar page** — same filter tabs as the dashboard,
   carried through month navigation so switching months doesn't reset it.
 - **Database size and item count on Settings**, next to the backup button.

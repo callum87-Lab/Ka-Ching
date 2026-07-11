@@ -44,6 +44,8 @@
           <span class="item-name muted">Order #{{ item.order_number }}</span>
           <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
+          <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
+          <div class="actions-drawer">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
           <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
@@ -55,6 +57,7 @@
             <input type="hidden" name="action" value="remove">
             <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
           </form>
+          </div>
           </div>
         </li>
         {% endfor %}
@@ -87,6 +90,8 @@
           <span class="item-name muted">{{ item.name }} &middot; {{ item.release_date }}</span>
           <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
+          <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
+          <div class="actions-drawer">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <a href="/items/{{ item.id }}/edit" class="btn-tiny">Edit</a>
             <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
@@ -94,6 +99,7 @@
               <input type="hidden" name="action" value="remove">
               <button type="submit" class="btn-remove">Remove</button>
             </form>
+          </div>
           </div>
         </li>
         {% endfor %}
@@ -128,6 +134,8 @@
           </a>
           <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
+          <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
+          <div class="actions-drawer">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
           <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
@@ -139,6 +147,7 @@
             <input type="hidden" name="action" value="remove">
             <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
           </form>
+          </div>
           </div>
         </li>
         {% endfor %}
@@ -181,7 +190,7 @@
         <div class="budget-bar-fill {{ 'over' if budget_pct > 100 else ('near' if budget_pct >= 80 else '') }}" style="width: {{ budget_bar_pct }}%;"></div>
       </div>
       <span class="budget-bar-label muted">
-        &pound;{{ "%.2f"|format(hero_grand_total) }} of &pound;{{ "%.2f"|format(monthly_budget) }} budget
+        &pound;{{ "%.2f"|format(cycle_spend) }} of &pound;{{ "%.2f"|format(monthly_budget) }} budget for {{ budget_cycle_label }}
         ({{ "%.0f"|format(budget_pct) }}%{% if budget_pct > 100 %} &mdash; over{% endif %})
       </span>
     </div>
@@ -220,7 +229,9 @@
   <div class="block-head">
     <h2>This week</h2>
     <span class="block-total mono">&pound;{{ "%.2f"|format(week_remaining) }} left of &pound;{{ "%.2f"|format(week_total) }}</span>
+    <button type="button" class="section-collapse-toggle" data-target="week-body" aria-label="Collapse section">&#9662;</button>
   </div>
+  <div class="section-body" id="week-body">
 
   {% if week_groups %}
   <div class="groups">
@@ -246,9 +257,20 @@
                       title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
+            {% if item.charge_status == 'charged' %}
+            <form method="post" action="/items/{{ item.id }}/mark" class="delivered-form">
+              <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+              <input type="hidden" name="action" value="toggle_delivered">
+              <button type="submit" class="delivered-toggle {{ 'is-delivered' if item.status == 'delivered' else '' }}"
+                      title="{{ 'Mark as not yet delivered' if item.status == 'delivered' else 'Mark as delivered' }}"
+                      aria-label="{{ 'Mark as not yet delivered' if item.status == 'delivered' else 'Mark as delivered' }}">&#128230;</button>
+            </form>
+            {% endif %}
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
+            <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
+            <div class="actions-drawer">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
@@ -260,6 +282,7 @@
               <input type="hidden" name="action" value="remove">
               <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
             </form>
+            </div>
             </div>
           </li>
           {% endfor %}
@@ -275,6 +298,7 @@
   <p class="muted ebay-filter-hint">eBay orders are usually already paid and delivered, so they won't show up here often &mdash; try <a href="/search?source=eBay">Search</a> to browse your full eBay history instead.</p>
   {% endif %}
   {% endif %}
+  </div>
 </section>
 
 <section class="block" id="viewed-month">
@@ -288,7 +312,9 @@
       {% endif %}
     </div>
     <span class="block-total mono">&pound;{{ "%.2f"|format(viewed_remaining_total) }} left of &pound;{{ "%.2f"|format(viewed_grand_total) }}</span>
+    <button type="button" class="section-collapse-toggle" data-target="month-body" aria-label="Collapse section">&#9662;</button>
   </div>
+  <div class="section-body" id="month-body">
 
   {% if viewed_groups %}
   <div class="groups">
@@ -314,9 +340,20 @@
                       title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
+            {% if item.charge_status == 'charged' %}
+            <form method="post" action="/items/{{ item.id }}/mark" class="delivered-form">
+              <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+              <input type="hidden" name="action" value="toggle_delivered">
+              <button type="submit" class="delivered-toggle {{ 'is-delivered' if item.status == 'delivered' else '' }}"
+                      title="{{ 'Mark as not yet delivered' if item.status == 'delivered' else 'Mark as delivered' }}"
+                      aria-label="{{ 'Mark as not yet delivered' if item.status == 'delivered' else 'Mark as delivered' }}">&#128230;</button>
+            </form>
+            {% endif %}
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
+            <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
+            <div class="actions-drawer">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
@@ -328,6 +365,7 @@
               <input type="hidden" name="action" value="remove">
               <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
             </form>
+            </div>
             </div>
           </li>
           {% endfor %}
@@ -344,6 +382,7 @@
   <p class="muted ebay-filter-hint">eBay orders are usually already paid and delivered, so they won't show up here often &mdash; try <a href="/search?source=eBay">Search</a> to browse your full eBay history instead.</p>
   {% endif %}
   {% endif %}
+  </div>
 </section>
 
 {% if recently_cancelled %}
@@ -436,7 +475,22 @@
         dot.style.display = 'none';
         guide.style.display = 'none';
       });
+      hit.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        showTooltip(hit, svg, dot, guide);
+        var touch = e.touches[0];
+        positionTooltip({ clientX: touch.clientX, clientY: touch.clientY });
+      }, { passive: false });
     });
+  });
+
+  document.addEventListener('touchstart', function (e) {
+    if (!e.target.closest('.trend-hit')) {
+      tooltip.style.display = 'none';
+      document.querySelectorAll('.trend-dot, .trend-guide').forEach(function (el) {
+        el.style.display = 'none';
+      });
+    }
   });
 
   function showTooltip(hit, svg, dot, guide) {
@@ -465,6 +519,16 @@
     tooltip.style.top = y + 'px';
   }
 })();
+
+document.querySelectorAll('.section-collapse-toggle').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var body = document.getElementById(btn.getAttribute('data-target'));
+    if (!body) return;
+    var collapsed = body.classList.toggle('collapsed');
+    btn.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+    btn.setAttribute('aria-label', collapsed ? 'Expand section' : 'Collapse section');
+  });
+});
 </script>
 
 {% endif %}

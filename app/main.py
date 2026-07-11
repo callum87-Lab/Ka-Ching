@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.10.4"
+APP_VERSION = "2026.07.11.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -85,9 +85,48 @@ async def _daily_notification_loop():
             await asyncio.sleep(3600)
 
 
+async def _daily_backup_loop():
+    """Runs forever in the background: once a day, if auto-backup is turned
+    on in Settings, copies the database into a timestamped file under
+    /data/backups/, keeping only the most recent 7 so this doesn't grow
+    unbounded. Silently does nothing on days it's turned off."""
+    while True:
+        try:
+            now = datetime.now()
+            target = now.replace(hour=3, minute=0, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            wait_seconds = max(1.0, (target - now).total_seconds())
+            await asyncio.sleep(wait_seconds)
+
+            conn = db.get_db()
+            cur = conn.cursor()
+            enabled = notifications.get_setting(cur, "auto_backup", "no") == "yes"
+            conn.close()
+            if not enabled:
+                continue
+
+            backup_dir = os.path.join(os.path.dirname(db.DB_PATH), "backups")
+            os.makedirs(backup_dir, exist_ok=True)
+            stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            dest = os.path.join(backup_dir, f"pullcost-auto-{stamp}.db")
+            shutil.copyfile(db.DB_PATH, dest)
+            logger.info("AUTO BACKUP: saved %s", dest)
+
+            existing = sorted(
+                (f for f in os.listdir(backup_dir) if f.startswith("pullcost-auto-")),
+            )
+            for old in existing[:-7]:
+                os.remove(os.path.join(backup_dir, old))
+        except Exception:
+            logger.exception("AUTO BACKUP: failed, will retry tomorrow")
+            await asyncio.sleep(3600)
+
+
 @app.on_event("startup")
 async def start_notification_scheduler():
     asyncio.create_task(_daily_notification_loop())
+    asyncio.create_task(_daily_backup_loop())
 
 
 # --- Shared helpers ----------------------------------------------------------
@@ -390,7 +429,8 @@ def render_trend_svg(chart_data, range_key):
     for i, c in enumerate(chart_data):
         weight = "700" if c["is_current"] else "400"
         color = "var(--neon-blue)" if c["is_current"] else "var(--text-muted)"
-        parts.append(f'<text x="{x_at(i)}" y="{label_y}" text-anchor="middle" font-size="12" '
+        alt_class = " trend-axis-label-alt" if i % 2 == 1 else ""
+        parts.append(f'<text class="trend-axis-label{alt_class}" x="{x_at(i)}" y="{label_y}" text-anchor="middle" font-size="12" '
                       f'font-weight="{weight}" fill="{color}">{c["label"]}</text>')
 
     hit_w = round(step, 1)
@@ -633,6 +673,16 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     conn = db.get_db()
     cur = conn.cursor()
 
+    # Only redirect on a clean, unparameterised visit to "/" - once someone's
+    # actively navigating the dashboard (a month, chart range, or shop filter
+    # in the URL), respect that rather than bouncing them away mid-browse.
+    if not month and not chart_range and not source:
+        landing = notifications.get_setting(cur, "default_landing_page", "dashboard")
+        landing_paths = {"calendar": "/calendar", "search": "/search", "add": "/items/new"}
+        if landing in landing_paths:
+            conn.close()
+            return RedirectResponse(url=landing_paths[landing], status_code=303)
+
     active_source = source if source else None
 
     week_end = today + timedelta(days=6)
@@ -652,16 +702,45 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     hero_grand_total = round(hero_comics_total + hero_shipping_total, 2)
 
     monthly_budget_raw = notifications.get_setting(cur, "monthly_budget", "")
+    budget_cycle = notifications.get_setting(cur, "budget_cycle", "monthly")
+    budget_rollover = notifications.get_setting(cur, "budget_rollover", "no") == "yes"
     monthly_budget = None
     budget_pct = None
     budget_bar_pct = None
+    cycle_spend = None
+    budget_cycle_label = {"monthly": "this month", "weekly": "this week", "28day": "this 28-day period"}.get(budget_cycle, "this month")
+
     if monthly_budget_raw:
         try:
-            monthly_budget = float(monthly_budget_raw)
-            if monthly_budget > 0:
-                budget_pct = round((hero_grand_total / monthly_budget) * 100, 1)
+            base_budget = float(monthly_budget_raw)
+            if base_budget > 0:
+                if budget_cycle == "weekly":
+                    cycle_spend = week_total
+                elif budget_cycle == "28day":
+                    twenty_eight_start = today - timedelta(days=27)
+                    cur.execute(
+                        "SELECT COALESCE(SUM(price), 0) AS s FROM items WHERE status != 'cancelled' AND date(release_date) BETWEEN date(?) AND date(?)",
+                        (twenty_eight_start.isoformat(), today.isoformat()),
+                    )
+                    cycle_spend = cur.fetchone()["s"]
+                else:
+                    cycle_spend = hero_grand_total
+
+                effective_budget = base_budget
+                if budget_rollover and budget_cycle == "monthly":
+                    prev_start, prev_end = month_bounds(shift_month(today, -1))
+                    prev_items = fetch_items_between(cur, prev_start, prev_end)
+                    prev_comics = round(sum(i["price"] for i in prev_items), 2)
+                    prev_groups = group_by_date(prev_items)
+                    prev_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, prev_groups)
+                    prev_total = round(prev_comics + prev_shipping, 2)
+                    if prev_total < base_budget:
+                        effective_budget = round(base_budget + (base_budget - prev_total), 2)
+
+                monthly_budget = effective_budget
+                budget_pct = round((cycle_spend / effective_budget) * 100, 1)
                 budget_bar_pct = min(100, budget_pct)
-        except ValueError:
+        except (ValueError, TypeError):
             monthly_budget = None
 
     hero_spent_comics, hero_remaining_comics, hero_spent_count, hero_remaining_count = split_spent_remaining(hero_items)
@@ -743,6 +822,8 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "monthly_budget": monthly_budget,
         "budget_pct": budget_pct,
         "budget_bar_pct": budget_bar_pct,
+        "budget_cycle_label": budget_cycle_label,
+        "cycle_spend": cycle_spend,
         "hero_spent_count": hero_spent_count,
         "next_month_total": next_month_total,
         "viewed_month_label": viewed_month.strftime("%B %Y"),
@@ -828,6 +909,14 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
             WHERE id = ?
             """,
             (item_id,),
+        )
+    elif action == "toggle_delivered":
+        cur.execute("SELECT status FROM items WHERE id = ?", (item_id,))
+        row = cur.fetchone()
+        new_status = "dispatched" if (row and row["status"] == "delivered") else "delivered"
+        cur.execute(
+            "UPDATE items SET status = ?, manual_override = 1 WHERE id = ?",
+            (new_status, item_id),
         )
     elif action == "remove":
         # Permanent delete - for bad data (duplicate line items, parsing
@@ -963,6 +1052,8 @@ async def create_items(request: Request):
     release_date = form.get("release_date", "")
     source = (form.get("source") or "").strip() or DEFAULT_SOURCE
     already_paid = form.get("already_paid")
+    order_number = (form.get("order_number") or "").strip() or None
+    shipping_cost_raw = (form.get("shipping_cost") or "").strip()
 
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
@@ -985,16 +1076,32 @@ async def create_items(request: Request):
             INSERT INTO items
                 (name, order_number, placed_date, status, release_date, charge_status,
                  price, note, imported_at, manual_override, source)
-            VALUES (?, NULL, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?)
+            VALUES (?, ?, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?)
             """,
-            (clean_name, today.isoformat(), release_iso, charge_status, price_val, now, source),
+            (clean_name, order_number, today.isoformat(), release_iso, charge_status, price_val, now, source),
         )
         created.append((cur.lastrowid, clean_name, price_val))
+
+    if shipping_cost_raw and order_number:
+        try:
+            shipping_val = float(shipping_cost_raw)
+            cur.execute(
+                """
+                INSERT INTO shipment_postage (order_number, shipment_index, amount, captured_at, source)
+                VALUES (?, 0, ?, ?, ?)
+                ON CONFLICT(order_number, shipment_index) DO UPDATE SET
+                    amount = excluded.amount, captured_at = excluded.captured_at, source = excluded.source
+                """,
+                (order_number, shipping_val, now, source),
+            )
+        except ValueError:
+            pass
+
     conn.commit()
     conn.close()
     logger.info(
-        "MANUAL BATCH ADD: release_date=%s source=%r created=%s",
-        release_iso, source, created,
+        "MANUAL BATCH ADD: release_date=%s source=%r order_number=%s shipping=%s created=%s",
+        release_iso, source, order_number, shipping_cost_raw, created,
     )
     return RedirectResponse(url="/", status_code=303)
 
@@ -1069,8 +1176,9 @@ def build_search_query(q, source, status, start_date, end_date):
     conditions = []
     params = []
     if q and q.strip():
-        conditions.append("name LIKE ?")
-        params.append(f"%{q.strip()}%")
+        term = f"%{q.strip()}%"
+        conditions.append("(name LIKE ? OR order_number LIKE ? OR source LIKE ?)")
+        params.extend([term, term, term])
     if source:
         clause, extra_params = source_filter_sql(source)
         conditions.append(clause)
@@ -1179,6 +1287,8 @@ def insights_page(request: Request):
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
         month_stats.append({
             "month_key": month_key,
+            "comics_total": comics_total,
+            "shipping_total": shipping_total,
             "total": round(comics_total + shipping_total, 2),
             "count": len(items),
         })
@@ -1187,12 +1297,53 @@ def insights_page(request: Request):
     if top_month:
         top_month["label"] = datetime.strptime(top_month["month_key"], "%Y-%m").strftime("%B %Y")
 
+    # 12-month rolling trend - same chart style as the dashboard, filling
+    # in any quiet months with zero rather than skipping them so the
+    # spacing along the axis stays even.
+    today_month = date.today().replace(day=1)
+    twelve_month_data = []
+    by_month_key = {m["month_key"]: m for m in month_stats}
+    for i in range(11, -1, -1):
+        m = shift_month(today_month, -i)
+        key = m.strftime("%Y-%m")
+        found = by_month_key.get(key)
+        twelve_month_data.append({
+            "label": m.strftime("%b"),
+            "total": found["total"] if found else 0.0,
+            "comics_total": found["comics_total"] if found else 0.0,
+            "shipping_total": found["shipping_total"] if found else 0.0,
+            "count": found["count"] if found else 0,
+            "is_current": (i == 0),
+        })
+    twelve_month_svg = render_trend_svg(twelve_month_data, "twelvemonth")
+
+    total_issues = len(all_items)
     priciest_item = max(all_items, key=lambda i: i["price"]) if all_items else None
     if priciest_item:
         priciest_item["release_date_label"] = (
             date.fromisoformat(priciest_item["release_date"]).strftime("%d %b %Y")
             if priciest_item["release_date"] else "no date set"
         )
+    top_titles = sorted(all_items, key=lambda i: -i["price"])[:3]
+    for t in top_titles:
+        t["release_date_label"] = (
+            date.fromisoformat(t["release_date"]).strftime("%d %b %Y") if t["release_date"] else "no date set"
+        )
+
+    months_with_data = len(month_stats) or 1
+    total_all_comics = round(sum(i["price"] for i in all_items), 2)
+    total_all_shipping = round(sum(m["shipping_total"] for m in month_stats), 2)
+    total_all_spend = round(total_all_comics + total_all_shipping, 2)
+    avg_per_month = round(total_all_spend / months_with_data, 2)
+    avg_per_issue = round(total_all_comics / total_issues, 2) if total_issues else 0.0
+    shipping_ratio_pct = round((total_all_shipping / total_all_comics) * 100, 1) if total_all_comics else 0.0
+
+    preorder_count = sum(1 for i in all_items if i["status"] == "preorder")
+    released_count = total_issues - preorder_count
+    preorder_pct = round((preorder_count / total_issues) * 100, 1) if total_issues else 0.0
+
+    cur.execute("SELECT price FROM items WHERE status = 'cancelled'")
+    cancelled_saved = round(sum(r["price"] for r in cur.fetchall()), 2)
 
     by_shop = {}
     for it in all_items:
@@ -1250,6 +1401,17 @@ def insights_page(request: Request):
         "shop_stats": shop_stats,
         "shop_bar_svg": shop_bar_svg,
         "has_data": bool(all_items),
+        "total_issues": total_issues,
+        "twelve_month_svg": twelve_month_svg,
+        "top_titles": top_titles,
+        "avg_per_month": avg_per_month,
+        "avg_per_issue": avg_per_issue,
+        "preorder_count": preorder_count,
+        "released_count": released_count,
+        "preorder_pct": preorder_pct,
+        "cancelled_saved": cancelled_saved,
+        "shipping_ratio_pct": shipping_ratio_pct,
+        "total_all_spend": total_all_spend,
     })
 
 
@@ -1391,6 +1553,13 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
         by_date.setdefault(it["release_date"], []).append(it)
 
     agenda_groups = group_by_date(items)
+    today_iso = today.isoformat()
+    default_open_date = None
+    upcoming = [g["date"] for g in agenda_groups if g["date"] >= today_iso]
+    if upcoming:
+        default_open_date = min(upcoming)
+    elif agenda_groups:
+        default_open_date = max(g["date"] for g in agenda_groups)
 
     days_in_month = calendar.monthrange(viewed_month.year, viewed_month.month)[1]
     first_weekday = v_start.weekday()  # Monday = 0
@@ -1403,6 +1572,7 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
         day_items = by_date.get(d_iso, [])
         week.append({
             "day": day_num,
+            "date_iso": d_iso,
             "is_today": d == today,
             "count": len(day_items),
             "total": round(sum(i["price"] for i in day_items), 2),
@@ -1431,6 +1601,7 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
         "filter_tab_sources": filter_tab_sources,
         "active_source": source or "",
         "viewed_month_param": viewed_month_param,
+        "default_open_date": default_open_date,
     })
 
 
@@ -1677,6 +1848,7 @@ def settings_form(
     test_error: str | None = None,
     restore_result: str | None = None,
     restore_count: int | None = None,
+    reset_result: str | None = None,
 ):
     conn = db.get_db()
     cur = conn.cursor()
@@ -1698,6 +1870,7 @@ def settings_form(
         "test_error": test_error,
         "restore_result": restore_result,
         "restore_count": restore_count,
+        "reset_result": reset_result,
         "item_count": item_count,
         "db_size_label": db_size_label,
     })
@@ -1714,6 +1887,12 @@ def save_settings(
     telegram_bot_token: str = Form(""),
     telegram_chat_id: str = Form(""),
     monthly_budget: str = Form(""),
+    notify_on_quiet_days: str = Form("no"),
+    budget_cycle: str = Form("monthly"),
+    budget_rollover: str = Form("no"),
+    currency_symbol: str = Form("gbp"),
+    default_landing_page: str = Form("dashboard"),
+    auto_backup: str = Form("no"),
 ):
     notifications.save_settings({
         "notify_provider": notify_provider,
@@ -1725,6 +1904,12 @@ def save_settings(
         "telegram_bot_token": telegram_bot_token.strip(),
         "telegram_chat_id": telegram_chat_id.strip(),
         "monthly_budget": monthly_budget.strip(),
+        "notify_on_quiet_days": notify_on_quiet_days,
+        "budget_cycle": budget_cycle,
+        "budget_rollover": budget_rollover,
+        "currency_symbol": currency_symbol,
+        "default_landing_page": default_landing_page,
+        "auto_backup": auto_backup,
     })
     logger.info("SETTINGS SAVED: provider=%s notify_hour=%s monthly_budget=%s", notify_provider, notify_hour, monthly_budget)
     return RedirectResponse(url="/settings", status_code=303)
@@ -1752,6 +1937,22 @@ def test_digest():
     if ok:
         return RedirectResponse(url="/settings?test_result=sent", status_code=303)
     return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+
+
+@app.post("/settings/factory-reset")
+def factory_reset(confirm: str = Form(...)):
+    if confirm != "RESET":
+        return RedirectResponse(url="/settings?reset_result=cancelled", status_code=303)
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM items")
+    cur.execute("DELETE FROM orders")
+    cur.execute("DELETE FROM dismissed_duplicates")
+    cur.execute("DELETE FROM shipment_postage")
+    conn.commit()
+    conn.close()
+    logger.warning("FACTORY RESET: all tracked items and order data wiped, settings kept")
+    return RedirectResponse(url="/settings?reset_result=done", status_code=303)
 
 
 @app.get("/settings/backup")

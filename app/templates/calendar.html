@@ -13,6 +13,7 @@
       {% endif %}
     </div>
     <a href="/calendar/export.ics" class="btn-tiny btn-export">Download .ics</a>
+    <a href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics" class="btn-tiny btn-export">Subscribe (live)</a>
   </div>
 
   {% if filter_tab_sources|length > 1 %}
@@ -38,7 +39,8 @@
     {% for week in weeks %}
       {% for day in week %}
         {% if day %}
-        <div class="cal-day {{ 'cal-today' if day.is_today else '' }} {{ 'cal-has-items' if day.count else '' }}">
+        <div class="cal-day {{ 'cal-today' if day.is_today else '' }} {{ 'cal-has-items' if day.count else '' }}"
+             {% if day.count %}data-jump-date="{{ day.date_iso }}"{% endif %}>
           <span class="cal-day-num">{{ day.day }}</span>
           {% if day.count %}
           <span class="cal-day-total mono">&pound;{{ "%.2f"|format(day.total) }}</span>
@@ -53,9 +55,9 @@
   </div>
 
   <p class="muted cal-hint">
-    Blank days are release-free. Full details for every release day are listed below &mdash;
-    the download gives you the same thing as a calendar file for Google Calendar, Apple Calendar,
-    Outlook, or similar, one entry per release day rather than per variant.
+    Blank days are release-free. Tap a day above to jump straight to its details below.
+    "Subscribe (live)" adds a feed to Google/Apple/Outlook that updates itself; "Download .ics"
+    is a one-off snapshot file instead.
   </p>
 </section>
 
@@ -67,11 +69,13 @@
   {% if agenda_groups %}
   <div class="groups">
     {% for group in agenda_groups %}
-    <div class="group {{ 'group-paid' if group.all_paid else '' }}">
-      <div class="group-head">
+    <div class="group {{ 'group-paid' if group.all_paid else '' }}" id="cal-group-{{ group.date }}">
+      <div class="group-head cal-accordion-toggle" data-target="cal-body-{{ group.date }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
         <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+        <span class="cal-accordion-arrow">&#9662;</span>
       </div>
+      <div class="cal-accordion-body{{ '' if group.date == default_open_date else ' collapsed' }}" id="cal-body-{{ group.date }}">
       <ul class="item-list item-list-readonly">
         {% for sg in group.source_groups %}
         <li class="cal-source-divider">
@@ -88,6 +92,7 @@
         {% endfor %}
         {% endfor %}
       </ul>
+      </div>
     </div>
     {% endfor %}
   </div>
@@ -95,5 +100,32 @@
   <p class="muted">Nothing due in {{ viewed_month_label }}.</p>
   {% endif %}
 </section>
+
+<script>
+document.querySelectorAll('.cal-accordion-toggle').forEach(function (head) {
+  head.addEventListener('click', function () {
+    var body = document.getElementById(head.getAttribute('data-target'));
+    if (!body) return;
+    var collapsed = body.classList.toggle('collapsed');
+    var arrow = head.querySelector('.cal-accordion-arrow');
+    if (arrow) arrow.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+  });
+});
+
+document.querySelectorAll('[data-jump-date]').forEach(function (dayEl) {
+  dayEl.addEventListener('click', function () {
+    var d = dayEl.getAttribute('data-jump-date');
+    var group = document.getElementById('cal-group-' + d);
+    if (!group) return;
+    var body = group.querySelector('.cal-accordion-body');
+    if (body && body.classList.contains('collapsed')) {
+      body.classList.remove('collapsed');
+      var arrow = group.querySelector('.cal-accordion-arrow');
+      if (arrow) arrow.innerHTML = '&#9662;';
+    }
+    group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
 
 {% endblock %}

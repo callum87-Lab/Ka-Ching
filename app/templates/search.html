@@ -55,15 +55,40 @@
     <div class="search-filter-row">
       <label>
         <span>From</span>
-        <input type="date" name="start_date" value="{{ start_date }}">
+        <input type="date" name="start_date" id="search-start-date" value="{{ start_date }}">
       </label>
       <label>
         <span>To</span>
-        <input type="date" name="end_date" value="{{ end_date }}">
+        <input type="date" name="end_date" id="search-end-date" value="{{ end_date }}">
       </label>
       <button type="submit" class="search-submit-btn">Search</button>
     </div>
+    <div class="search-date-presets">
+      <button type="button" class="date-preset-btn" data-preset="month">This Month</button>
+      <button type="button" class="date-preset-btn" data-preset="year">This Year</button>
+    </div>
   </form>
+
+  <script>
+  document.querySelectorAll('.date-preset-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var now = new Date();
+      var y = now.getFullYear(), m = now.getMonth();
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+      var start, end;
+      if (btn.getAttribute('data-preset') === 'month') {
+        start = y + '-' + pad(m + 1) + '-01';
+        end = y + '-' + pad(m + 1) + '-' + pad(new Date(y, m + 1, 0).getDate());
+      } else {
+        start = y + '-01-01';
+        end = y + '-12-31';
+      }
+      document.getElementById('search-start-date').value = start;
+      document.getElementById('search-end-date').value = end;
+      btn.closest('form').submit();
+    });
+  });
+  </script>
 
   {% if has_filter %}
     {% if results %}
@@ -100,9 +125,20 @@
                       title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
+            {% if item.charge_status == 'charged' %}
+            <form method="post" action="/items/{{ item.id }}/mark" class="delivered-form">
+              <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+              <input type="hidden" name="action" value="toggle_delivered">
+              <button type="submit" class="delivered-toggle {{ 'is-delivered' if item.status == 'delivered' else '' }}"
+                      title="{{ 'Mark as not yet delivered' if item.status == 'delivered' else 'Mark as delivered' }}"
+                      aria-label="{{ 'Mark as not yet delivered' if item.status == 'delivered' else 'Mark as delivered' }}">&#128230;</button>
+            </form>
+            {% endif %}
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
+            <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
+            <div class="actions-drawer">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
@@ -115,11 +151,15 @@
               <button type="submit" class="btn-remove" title="Delete this entry permanently">Remove</button>
             </form>
             </div>
+            </div>
             {% endif %}
           </li>
           <li class="search-meta-row">
             <span class="muted search-meta">{{ item.release_date_label }}
               &middot; <span style="color: {{ item.source_color }};">{{ item.source }}</span>
+              {% if item.order_number %}
+              &middot; <a href="/search?q={{ item.order_number }}" class="search-order-link">order #{{ item.order_number }}</a>
+              {% endif %}
             </span>
           </li>
           {% endfor %}
