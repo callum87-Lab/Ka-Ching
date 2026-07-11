@@ -74,8 +74,10 @@
     <div class="group {{ 'group-paid' if group.all_paid else '' }}" id="cal-group-{{ group.date }}">
       <div class="group-head cal-accordion-toggle" data-target="cal-body-{{ group.date }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
-        <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
-        <span class="cal-accordion-arrow">&#9662;</span>
+        <span class="group-head-right">
+          <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+          <span class="cal-accordion-arrow">&#9662;</span>
+        </span>
       </div>
       <div class="cal-accordion-body{{ '' if group.date == default_open_date else ' collapsed' }}" id="cal-body-{{ group.date }}">
       <ul class="item-list item-list-readonly">
@@ -104,16 +106,6 @@
 </section>
 
 <script>
-document.querySelectorAll('.cal-accordion-toggle').forEach(function (head) {
-  head.addEventListener('click', function () {
-    var body = document.getElementById(head.getAttribute('data-target'));
-    if (!body) return;
-    var collapsed = body.classList.toggle('collapsed');
-    var arrow = head.querySelector('.cal-accordion-arrow');
-    if (arrow) arrow.innerHTML = collapsed ? '&#9656;' : '&#9662;';
-  });
-});
-
 document.querySelectorAll('[data-jump-date]').forEach(function (dayEl) {
   dayEl.addEventListener('click', function () {
     var d = dayEl.getAttribute('data-jump-date');

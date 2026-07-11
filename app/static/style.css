@@ -290,6 +290,12 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   align-items: baseline;
   margin-bottom: 8px;
 }
+.group-head-right {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-left: auto;
+}
 
 .group-date {
   font-weight: 700;

@@ -72,6 +72,16 @@ if ('serviceWorker' in navigator) {
     });
   });
 
+  document.querySelectorAll('.cal-accordion-toggle').forEach(function (head) {
+    head.addEventListener('click', function () {
+      var body = document.getElementById(head.getAttribute('data-target'));
+      if (!body) return;
+      var collapsed = body.classList.toggle('collapsed');
+      var arrow = head.querySelector('.cal-accordion-arrow');
+      if (arrow) arrow.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+    });
+  });
+
   window.submitBulk = function (action) {
     const checked = document.querySelectorAll('.bulk-select:checked');
     if (checked.length === 0) return;

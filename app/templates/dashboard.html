@@ -237,10 +237,14 @@
   <div class="groups">
     {% for group in week_groups %}
     <div class="group {{ 'group-paid' if group.all_paid else '' }}">
-      <div class="group-head">
+      <div class="group-head cal-accordion-toggle" data-target="week-body-{{ loop.index0 }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
-        <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+        <span class="group-head-right">
+          <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+          <span class="cal-accordion-arrow">&#9662;</span>
+        </span>
       </div>
+      <div class="cal-accordion-body" id="week-body-{{ loop.index0 }}">
       {% for sg in group.source_groups %}
       <div class="source-subgroup">
         <div class="source-label" style="color: {{ sg.color }};">
@@ -280,6 +284,7 @@
         </ul>
       </div>
       {% endfor %}
+      </div>
     </div>
     {% endfor %}
   </div>
@@ -311,10 +316,14 @@
   <div class="groups">
     {% for group in viewed_groups %}
     <div class="group {{ 'group-paid' if group.all_paid else '' }}">
-      <div class="group-head">
+      <div class="group-head cal-accordion-toggle" data-target="month-body-{{ loop.index0 }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
-        <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+        <span class="group-head-right">
+          <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+          <span class="cal-accordion-arrow">&#9662;</span>
+        </span>
       </div>
+      <div class="cal-accordion-body" id="month-body-{{ loop.index0 }}">
       {% for sg in group.source_groups %}
       <div class="source-subgroup">
         <div class="source-label" style="color: {{ sg.color }};">
@@ -355,6 +364,7 @@
         <div class="group-ship mono">+ &pound;{{ "%.2f"|format(sg.shipping_amount) }} {{ 'shipping' if sg.shipping_is_exact else 'est. shipping' }} ({{ sg.source }}){% if group.all_paid %} - paid{% endif %}</div>
       </div>
       {% endfor %}
+      </div>
     </div>
     {% endfor %}
   </div>
