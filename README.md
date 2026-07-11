@@ -10,6 +10,14 @@ questions and nothing else:
 - **What's due this week, and what will it cost?**
 - **What's my forecast for this month (and next)?**
 
+> **Built for the UK.** Prices display in £ throughout (currently hardcoded,
+> not a setting), and the two shops with dedicated parsers - Forbidden
+> Planet and eBay - are both read in their UK forms
+> (forbiddenplanet.com, ebay.co.uk). It'll still work anywhere as a general
+> spend tracker via the manual add form or the generic paste-in parser
+> (which doesn't care about currency symbols), but the two purpose-built
+> parsers and the currency display are UK-specific as it stands today.
+
 ## Your data is yours
 
 Ka-Ching! runs entirely on your own server, under your own control. There's
