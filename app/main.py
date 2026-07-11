@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.11.1"
+APP_VERSION = "2026.07.11.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1391,15 +1391,12 @@ def insights_page(request: Request):
         for sub in s["sub_shops"]:
             sub["pct"] = round((sub["total"] / max_shop_total) * 100, 1)
 
-    shop_bar_svg = render_shop_bar_svg(shop_stats)
-
     conn.close()
     return templates.TemplateResponse("insights.html", {
         "request": request,
         "top_month": top_month,
         "priciest_item": priciest_item,
         "shop_stats": shop_stats,
-        "shop_bar_svg": shop_bar_svg,
         "has_data": bool(all_items),
         "total_issues": total_issues,
         "twelve_month_svg": twelve_month_svg,

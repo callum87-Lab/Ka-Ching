@@ -225,6 +225,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
+.cal-export-btns { display: flex; gap: 8px; }
 
 .block-head h2 {
   font-family: var(--font-display);

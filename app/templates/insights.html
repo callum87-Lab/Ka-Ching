@@ -133,22 +133,6 @@
     {% endfor %}
   </div>
 
-  {% if shop_bar_svg %}
-  <div class="block-head insight-shop-head">
-    <h2>Spend by shop, chart view</h2>
-  </div>
-  <div class="chart insight-chart-wrap">
-    {{ shop_bar_svg|safe }}
-    <div class="trend-tooltip" id="shop-chart-tooltip" style="display: none;">
-      <div class="trend-tooltip-label" id="shop-tt-label"></div>
-      <div class="trend-tooltip-row trend-tooltip-total">
-        <span>Total</span><span class="mono" id="shop-tt-total"></span>
-      </div>
-      <div class="trend-tooltip-count" id="shop-tt-count"></div>
-    </div>
-  </div>
-  {% endif %}
-
   {% endif %}
 </section>
 
@@ -164,31 +148,6 @@
       if (arrow) arrow.innerHTML = isOpen ? '&#9656;' : '&#9662;';
     });
   });
-
-  var tooltip = document.getElementById('shop-chart-tooltip');
-  if (tooltip) {
-    var label = document.getElementById('shop-tt-label');
-    var totalEl = document.getElementById('shop-tt-total');
-    var countEl = document.getElementById('shop-tt-count');
-    document.querySelectorAll('.shop-bar-hit').forEach(function (hit) {
-      hit.addEventListener('mouseenter', function () {
-        label.textContent = hit.getAttribute('data-label');
-        totalEl.textContent = '£' + hit.getAttribute('data-total');
-        var count = hit.getAttribute('data-count');
-        countEl.textContent = count + (count === '1' ? ' issue' : ' issues');
-        tooltip.style.display = 'block';
-      });
-      hit.addEventListener('mousemove', function (e) {
-        var wrap = hit.closest('.insight-chart-wrap');
-        var rect = wrap.getBoundingClientRect();
-        tooltip.style.left = (e.clientX - rect.left + 14) + 'px';
-        tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
-      });
-      hit.addEventListener('mouseleave', function () {
-        tooltip.style.display = 'none';
-      });
-    });
-  }
   var trendTooltip = document.getElementById('trend-tooltip');
   if (trendTooltip) {
     document.querySelectorAll('.trend-svg').forEach(function (svg) {

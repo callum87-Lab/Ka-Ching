@@ -284,9 +284,6 @@ time you pick.
 - **Mobile action drawer** — on narrow screens, the bulk checkbox, cancel,
   and remove buttons tuck behind a small "&#8942;" toggle per row instead
   of always taking up space.
-- **Arrived/Delivered toggle** — once something's marked paid, a small
-  parcel icon lets you flag it as delivered, reusing the existing status
-  field rather than adding new data.
 - **Log Orders** (renamed from "+ Add") — Paste Invoice / Manual Entry tabs,
   optional order number and shipping cost fields on the manual form (feeds
   straight into that shop's exact shipping figure), and quick-select shop
@@ -311,9 +308,7 @@ time you pick.
   rolling spend trend, and spend by shop across all time, each shop's real
   shipping worked in the same exact-first way as everywhere else. eBay
   sellers are grouped into one row (same as everywhere else in the app) -
-  click it to expand and see each seller's own individual total. A chart
-  view underneath shows the same shop totals as gradient bars, matching
-  the dashboard's chart style, with hover for exact figures.
+  click it to expand and see each seller's own individual total.
 - **Shop filter on the Calendar page** — same filter tabs as the dashboard,
   carried through month navigation so switching months doesn't reset it.
 - **Database size and item count on Settings**, next to the backup button.

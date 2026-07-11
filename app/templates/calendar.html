@@ -12,8 +12,10 @@
       <a href="/calendar{% if active_source %}?source={{ active_source }}{% endif %}" class="month-nav-today">Today</a>
       {% endif %}
     </div>
-    <a href="/calendar/export.ics" class="btn-tiny btn-export">Download .ics</a>
-    <a href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics" class="btn-tiny btn-export">Subscribe (live)</a>
+    <div class="cal-export-btns">
+      <a href="/calendar/export.ics" class="btn-tiny btn-export">Download .ics</a>
+      <a href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics" class="btn-tiny btn-export">Subscribe (live)</a>
+    </div>
   </div>
 
   {% if filter_tab_sources|length > 1 %}
