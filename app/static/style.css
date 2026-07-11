@@ -736,6 +736,17 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   cursor: pointer;
 }
 .date-preset-btn:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
+.date-preset-btn.active {
+  color: #04121a;
+  background: var(--neon-blue);
+  border-color: var(--neon-blue);
+}
+.search-view-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: -4px 0 12px;
+}
+.search-view-label strong { color: var(--text); }
 .search-order-link { color: var(--neon-blue); }
 
 .search-totals {
@@ -1360,6 +1371,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   }
   .frame { padding-bottom: 56px; }
   .hero { flex-direction: column; align-items: flex-start; }
+  .hero-detail { flex-basis: auto; min-width: 0; }
   .price-stamp { width: 140px; height: 140px; }
   .chart { height: 130px; }
   .actions-drawer-toggle { display: inline-block; }

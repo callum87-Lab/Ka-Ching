@@ -64,8 +64,8 @@
       <button type="submit" class="search-submit-btn">Search</button>
     </div>
     <div class="search-date-presets">
-      <button type="button" class="date-preset-btn" data-preset="month">This Month</button>
-      <button type="button" class="date-preset-btn" data-preset="year">This Year</button>
+      <button type="button" class="date-preset-btn {{ 'active' if active_date_preset == 'month' else '' }}" data-preset="month">This Month</button>
+      <button type="button" class="date-preset-btn {{ 'active' if active_date_preset == 'year' else '' }}" data-preset="year">This Year</button>
     </div>
   </form>
 
@@ -91,6 +91,12 @@
   </script>
 
   {% if has_filter %}
+    {% if active_date_preset %}
+    <p class="search-view-label">
+      Showing: <strong>{{ "This Month" if active_date_preset == "month" else "This Year" }}</strong>
+      ({{ active_date_preset_label }})
+    </p>
+    {% endif %}
     {% if results %}
     <div class="search-totals">
       <span><span class="mono">{{ match_count }}</span> match{{ "es" if match_count != 1 else "" }}{% if truncated %} (showing first 500){% endif %}</span>

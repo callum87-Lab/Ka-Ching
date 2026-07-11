@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.11.6"
+APP_VERSION = "2026.07.11.7"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1379,6 +1379,20 @@ def search_items(
 
     active_status = status or "all"
     active_sort = sort if sort in SEARCH_SORT_OPTIONS else "date_desc"
+
+    active_date_preset = None
+    active_date_preset_label = None
+    if start_date and end_date:
+        today = date.today()
+        month_start, month_end = month_bounds(today)
+        year_start, year_end = date(today.year, 1, 1), date(today.year, 12, 31)
+        if start_date == month_start.isoformat() and end_date == month_end.isoformat():
+            active_date_preset = "month"
+            active_date_preset_label = today.strftime("%B %Y")
+        elif start_date == year_start.isoformat() and end_date == year_end.isoformat():
+            active_date_preset = "year"
+            active_date_preset_label = str(today.year)
+
     has_filter = bool(
         (q and q.strip()) or source or (status and status != "all") or start_date or end_date
     )
@@ -1422,6 +1436,8 @@ def search_items(
         "start_date": start_date or "",
         "end_date": end_date or "",
         "active_sort": active_sort,
+        "active_date_preset": active_date_preset,
+        "active_date_preset_label": active_date_preset_label,
         "sort_options": SEARCH_SORT_OPTIONS,
         "match_count": match_count,
         "spent": spent,
