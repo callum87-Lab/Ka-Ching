@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.11.4"
+APP_VERSION = "2026.07.11.5"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -685,6 +685,20 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
 
     active_source = source if source else None
 
+    date_changes_flash = None
+    cur.execute("SELECT value FROM settings WHERE key = '_flash_date_changes'")
+    flash_row = cur.fetchone()
+    if flash_row and flash_row["value"]:
+        try:
+            date_changes_flash = json.loads(flash_row["value"])
+            for c in date_changes_flash:
+                c["old_label"] = date.fromisoformat(c["old_date"]).strftime("%d %b")
+                c["new_label"] = date.fromisoformat(c["new_date"]).strftime("%d %b")
+        except (ValueError, TypeError):
+            date_changes_flash = None
+        cur.execute("DELETE FROM settings WHERE key = '_flash_date_changes'")
+        conn.commit()
+
     week_end = today + timedelta(days=6)
     week_items = fetch_items_between(cur, today, week_end, active_source)
     week_groups = group_by_date(week_items)
@@ -824,6 +838,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "budget_bar_pct": budget_bar_pct,
         "budget_cycle_label": budget_cycle_label,
         "cycle_spend": cycle_spend,
+        "date_changes_flash": date_changes_flash,
         "hero_spent_count": hero_spent_count,
         "next_month_total": next_month_total,
         "viewed_month_label": viewed_month.strftime("%B %Y"),
@@ -1054,6 +1069,7 @@ async def create_items(request: Request):
     already_paid = form.get("already_paid")
     order_number = (form.get("order_number") or "").strip() or None
     shipping_cost_raw = (form.get("shipping_cost") or "").strip()
+    tracking_number = (form.get("tracking_number") or "").strip() or None
 
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
@@ -1075,10 +1091,10 @@ async def create_items(request: Request):
             """
             INSERT INTO items
                 (name, order_number, placed_date, status, release_date, charge_status,
-                 price, note, imported_at, manual_override, source)
-            VALUES (?, ?, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?)
+                 price, note, imported_at, manual_override, source, tracking_number)
+            VALUES (?, ?, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?, ?)
             """,
-            (clean_name, order_number, today.isoformat(), release_iso, charge_status, price_val, now, source),
+            (clean_name, order_number, today.isoformat(), release_iso, charge_status, price_val, now, source, tracking_number),
         )
         created.append((cur.lastrowid, clean_name, price_val))
 
@@ -1134,21 +1150,23 @@ def update_item(
     release_date: str = Form(...),
     source: str = Form(...),
     already_paid: str | None = Form(None),
+    tracking_number: str = Form(""),
 ):
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
     charge_status = "charged" if already_paid else "not_charged"
     source_clean = source.strip() or DEFAULT_SOURCE
+    tracking_clean = tracking_number.strip() or None
 
     conn = db.get_db()
     cur = conn.cursor()
     cur.execute(
         """
         UPDATE items
-        SET name = ?, price = ?, release_date = ?, source = ?, charge_status = ?, manual_override = 1
+        SET name = ?, price = ?, release_date = ?, source = ?, charge_status = ?, manual_override = 1, tracking_number = ?
         WHERE id = ?
         """,
-        (name.strip(), price, release_iso, source_clean, charge_status, item_id),
+        (name.strip(), price, release_iso, source_clean, charge_status, tracking_clean, item_id),
     )
     conn.commit()
     conn.close()
@@ -1754,6 +1772,7 @@ async def import_confirm(request: Request):
             "charge_status": form.get(f"charge_status_{i}") or "not_charged",
             "note": form.get(f"note_{i}") or None,
             "source": (form.get(f"source_{i}") or "").strip(),
+            "tracking_number": (form.get(f"tracking_number_{i}") or "").strip() or None,
         })
 
     if not kept_items:
@@ -1780,6 +1799,14 @@ async def import_confirm(request: Request):
         ]
         result = parser.store_parsed_items(store_items, order_totals)
         logger.info("IMPORT CONFIRM (Forbidden Planet): %s", result)
+        if result.get("date_slippage"):
+            conn2 = db.get_db()
+            conn2.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('_flash_date_changes', ?)",
+                (json.dumps(result["date_slippage"]),),
+            )
+            conn2.commit()
+            conn2.close()
     else:
         order_shipping_raw = form.get("order_shipping_json", "{}")
         try:
@@ -1801,12 +1828,13 @@ async def import_confirm(request: Request):
                 """
                 INSERT INTO items
                     (name, order_number, placed_date, status, release_date, charge_status,
-                     price, note, imported_at, manual_override, source)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                     price, note, imported_at, manual_override, source, tracking_number)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
                 """,
                 (
                     it["name"], it["order_number"], today.isoformat(), it["status"] or "preorder",
                     release_iso, it["charge_status"] or "not_charged", it["price"], it["note"], now, item_source,
+                    it["tracking_number"],
                 ),
             )
             created.append((cur.lastrowid, it["name"], it["price"], item_source))

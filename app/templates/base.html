@@ -90,6 +90,20 @@ document.querySelectorAll('.cal-accordion-toggle').forEach(function (head) {
     if (arrow) arrow.innerHTML = collapsed ? '&#9656;' : '&#9662;';
   });
 });
+
+document.querySelectorAll('.track-copy-btn').forEach(function (btn) {
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var tracking = btn.getAttribute('data-tracking');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(tracking).then(function () {
+        var original = btn.innerHTML;
+        btn.innerHTML = 'Copied!';
+        setTimeout(function () { btn.innerHTML = '&#128230; ' + tracking; }, 1200);
+      });
+    }
+  });
+});
 </script>
 </body>
 </html>

@@ -35,6 +35,11 @@
       </datalist>
     </label>
 
+    <label>
+      <span>Tracking number <span class="muted">(optional)</span></span>
+      <input type="text" name="tracking_number" value="{{ item.tracking_number if item and item.tracking_number else '' }}" placeholder="e.g. NP678811691GB">
+    </label>
+
     <label class="checkbox-row">
       <input type="checkbox" name="already_paid" value="yes" {{ 'checked' if item and item.charge_status == 'charged' else '' }}>
       <span>Already paid</span>

@@ -59,6 +59,8 @@ MIGRATIONS = {
         ("prev_status", "TEXT"),
         ("prev_charge_status", "TEXT"),
         ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
+        ("tracking_number", "TEXT"),
+        ("prev_release_date", "TEXT"),
     ],
     "shipment_postage": [
         ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),

@@ -193,6 +193,7 @@ def store_parsed_items(items, order_totals):
     cur = conn.cursor()
     imported = 0
     updated = 0
+    date_changes = []
     now = datetime.now(timezone.utc).isoformat()
 
     for order_number, declared_total in order_totals.items():
@@ -236,21 +237,32 @@ def store_parsed_items(items, order_totals):
             (order_number, it["name"], it["price"]),
         )
         existing = cur.fetchone()
-        if existing and existing["release_date"] != release_date:
+        date_slipped = bool(
+            existing and existing["release_date"] and release_date
+            and existing["release_date"] != release_date
+        )
+        if date_slipped:
             logger.info(
                 "IMPORT REFRESH: id=%s name=%r order=%s release_date %r -> %r (status %r -> %r)",
                 existing["id"], it["name"], order_number,
                 existing["release_date"], release_date, existing["status"], it["status"],
             )
+            date_changes.append({
+                "name": it["name"],
+                "old_date": existing["release_date"],
+                "new_date": release_date,
+            })
 
         cur.execute(
             """
             UPDATE items
-            SET status = ?, release_date = ?, charge_status = ?, note = ?, imported_at = ?
+            SET status = ?, release_date = ?, charge_status = ?, note = ?, imported_at = ?,
+                prev_release_date = CASE WHEN ? THEN ? ELSE prev_release_date END
             WHERE order_number IS ? AND name = ? AND price = ? AND manual_override = 0
             """,
             (
                 it["status"], release_date, it["charge_status"], it["note"], now,
+                date_slipped, existing["release_date"] if existing else None,
                 order_number, it["name"], it["price"],
             ),
         )
@@ -266,6 +278,7 @@ def store_parsed_items(items, order_totals):
         "updated": updated,
         "skipped": len(items) - imported - updated,
         "order_totals_captured": len(order_totals),
+        "date_slippage": date_changes,
     }
 
 
@@ -466,6 +479,7 @@ def detect_import(text: str):
                 "status": it["status"],
                 "charge_status": it["charge_status"] or "",
                 "note": it["note"] or "",
+                "tracking_number": "",
             }
             for it in fp_items
         ]
@@ -515,6 +529,7 @@ def detect_import(text: str):
                     "charge_status": default_charge,
                     "note": it["note"] or "",
                     "source": ebay["source_guess"],
+                    "tracking_number": ebay["tracking_number"] or "",
                 })
 
         multi_order = len(chunks) > 1
@@ -544,6 +559,7 @@ def detect_import(text: str):
             "charge_status": "",
             "note": it["note"] or "",
             "source": "",
+            "tracking_number": "",
         }
         for it in generic["items"]
     ]
@@ -648,6 +664,7 @@ _EBAY_SKIP_EXACT = {"Item details", "incl.", "Buyer Protection", "Buy again", "M
 _EBAY_PLACED_RE = re.compile(r"Time placed\s*\t?\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 _EBAY_DELIVERED_RE = re.compile(r"Delivered on\s+[A-Za-z]+,?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 _EBAY_PAID_RE = re.compile(r"Paid on\s+\d{1,2}\s+[A-Za-z]+", re.IGNORECASE)
+_EBAY_TRACKING_RE = re.compile(r"Number\s*\n?\s*\t?\s*([A-Z0-9]{8,})", re.IGNORECASE)
 
 
 def looks_like_ebay(text: str) -> bool:
@@ -700,6 +717,8 @@ def parse_ebay_order(text: str):
     delivered_match = _EBAY_DELIVERED_RE.search(text)
     already_delivered = delivered_match is not None
     already_paid = _EBAY_PAID_RE.search(text) is not None
+    tracking_match = _EBAY_TRACKING_RE.search(text)
+    tracking_number = tracking_match.group(1) if tracking_match else None
 
     # eBay orders aren't pre-orders, so there's no "release date" in the FP
     # sense - but the order itself has a real, unambiguous date attached
@@ -757,6 +776,7 @@ def parse_ebay_order(text: str):
         "source_guess": source_guess,
         "already_delivered": already_delivered,
         "already_paid": already_paid,
+        "tracking_number": tracking_number,
         "shipping": implied_shipping,
         "items": items,
     }

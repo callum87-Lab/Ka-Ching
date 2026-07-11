@@ -13,6 +13,18 @@
   <button type="button" class="btn-remove-all" onclick="submitBulk('remove')">Remove</button>
 </div>
 
+{% if date_changes_flash %}
+<div class="result-banner date-slippage-banner">
+  <strong>Release date{{ "s" if date_changes_flash|length != 1 else "" }} changed</strong> since your last import:
+  {% for c in date_changes_flash %}
+  <div class="result-change-row">
+    <span class="item-name">{{ c.name }}</span>
+    <span class="mono">{{ c.old_label }} &rarr; {{ c.new_label }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% if not has_any_data %}
 <section class="empty-state">
   <h1>Nothing tracked yet</h1>
@@ -262,6 +274,7 @@
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            {% if item.tracking_number %}<button type="button" class="track-copy-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number">&#128230; {{ item.tracking_number }}</button>{% endif %}
             <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
@@ -341,6 +354,7 @@
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            {% if item.tracking_number %}<button type="button" class="track-copy-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number">&#128230; {{ item.tracking_number }}</button>{% endif %}
             <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>

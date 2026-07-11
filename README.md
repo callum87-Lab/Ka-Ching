@@ -301,6 +301,14 @@ time you pick.
   (type-to-confirm, wipes tracked items only - settings are kept).
 - **Mobile bottom nav bar** — single row, thumb-reach, instead of wrapping
   onto two lines.
+- **Tracking number** — optional field on the manual add/edit forms, and
+  auto-filled from eBay imports (it's already sitting right there in the
+  order text). Shows next to the item with a one-tap copy button, for
+  pasting into whichever carrier site you want to check it on yourself.
+- **Release date change tracking** — when a re-import shows a different
+  release date for something already tracked (Forbidden Planet does this
+  often), a note appears on your next dashboard visit: which comic, old
+  date, new date. Previously this happened silently in the background.
 - **Insights page** — most expensive month ever, priciest single issue
   tracked, total issues tracked, average spend per month and per issue,
   pre-order vs released split, money saved by cancelling, shipping as a

@@ -70,6 +70,7 @@
         <input type="hidden" name="status_{{ loop.index0 }}" value="{{ item.status }}">
         <input type="hidden" name="charge_status_{{ loop.index0 }}" value="{{ item.charge_status }}">
         <input type="hidden" name="note_{{ loop.index0 }}" value="{{ item.note }}">
+        <input type="hidden" name="tracking_number_{{ loop.index0 }}" value="{{ item.tracking_number }}">
         {% if item.note or item.duplicate_flag %}
         <div class="preview-row-note">
           {% if item.note %}<span class="muted">{{ item.note }}</span>{% endif %}
@@ -110,7 +111,8 @@
       '<input type="hidden" name="placed_date_' + nextIndex + '" value="">' +
       '<input type="hidden" name="status_' + nextIndex + '" value="preorder">' +
       '<input type="hidden" name="charge_status_' + nextIndex + '" value="">' +
-      '<input type="hidden" name="note_' + nextIndex + '" value="">';
+      '<input type="hidden" name="note_' + nextIndex + '" value="">' +
+      '<input type="hidden" name="tracking_number_' + nextIndex + '" value="">';
     container.appendChild(row);
     nextIndex += 1;
     rowCountInput.value = nextIndex;
