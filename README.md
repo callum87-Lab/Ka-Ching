@@ -1,20 +1,37 @@
+![Ka-Ching!](app/static/img/logo.png)
+
 # Ka-Ching!
 
-A tiny self-hosted dashboard that answers two questions and nothing else:
+**This is not a comic collection catalogue.** It doesn't track what you own,
+store cover art, or care about which variant is sitting on your shelf —
+there are already excellent apps for that. Ka-Ching! answers exactly two
+questions and nothing else:
 
 - **What's due this week, and what will it cost?**
 - **What's my forecast for this month (and next)?**
 
-It does not catalogue your collection, track variants you own, or store cover
-art — you've already got apps for that. This just watches your bank balance.
+## Your data is yours
+
+Ka-Ching! runs entirely on your own server, under your own control. There's
+no account to create, no cloud service sitting in the middle, no analytics,
+and nothing phones home anywhere — the only network calls it ever makes are
+ones you explicitly set up yourself (a notification push through
+ntfy/Gotify/Telegram, if and when you choose to configure one).
+
+Everything you paste in — every order, every price, every shop — lives in
+one SQLite file on your own machine, and nowhere else. This project doesn't
+want your data, doesn't have your data, and there's no mechanism by which it
+ever could. `Download backup` on the Settings page gives you the whole
+database as a single file whenever you want it — genuinely yours, not
+locked into anything.
 
 > Note: the folder, Docker container, and database file are all still called
 > `pullcost` under the hood — only the name on the page changed. Renaming the
 > deployed stack wasn't worth the disruption for a cosmetic change.
 
-The logo is a real image now (`app/static/img/logo.png`), not CSS text —
-doubles as the browser tab favicon too. Swap that file for anything the same
-rough proportions to change it.
+The logo is a real image (`app/static/img/logo.png`), not CSS text — doubles
+as the browser tab favicon too. Swap that file for anything the same rough
+proportions to change it.
 
 ## How it works
 
@@ -471,7 +488,11 @@ dashboard — reliably.
 ## What this deliberately doesn't do
 
 - No collection cataloguing, no barcode scanning, no cover art
+- No accounts, no cloud, no analytics, no telemetry of any kind
 - No login/auth — put it behind your existing reverse proxy (NPM/Authelia)
   the same way as everything else, since it has no auth of its own
 - No automatic scraping of the retailer site — paste-in only, so nothing
   breaks silently when a retailer changes their page markup
+
+It's a small, honest tool that does one job on hardware you own, with data
+that never leaves it.
