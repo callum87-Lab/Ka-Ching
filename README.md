@@ -465,8 +465,8 @@ The app exposes a small JSON endpoint at `/api/summary`:
 `jq` (Aegis likely already has both; otherwise `apt install jq`).
 
 ```bash
-export NTFY_TOPIC=pullcost          # required
-export PULLCOST_URL=http://192.168.0.178:8091   # default shown, override if needed
+export NTFY_TOPIC=kaching           # required
+export KACHING_URL=http://192.168.0.178:8091   # default shown, override if needed
 export NTFY_URL=https://ntfy.sh     # default shown, point at your own ntfy server if self-hosted
 
 ./scripts/ntfy-digest.sh weekly     # "This week: £27.88 across 3 issue(s)."
@@ -474,11 +474,12 @@ export NTFY_URL=https://ntfy.sh     # default shown, point at your own ntfy serv
 ```
 
 Suggested crontab, run from wherever the script lives (e.g. alongside your
-other scheduled jobs on Aegis):
+other scheduled jobs on Aegis - the folder path below is whatever this
+actually lives in on your server):
 
 ```cron
-0 8 * * 1   NTFY_TOPIC=pullcost /opt/stacks/pullcost/scripts/ntfy-digest.sh weekly
-0 8 1 * *   NTFY_TOPIC=pullcost /opt/stacks/pullcost/scripts/ntfy-digest.sh monthly
+0 8 * * 1   NTFY_TOPIC=kaching /opt/stacks/pullcost/scripts/ntfy-digest.sh weekly
+0 8 1 * *   NTFY_TOPIC=kaching /opt/stacks/pullcost/scripts/ntfy-digest.sh monthly
 ```
 
 This is left as a script you run yourself, rather than built into the
