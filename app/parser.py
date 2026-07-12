@@ -420,12 +420,14 @@ _ORDER_DETAIL_CONFIRMED_RE = re.compile(
     r"(?:Confirmed on:|Placed)\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
 )
 _ORDER_DETAIL_ITEM_RE = re.compile(
-    r"^[ \t]*\*?\s*\[([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
+    r"^\[([^\[\]]+?)\]\s*\n"
+    r"(?:[^\n]*\n)??"
     r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled)\b[^\n]*\n"
-    r"(?:[ \t]*\*?\s*\[[^\]]*\]\([^)]*\)\s*\n|[ \t]*\*?\s*Fully charged\s*\n|[ \t]*\*?\s*Not charged\s*\n|[ \t]*[^\n£]*\n)*"
+    r"(?:[^\n]*\n)*?"
     r"£\s*([\d,]+\.\d{2})",
     re.MULTILINE,
 )
+_ORDER_DETAIL_IMAGE_SUFFIX_RE = re.compile(r"\s*\(Product Image\)\s*$", re.IGNORECASE)
 
 
 def parse_order_detail_items(text: str):
@@ -444,7 +446,8 @@ def parse_order_detail_items(text: str):
         except ValueError:
             continue
         status = "dispatched" if m.group(2).lower() == "dispatched" else "preorder"
-        items.append({"name": m.group(1).strip(), "price": price, "status": status})
+        name = _ORDER_DETAIL_IMAGE_SUFFIX_RE.sub("", m.group(1).strip()).strip()
+        items.append({"name": name, "price": price, "status": status})
     if not items:
         return None
 
