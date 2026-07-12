@@ -511,3 +511,33 @@ dashboard — reliably.
 
 It's a small, honest tool that does one job on hardware you own, with data
 that never leaves it.
+
+## Contributing a new shop's parser
+
+Ka-Ching! only knows how to reliably read Forbidden Planet and eBay, because
+those are the two that have actually been built and tested against real
+orders. If you shop somewhere else and want that shop supported too, that's
+genuinely welcome — but it has to start from a real example, not a guess,
+since retailer pages are full of small surprises no one would think to
+account for in advance.
+
+**The right way to contribute one:** take a real order confirmation or
+order-history page from that shop, and manually replace anything personal —
+your name, address, card details, real order numbers, real dates — with
+made-up values, while keeping the actual page structure, wording, and layout
+exactly as it really appears. The structure is what a parser is built from;
+none of it depends on the content being real. Then open a GitHub issue with
+that sanitised example and a note on what shop it's from.
+
+This is deliberately a manual, human step rather than an automated "share my
+data" button. An automated redaction tool can miss things a person reviewing
+their own paste wouldn't - a stray reference number, something unexpected in
+a link - and Ka-Ching!'s whole point is that nothing about it ever has an
+automated path for data to leave your server, even a well-intentioned one.
+A hand-sanitised example keeps that promise intact while still giving enough
+to build from.
+
+If you're comfortable writing the parser yourself, pull requests work the
+same way - just make sure any example text included with it is sanitised
+the same way first.
+
