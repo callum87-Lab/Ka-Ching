@@ -18,6 +18,15 @@ questions and nothing else:
 > (which doesn't care about currency symbols), but the two purpose-built
 > parsers and the currency display are UK-specific as it stands today.
 
+> **Not just comics, either.** Ka-Ching! doesn't actually check what kind of
+> thing it's tracking - a comic, a hardcover, an action figure, a manga
+> volume, whatever has a name, a price, a release date, and a shop just
+> works, the same way. That's not a deliberately-built feature so much as a
+> natural side effect of never trying to be a specialised comic-only tool -
+> confirmed in practice when a real Forbidden Planet order with hardcovers
+> and Black Series action figures mixed in with the comics imported and
+> tracked exactly the same as everything else, no special handling needed.
+
 ## Your data is yours
 
 Ka-Ching! runs entirely on your own server, under your own control. There's
