@@ -577,22 +577,6 @@ def detect_import(text: str):
             "order_shipping_map": {},
         }
 
-    postage_samples = parse_shipment_postage(text)
-    if postage_samples:
-        return {
-            "parser": "order_detail_postage",
-            "source_guess": "Forbidden Planet",
-            "rows": [],
-            "postage_samples": postage_samples,
-            "order_totals": {},
-            "skipped_no_order": 0,
-            "declared_total": None,
-            "shipping": None,
-            "order_number": None,
-            "multi_order": False,
-            "order_shipping_map": {},
-        }
-
     generic = parse_generic_order(text)
     preview_items = [
         {
