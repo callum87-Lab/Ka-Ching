@@ -541,3 +541,8 @@ If you're comfortable writing the parser yourself, pull requests work the
 same way - just make sure any example text included with it is sanitised
 the same way first.
 
+## License
+
+MIT - see [LICENSE](LICENSE). Use it, fork it, change it, ship it however
+you like.
+
