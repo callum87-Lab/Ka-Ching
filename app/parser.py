@@ -405,6 +405,64 @@ def apply_release_date_updates(updates):
 # scoped to its own "Order #<n>" heading so postage never gets misattributed
 # to the wrong order.
 
+# --- Order-detail pages: item extraction ------------------------------------
+#
+# The order-DETAIL page (one specific order, not the order-history list) has
+# a completely different shape to both: each item is followed by a dispatch
+# status ("Dispatched" / "Awaiting Stock") rather than a release date, and
+# the whole page is wrapped in markdown-style [text](url) link syntax when
+# copied from a browser. There's no release date anywhere on this page type
+# - just a "Confirmed on" order-placement date - so items land with that as
+# their placed_date and an empty release_date for the person to fill in,
+# rather than inventing one.
+
+_ORDER_DETAIL_CONFIRMED_RE = re.compile(
+    r"Confirmed on:\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
+)
+_ORDER_DETAIL_ITEM_RE = re.compile(
+    r"^\*?\s*\[([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
+    r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered)\b[^\n]*\n"
+    r"(?:[ \t]*\*?\s*\[[^\]]*\]\([^)]*\)\s*\n|[ \t]*[^\n£]*\n)?"
+    r"£\s*([\d,]+\.\d{2})",
+    re.MULTILINE,
+)
+
+
+def parse_order_detail_items(text: str):
+    """Returns {order_number, placed_date, items: [{name, price, status}]}
+    for a single Forbidden Planet order-detail page, or None if this text
+    doesn't look like one (no heading, or no items found this way)."""
+    heading = _ORDER_DETAIL_HEADING_RE.search(text)
+    if not heading:
+        return None
+    items = []
+    for m in _ORDER_DETAIL_ITEM_RE.finditer(text):
+        try:
+            price = float(m.group(3).replace(",", ""))
+        except ValueError:
+            continue
+        status = "dispatched" if m.group(2).lower() == "dispatched" else "preorder"
+        items.append({"name": m.group(1).strip(), "price": price, "status": status})
+    if not items:
+        return None
+
+    placed_date = None
+    confirmed = _ORDER_DETAIL_CONFIRMED_RE.search(text)
+    if confirmed:
+        try:
+            placed_date = datetime.strptime(
+                f"{confirmed.group(1)} {confirmed.group(2)} {confirmed.group(3)}", "%d %B %Y"
+            ).date().isoformat()
+        except ValueError:
+            placed_date = None
+
+    return {
+        "order_number": heading.group(1),
+        "placed_date": placed_date,
+        "items": items,
+    }
+
+
 _ORDER_DETAIL_HEADING_RE = re.compile(r"Order #(\d+)")
 _SHIPMENT_POSTAGE_RE = re.compile(
     r"package with \d+ items?[^\d£\n]*?£?\s*([\d,]+\.\d{2})", re.IGNORECASE
@@ -575,6 +633,42 @@ def detect_import(text: str):
             "order_number": None,
             "multi_order": False,
             "order_shipping_map": {},
+        }
+
+    # A person might also paste in an order-DETAIL page (one specific order,
+    # not the order-history list) - a completely different shape with no
+    # release dates at all, just per-item dispatch status. Recognising it
+    # here means real item names and prices instead of the generic parser
+    # mangling header text into fake rows.
+    order_detail = parse_order_detail_items(text)
+    if order_detail:
+        postage_samples = parse_shipment_postage(text)
+        preview_items = [
+            {
+                "name": it["name"],
+                "price": it["price"],
+                "release_date": "",
+                "order_number": order_detail["order_number"],
+                "placed_date": order_detail["placed_date"] or "",
+                "status": it["status"],
+                "charge_status": "charged" if it["status"] == "dispatched" else "not_charged",
+                "note": "No release date on this page type - just dispatch status. Fill in a date if you know one.",
+                "tracking_number": "",
+            }
+            for it in order_detail["items"]
+        ]
+        return {
+            "parser": "forbidden_planet",
+            "source_guess": "Forbidden Planet",
+            "rows": preview_items,
+            "order_totals": {},
+            "skipped_no_order": 0,
+            "declared_total": None,
+            "shipping": None,
+            "order_number": order_detail["order_number"],
+            "multi_order": False,
+            "order_shipping_map": {},
+            "postage_samples": postage_samples,
         }
 
     generic = parse_generic_order(text)

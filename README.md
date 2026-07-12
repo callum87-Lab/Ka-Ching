@@ -66,14 +66,17 @@ The dashboard then shows:
 Shipping is no longer a flat guess. If you paste in a Forbidden Planet
 **order detail page** (the page for one specific order, not the order-history
 list — its Order Summary shows a "Postage" breakdown with the exact cost of
-each shipment), Ka-Ching! recognises it, shows exactly what it found on a
-quick review screen, and reads those figures directly once confirmed - no
-new items get added, just the shipping figure(s) saved. It then uses your
-real average once there are a few. Multiple order-detail pages can be pasted
-concatenated together in one go. Without that, it falls back to an
-approximation from the order-history list (declared total minus item costs,
-split across shipments), and only falls back further to a flat guess if
-neither has enough data yet. A note under the hero shows which one it's
+each shipment), Ka-Ching! recognises it as Forbidden Planet and shows every
+item on the same editable review screen as any other import - name, price,
+and shop pre-filled - alongside the exact shipping figure(s), which get
+saved automatically once confirmed. This page type never shows a release
+date though (just dispatch status), so that field is left blank for you to
+fill in if you want it. Once there's enough real shipping data, it's used
+for your real average. Multiple order-detail pages can be pasted
+concatenated together in one go. Without any of this, shipping falls back to
+an approximation from the order-history list (declared total minus item
+costs, split across shipments), and only falls back further to a flat guess
+if neither has enough data yet. A note under the hero shows which one it's
 currently using.
 
 Every item has a small circle next to it — tap it to mark that item paid.

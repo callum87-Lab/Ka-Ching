@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.12.2"
+APP_VERSION = "2026.07.12.3"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1772,6 +1772,12 @@ async def import_confirm(request: Request):
         ]
         result = parser.store_parsed_items(store_items, order_totals)
         logger.info("IMPORT CONFIRM (Forbidden Planet): %s", result)
+
+        postage_samples = json.loads(form.get("postage_samples_json", "[]"))
+        if postage_samples:
+            saved = parser.store_shipment_postage(postage_samples)
+            logger.info("ORDER-DETAIL POSTAGE CAPTURED: %s samples", saved)
+
         if result.get("date_slippage"):
             conn2 = db.get_db()
             conn2.execute(

@@ -88,6 +88,7 @@
     <input type="hidden" name="row_count" value="{{ preview.rows|length }}">
     {% if preview.parser == 'forbidden_planet' %}
     <input type="hidden" name="order_totals_json" value='{{ preview.order_totals|tojson }}'>
+    <input type="hidden" name="postage_samples_json" value='{{ (preview.postage_samples or [])|tojson }}'>
     {% else %}
     <input type="hidden" name="order_shipping_json" value='{{ preview.order_shipping_map|tojson }}'>
     {% if preview.declared_total %}
