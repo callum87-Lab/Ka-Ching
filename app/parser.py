@@ -520,6 +520,50 @@ def store_shipment_postage(samples):
     return len(samples)
 
 
+def _build_order_detail_preview(text: str, order_detail: dict) -> dict:
+    """Turns a parsed order-detail page into the same unified preview shape
+    every other parser returns. Split out so the early gate in detect_import
+    and (previously) the later fallback path could share it - now just the
+    early gate, but kept as its own function since detect_import is already
+    long enough."""
+    postage_samples = parse_shipment_postage(text)
+    preview_items = [
+        {
+            "name": it["name"],
+            "price": it["price"],
+            # Dispatched items have already happened, same logic as eBay
+            # orders - there's no meaningful future release date to wait
+            # for, so the date it was confirmed/placed is far more useful
+            # than leaving it blank. Anything not yet dispatched genuinely
+            # has no known date on this page, so that stays blank.
+            "release_date": (order_detail["placed_date"] or "") if it["status"] == "dispatched" else "",
+            "order_number": order_detail["order_number"],
+            "placed_date": order_detail["placed_date"] or "",
+            "status": it["status"],
+            "charge_status": "charged" if it["status"] == "dispatched" else "not_charged",
+            "note": (
+                None if it["status"] == "dispatched"
+                else "No release date shown on this page - just dispatch status. Fill in a date if you know one."
+            ),
+            "tracking_number": "",
+        }
+        for it in order_detail["items"]
+    ]
+    return {
+        "parser": "forbidden_planet",
+        "source_guess": "Forbidden Planet",
+        "rows": preview_items,
+        "order_totals": {},
+        "skipped_no_order": 0,
+        "declared_total": None,
+        "shipping": None,
+        "order_number": order_detail["order_number"],
+        "multi_order": False,
+        "order_shipping_map": {},
+        "postage_samples": postage_samples,
+    }
+
+
 def detect_import(text: str, shop_hint: str | None = None):
     """Tries each known parser in turn and returns a single unified preview
     structure for the review-and-confirm screen. Never touches the database
@@ -530,6 +574,20 @@ def detect_import(text: str, shop_hint: str | None = None):
     generic parser, which still extracts what it safely can (order number,
     total, shipping, item rows where the structure is clear enough) and
     leaves the rest blank for the person to fill in themselves."""
+    # An order-DETAIL page (or its shorter order-summary cousin) needs to be
+    # ruled in or out before the order-history-list parser ever runs on it -
+    # that parser triggers on any standalone [bracketed] line as an item
+    # marker, which this different page shape can accidentally satisfy
+    # (e.g. if a link's URL portion gets stripped on copy, leaving just the
+    # bracketed title text behind) - with no idea how to track this page's
+    # order-number format, misparsing everything as ownerless and silently
+    # discarding it. Checking here first avoids that cross-contamination
+    # entirely, rather than only reacting to specific text shapes that
+    # happen to trigger it.
+    order_detail_early = parse_order_detail_items(text)
+    if order_detail_early:
+        return _build_order_detail_preview(text, order_detail_early)
+
     fp_items, fp_order_totals, fp_skipped = parse_order_history(text)
     if fp_items:
         preview_items = [
@@ -636,50 +694,6 @@ def detect_import(text: str, shop_hint: str | None = None):
             "order_number": None,
             "multi_order": False,
             "order_shipping_map": {},
-        }
-
-    # A person might also paste in an order-DETAIL page (one specific order,
-    # not the order-history list) - a completely different shape with no
-    # release dates at all, just per-item dispatch status. Recognising it
-    # here means real item names and prices instead of the generic parser
-    # mangling header text into fake rows.
-    order_detail = parse_order_detail_items(text)
-    if order_detail:
-        postage_samples = parse_shipment_postage(text)
-        preview_items = [
-            {
-                "name": it["name"],
-                "price": it["price"],
-                # Dispatched items have already happened, same logic as eBay
-                # orders - there's no meaningful future release date to wait
-                # for, so the date it was confirmed/placed is far more useful
-                # than leaving it blank. Anything not yet dispatched genuinely
-                # has no known date on this page, so that stays blank.
-                "release_date": (order_detail["placed_date"] or "") if it["status"] == "dispatched" else "",
-                "order_number": order_detail["order_number"],
-                "placed_date": order_detail["placed_date"] or "",
-                "status": it["status"],
-                "charge_status": "charged" if it["status"] == "dispatched" else "not_charged",
-                "note": (
-                    None if it["status"] == "dispatched"
-                    else "No release date shown on this page - just dispatch status. Fill in a date if you know one."
-                ),
-                "tracking_number": "",
-            }
-            for it in order_detail["items"]
-        ]
-        return {
-            "parser": "forbidden_planet",
-            "source_guess": "Forbidden Planet",
-            "rows": preview_items,
-            "order_totals": {},
-            "skipped_no_order": 0,
-            "declared_total": None,
-            "shipping": None,
-            "order_number": order_detail["order_number"],
-            "multi_order": False,
-            "order_shipping_map": {},
-            "postage_samples": postage_samples,
         }
 
     if shop_hint and shop_hint.strip().lower() == "forbidden planet":
