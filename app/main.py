@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.11.9"
+APP_VERSION = "2026.07.12.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1695,6 +1695,30 @@ def import_preview(request: Request, order_text: str = Form(...)):
 async def import_confirm(request: Request):
     form = await request.form()
     parser_type = form.get("parser_type", "generic")
+
+    if parser_type == "release_date_email":
+        updates = json.loads(form.get("release_updates_json", "[]"))
+        result = parser.apply_release_date_updates(updates)
+        logger.info("EMAIL DATE UPDATE: %s", result)
+        if result.get("changes"):
+            conn = db.get_db()
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('_flash_date_changes', ?)",
+                (json.dumps([
+                    {"name": c["name"], "old_date": c["old_date"], "new_date": c["new_date"]}
+                    for c in result["changes"]
+                ]),),
+            )
+            conn.commit()
+            conn.close()
+        return RedirectResponse(url="/", status_code=303)
+
+    if parser_type == "order_detail_postage":
+        samples = json.loads(form.get("postage_samples_json", "[]"))
+        count = parser.store_shipment_postage(samples)
+        logger.info("ORDER-DETAIL POSTAGE CAPTURED: %s samples", count)
+        return RedirectResponse(url="/", status_code=303)
+
     row_count = int(form.get("row_count", "0") or 0)
 
     def _str_to_date(s):

@@ -66,8 +66,10 @@ The dashboard then shows:
 Shipping is no longer a flat guess. If you paste in a Forbidden Planet
 **order detail page** (the page for one specific order, not the order-history
 list — its Order Summary shows a "Postage" breakdown with the exact cost of
-each shipment), Ka-Ching! reads those figures directly and uses your real
-average once there are a few. Multiple order-detail pages can be pasted
+each shipment), Ka-Ching! recognises it, shows exactly what it found on a
+quick review screen, and reads those figures directly once confirmed - no
+new items get added, just the shipping figure(s) saved. It then uses your
+real average once there are a few. Multiple order-detail pages can be pasted
 concatenated together in one go. Without that, it falls back to an
 approximation from the order-history list (declared total minus item costs,
 split across shipments), and only falls back further to a flat guess if
@@ -249,9 +251,10 @@ ticked Paid or Cancel on it yourself, in which case your tick always wins.
 Forbidden Planet emails you separately whenever a pre-order's release date
 moves — a completely different format to the order-history page (no price,
 no images, dates written as DD/MM/YYYY). You can paste one of these emails
-into the same Import box and it'll update just that one item's date, without
-needing a full re-import. The import banner will say "Release-date update: 1
-item(s) updated" instead of the usual found/added/skipped line.
+into the same Import box - it's recognised as its own kind of paste, shows a
+simple review screen listing exactly which item(s) will get which new date,
+and only updates them once you confirm. Nothing else changes and no new
+items get added.
 
 This only understands the one email template Forbidden Planet was sending as
 of when this was built — if they change the wording or you spot one that

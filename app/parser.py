@@ -370,7 +370,7 @@ def apply_release_date_updates(updates):
             unmatched += 1
             continue
 
-        new_iso = u["release_date"].isoformat()
+        new_iso = u["release_date"]
         for row in rows:
             logger.info(
                 "EMAIL DATE UPDATE: id=%s name=%r order=%s release_date %r -> %r",
@@ -406,7 +406,9 @@ def apply_release_date_updates(updates):
 # to the wrong order.
 
 _ORDER_DETAIL_HEADING_RE = re.compile(r"Order #(\d+)")
-_SHIPMENT_POSTAGE_RE = re.compile(r"already shipped!\s*£?\s*([\d,]+\.\d{2})", re.IGNORECASE)
+_SHIPMENT_POSTAGE_RE = re.compile(
+    r"package with \d+ items?[^\d£\n]*?£?\s*([\d,]+\.\d{2})", re.IGNORECASE
+)
 
 
 def parse_shipment_postage(text: str):
@@ -545,6 +547,50 @@ def detect_import(text: str):
             "order_number": first_order_number if not multi_order else None,
             "multi_order": multi_order,
             "order_count": len(chunks),
+        }
+
+    # Forbidden Planet also sends a completely different kind of paste - a
+    # "release date changed" email (no items, no prices, just a date update
+    # for something already tracked) - and a person might paste in an
+    # order-DETAIL page on its own (not the order-history list) purely to
+    # capture its exact postage breakdown. Neither of these adds anything
+    # new to review as rows, so they get their own simple confirm screen
+    # rather than being forced through the generic item parser, which would
+    # otherwise mangle them (there's no comic here to extract).
+    release_updates = parse_release_date_updates(text)
+    if release_updates:
+        preview_updates = [
+            {**u, "release_date": u["release_date"].isoformat()}
+            for u in release_updates
+        ]
+        return {
+            "parser": "release_date_email",
+            "source_guess": "Forbidden Planet",
+            "rows": [],
+            "release_updates": preview_updates,
+            "order_totals": {},
+            "skipped_no_order": 0,
+            "declared_total": None,
+            "shipping": None,
+            "order_number": None,
+            "multi_order": False,
+            "order_shipping_map": {},
+        }
+
+    postage_samples = parse_shipment_postage(text)
+    if postage_samples:
+        return {
+            "parser": "order_detail_postage",
+            "source_guess": "Forbidden Planet",
+            "rows": [],
+            "postage_samples": postage_samples,
+            "order_totals": {},
+            "skipped_no_order": 0,
+            "declared_total": None,
+            "shipping": None,
+            "order_number": None,
+            "multi_order": False,
+            "order_shipping_map": {},
         }
 
     generic = parse_generic_order(text)

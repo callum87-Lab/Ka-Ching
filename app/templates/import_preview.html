@@ -11,6 +11,62 @@
     untick anything you don't want, then confirm.
   </p>
 
+  {% if preview.parser == 'release_date_email' %}
+  <div class="preview-meta">
+    <span class="preview-meta-tag">Detected: Forbidden Planet release-date-change email</span>
+  </div>
+  <p class="muted item-form-hint">
+    This looks like a release-date update, not a new order - nothing new
+    gets added, just the date(s) below refreshed on whatever's already
+    tracked under that order number.
+  </p>
+  <div class="preview-simple-list">
+    {% for u in preview.release_updates %}
+    <div class="preview-simple-row">
+      <span class="item-name">{{ u.name }}</span>
+      <span class="mono">&rarr; {{ u.release_date }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <form method="post" action="/import/confirm">
+    <input type="hidden" name="parser_type" value="release_date_email">
+    <input type="hidden" name="release_updates_json" value='{{ preview.release_updates|tojson }}'>
+    <div class="preview-actions">
+      <button type="submit">Confirm &amp; update {{ preview.release_updates|length }} date{{ "s" if preview.release_updates|length != 1 else "" }}</button>
+      <a href="/items/new" class="btn-tiny">Cancel</a>
+    </div>
+  </form>
+
+  {% elif preview.parser == 'order_detail_postage' %}
+  <div class="preview-meta">
+    <span class="preview-meta-tag">Detected: Forbidden Planet order-detail page</span>
+  </div>
+  <p class="muted item-form-hint">
+    This is a single order's detail page, not the order-history list - it only
+    ever gives you exact <strong>shipping</strong> figures, never the items
+    themselves. To log the books/items in this order, paste the order-history
+    list page instead (or add them by hand on Log Orders) - this screen just
+    saves the shipping cost(s) below for order #{{ preview.postage_samples[0].order_number if preview.postage_samples }},
+    so future forecasts for that shop are more accurate.
+  </p>
+  <div class="preview-simple-list">
+    {% for s in preview.postage_samples %}
+    <div class="preview-simple-row">
+      <span class="item-name">Shipment {{ s.shipment_index + 1 }}</span>
+      <span class="mono">&pound;{{ "%.2f"|format(s.amount) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <form method="post" action="/import/confirm">
+    <input type="hidden" name="parser_type" value="order_detail_postage">
+    <input type="hidden" name="postage_samples_json" value='{{ preview.postage_samples|tojson }}'>
+    <div class="preview-actions">
+      <button type="submit">Confirm &amp; save shipping</button>
+      <a href="/items/new" class="btn-tiny">Cancel</a>
+    </div>
+  </form>
+
+  {% else %}
   <div class="preview-meta">
     {% if preview.parser == 'forbidden_planet' %}
     <span class="preview-meta-tag">Detected: Forbidden Planet</span>
@@ -88,12 +144,14 @@
       <a href="/items/new" class="btn-tiny">Cancel</a>
     </div>
   </form>
+  {% endif %}
 </section>
 
 <script>
 (function () {
   const container = document.getElementById('preview-rows');
   const addBtn = document.getElementById('add-preview-row-btn');
+  if (!container || !addBtn) { return; }
   const rowCountInput = document.querySelector('input[name="row_count"]');
   const isForbiddenPlanet = {{ 'true' if preview.parser == 'forbidden_planet' else 'false' }};
   let nextIndex = {{ preview.rows|length }};
