@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.12.4"
+APP_VERSION = "2026.07.12.5"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1673,10 +1673,10 @@ def import_form_redirect():
 
 
 @app.post("/import")
-def import_preview(request: Request, order_text: str = Form(...)):
+def import_preview(request: Request, order_text: str = Form(...), shop_hint: str = Form("")):
     """Parses the pasted text and shows an editable review screen - nothing
     is written to the database until the person confirms it looks right."""
-    preview = parser.detect_import(order_text)
+    preview = parser.detect_import(order_text, shop_hint=shop_hint or None)
 
     conn = db.get_db()
     cur = conn.cursor()

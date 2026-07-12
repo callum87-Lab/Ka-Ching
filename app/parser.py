@@ -520,7 +520,7 @@ def store_shipment_postage(samples):
     return len(samples)
 
 
-def detect_import(text: str):
+def detect_import(text: str, shop_hint: str | None = None):
     """Tries each known parser in turn and returns a single unified preview
     structure for the review-and-confirm screen. Never touches the database
     - this is pure detection, so a bad guess costs nothing until confirmed.
@@ -681,6 +681,51 @@ def detect_import(text: str):
             "order_shipping_map": {},
             "postage_samples": postage_samples,
         }
+
+    if shop_hint and shop_hint.strip().lower() == "forbidden planet":
+        generic = parse_generic_order(text)
+        if generic["items"]:
+            fallback_date = None
+            confirmed = _ORDER_DETAIL_CONFIRMED_RE.search(text)
+            if confirmed:
+                date_str = f"{confirmed.group(1)} {confirmed.group(2)} {confirmed.group(3)}"
+                for fmt in ("%d %b %Y", "%d %B %Y"):
+                    try:
+                        fallback_date = datetime.strptime(date_str, fmt).date().isoformat()
+                        break
+                    except ValueError:
+                        continue
+            heading = _ORDER_DETAIL_HEADING_RE.search(text)
+            order_number = heading.group(1) if heading else (generic["order_number"] or "")
+            preview_items = [
+                {
+                    "name": it["name"],
+                    "price": it["price"],
+                    "release_date": it["release_date"] or fallback_date or "",
+                    "order_number": order_number,
+                    "placed_date": fallback_date or "",
+                    "status": "preorder",
+                    "charge_status": "",
+                    "note": it["note"] or (
+                        None if (it["release_date"] or fallback_date)
+                        else "Couldn't find a date for this one - fill it in if you know it."
+                    ),
+                    "tracking_number": "",
+                }
+                for it in generic["items"]
+            ]
+            return {
+                "parser": "forbidden_planet",
+                "source_guess": "Forbidden Planet",
+                "rows": preview_items,
+                "order_totals": {},
+                "skipped_no_order": 0,
+                "declared_total": generic["declared_total"],
+                "shipping": generic["shipping"],
+                "order_number": order_number,
+                "multi_order": False,
+                "order_shipping_map": {},
+            }
 
     generic = parse_generic_order(text)
     preview_items = [

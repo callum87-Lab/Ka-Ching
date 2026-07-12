@@ -113,13 +113,13 @@
   {% endif %}
   {% endif %}
 
-  <div class="parser-hint-row">
-    <span class="muted">Detected automatically, but if you know which shop this is:</span>
-    <button type="button" class="parser-hint-btn" data-hint="Forbidden Planet order history page">Forbidden Planet</button>
-    <button type="button" class="parser-hint-btn" data-hint="eBay order-detail page">eBay</button>
-  </div>
-
   <form method="post" action="/import" class="import-form">
+    <div class="parser-hint-row">
+      <span class="muted">Detected automatically, but if you know which shop this is:</span>
+      <button type="button" class="parser-hint-btn" data-shop="Forbidden Planet">Forbidden Planet</button>
+      <button type="button" class="parser-hint-btn" data-shop="eBay">eBay</button>
+    </div>
+    <input type="hidden" name="shop_hint" id="shop-hint-input" value="">
     <textarea name="order_text" rows="16" placeholder="Paste order history here..." required></textarea>
     <button type="submit">Import</button>
   </form>
@@ -163,10 +163,17 @@
     });
   });
 
+  const shopHintInput = document.getElementById('shop-hint-input');
   document.querySelectorAll('.parser-hint-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
+      const alreadyActive = btn.classList.contains('active');
       document.querySelectorAll('.parser-hint-btn').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
+      if (alreadyActive) {
+        shopHintInput.value = '';
+      } else {
+        btn.classList.add('active');
+        shopHintInput.value = btn.getAttribute('data-shop');
+      }
     });
   });
 
