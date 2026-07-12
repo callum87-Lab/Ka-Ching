@@ -1,4 +1,4 @@
-![Ka-Ching!](app/static/img/logo.png)
+![Ka-Ching!](app/static/img/readme-banner.png)
 
 # Ka-Ching!
 
