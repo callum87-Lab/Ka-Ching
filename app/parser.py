@@ -417,12 +417,12 @@ def apply_release_date_updates(updates):
 # rather than inventing one.
 
 _ORDER_DETAIL_CONFIRMED_RE = re.compile(
-    r"Confirmed on:\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
+    r"(?:Confirmed on:|Placed)\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
 )
 _ORDER_DETAIL_ITEM_RE = re.compile(
-    r"^\*?\s*\[([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
-    r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered)\b[^\n]*\n"
-    r"(?:[ \t]*\*?\s*\[[^\]]*\]\([^)]*\)\s*\n|[ \t]*[^\n£]*\n)?"
+    r"^[ \t]*\*?\s*\[([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
+    r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled)\b[^\n]*\n"
+    r"(?:[ \t]*\*?\s*\[[^\]]*\]\([^)]*\)\s*\n|[ \t]*\*?\s*Fully charged\s*\n|[ \t]*\*?\s*Not charged\s*\n|[ \t]*[^\n£]*\n)*"
     r"£\s*([\d,]+\.\d{2})",
     re.MULTILINE,
 )
@@ -437,6 +437,8 @@ def parse_order_detail_items(text: str):
         return None
     items = []
     for m in _ORDER_DETAIL_ITEM_RE.finditer(text):
+        if m.group(2).lower() == "cancelled":
+            continue
         try:
             price = float(m.group(3).replace(",", ""))
         except ValueError:
@@ -449,12 +451,13 @@ def parse_order_detail_items(text: str):
     placed_date = None
     confirmed = _ORDER_DETAIL_CONFIRMED_RE.search(text)
     if confirmed:
-        try:
-            placed_date = datetime.strptime(
-                f"{confirmed.group(1)} {confirmed.group(2)} {confirmed.group(3)}", "%d %B %Y"
-            ).date().isoformat()
-        except ValueError:
-            placed_date = None
+        date_str = f"{confirmed.group(1)} {confirmed.group(2)} {confirmed.group(3)}"
+        for fmt in ("%d %b %Y", "%d %B %Y"):
+            try:
+                placed_date = datetime.strptime(date_str, fmt).date().isoformat()
+                break
+            except ValueError:
+                continue
 
     return {
         "order_number": heading.group(1),
@@ -463,7 +466,7 @@ def parse_order_detail_items(text: str):
     }
 
 
-_ORDER_DETAIL_HEADING_RE = re.compile(r"Order #(\d+)")
+_ORDER_DETAIL_HEADING_RE = re.compile(r"Order\s*#\[?(\d+)\]?")
 _SHIPMENT_POSTAGE_RE = re.compile(
     r"package with \d+ items?[^\d£\n]*?£?\s*([\d,]+\.\d{2})", re.IGNORECASE
 )
@@ -647,12 +650,20 @@ def detect_import(text: str):
             {
                 "name": it["name"],
                 "price": it["price"],
-                "release_date": "",
+                # Dispatched items have already happened, same logic as eBay
+                # orders - there's no meaningful future release date to wait
+                # for, so the date it was confirmed/placed is far more useful
+                # than leaving it blank. Anything not yet dispatched genuinely
+                # has no known date on this page, so that stays blank.
+                "release_date": (order_detail["placed_date"] or "") if it["status"] == "dispatched" else "",
                 "order_number": order_detail["order_number"],
                 "placed_date": order_detail["placed_date"] or "",
                 "status": it["status"],
                 "charge_status": "charged" if it["status"] == "dispatched" else "not_charged",
-                "note": "No release date on this page type - just dispatch status. Fill in a date if you know one.",
+                "note": (
+                    None if it["status"] == "dispatched"
+                    else "No release date shown on this page - just dispatch status. Fill in a date if you know one."
+                ),
                 "tracking_number": "",
             }
             for it in order_detail["items"]
