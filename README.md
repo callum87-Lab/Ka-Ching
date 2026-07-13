@@ -271,12 +271,12 @@ doesn't get picked up, paste an example and it can be adjusted.
 ## More than one shop
 
 Ka-Ching! only knows how to *read* Forbidden Planet's pages — it can't parse
-any other retailer's site. For anything else, use **+ Add** in the nav (which
-also has the paste-in Import box further down the same page). Set the release
-date and shop once, then add every comic from that same order as its own row
-(name + price) before submitting — one shipment, one form, rather than
-repeating the whole form per comic. Click any item's name on the dashboard to
-edit those same details later, one at a time.
+any other retailer's site. For anything else, use **Log Orders** in the nav
+(which also has the paste-in Import box further down the same page). Set the
+release date and shop once, then add every comic from that same order as its
+own row (name + price) before submitting — one shipment, one form, rather
+than repeating the whole form per comic. Click any item's name on the
+dashboard to edit those same details later, one at a time.
 
 **eBay purchases from different sellers share one filter tab.** Each seller
 still gets its own colour and label within the grouped item lists (so you can
@@ -356,7 +356,6 @@ time you pick.
 - **Shop filter on the Calendar page** — same filter tabs as the dashboard,
   carried through month navigation so switching months doesn't reset it.
 - **Database size and item count on Settings**, next to the backup button.
-
 - **Monthly budget bar** — set a target on the Settings page and the
   dashboard shows a progress bar for how close this month's forecast total
   is to it, colour-shifting from green to amber to pink as you approach or
