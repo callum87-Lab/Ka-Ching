@@ -161,13 +161,16 @@ def check_and_notify_tomorrow(force: bool = False):
     for it in items:
         by_source.setdefault(it["source"], []).append(it)
 
+    currency_symbol = {"gbp": "\u00a3", "usd": "$", "eur": "\u20ac"}.get(
+        get_setting(cur, "currency_symbol", "gbp"), "\u00a3"
+    )
     total = sum(i["price"] for i in items)
     lines = []
     for src, its in sorted(by_source.items()):
         sub = sum(i["price"] for i in its)
-        lines.append(f"{src}: {len(its)} item(s), £{sub:.2f}")
+        lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:.2f}")
     message = "\n".join(lines)
-    title = f"Tomorrow: {len(items)} comic{'s' if len(items) != 1 else ''}, £{total:.2f}"
+    title = f"Tomorrow: {len(items)} comic{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
 
     result = send_via_configured_provider(cur, title, message)
     conn.close()

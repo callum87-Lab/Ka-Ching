@@ -1,5 +1,6 @@
 import asyncio
 import calendar
+import contextvars
 import csv
 import hashlib
 import io
@@ -26,9 +27,41 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.13.1"
+APP_VERSION = "2026.07.13.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
+
+CURRENCY_SYMBOLS = {"gbp": "\u00a3", "usd": "$", "eur": "\u20ac"}
+_currency_ctx: contextvars.ContextVar[str] = contextvars.ContextVar("currency_symbol", default="\u00a3")
+
+
+def get_currency_symbol(cur) -> str:
+    """Looks up the currency setting directly - for the handful of places
+    that build plain text (push notifications, log-style messages) rather
+    than rendering a template, where the Jinja global below doesn't reach."""
+    code = notifications.get_setting(cur, "currency_symbol", "gbp")
+    return CURRENCY_SYMBOLS.get(code, "\u00a3")
+
+
+@app.middleware("http")
+async def currency_context_middleware(request: Request, call_next):
+    """Resolves the currency symbol once per request and stashes it in a
+    contextvar, so every template can call currency() without every single
+    route needing to fetch and pass it through its own context dict."""
+    try:
+        conn = db.get_db()
+        symbol = get_currency_symbol(conn.cursor())
+        conn.close()
+    except Exception:
+        symbol = "\u00a3"
+    token = _currency_ctx.set(symbol)
+    try:
+        return await call_next(request)
+    finally:
+        _currency_ctx.reset(token)
+
+
+templates.env.globals["currency"] = lambda: _currency_ctx.get()
 
 DEFAULT_SHIPPING_ESTIMATE = float(os.environ.get("SHIPPING_ESTIMATE", "4.00"))
 MIN_SHIPPING_SAMPLES = 3
@@ -1607,6 +1640,7 @@ def export_ics():
         (today.isoformat(),),
     )
     items = [dict(r) for r in cur.fetchall()]
+    currency_symbol = get_currency_symbol(cur)
     conn.close()
 
     by_date = {}
@@ -1621,7 +1655,7 @@ def export_ics():
         d_next = (date.fromisoformat(release_date_str) + timedelta(days=1)).strftime("%Y%m%d")
         total = round(sum(i["price"] for i in day_items), 2)
         names = [f"{i['name']} ({i['source']})" for i in day_items]
-        summary = f"{len(day_items)} comic{'s' if len(day_items) != 1 else ''} out (\u00a3{total:.2f})"
+        summary = f"{len(day_items)} comic{'s' if len(day_items) != 1 else ''} out ({currency_symbol}{total:.2f})"
         description = "\\n".join(_ics_escape(n) for n in names)
         uid = f"kaching-{release_date_str}@kaching.local"
 
@@ -1649,6 +1683,7 @@ def check_preview_duplicates(cur, preview_items):
     already exists under a DIFFERENT order - a likely accidental double
     order, worth a second look before confirming. The same name under the
     SAME order is just a normal re-import refresh and isn't flagged."""
+    symbol = get_currency_symbol(cur)
     for it in preview_items:
         cur.execute(
             "SELECT order_number, price, release_date FROM items WHERE name = ? AND status != 'cancelled'",
@@ -1659,7 +1694,7 @@ def check_preview_duplicates(cur, preview_items):
         it["duplicate_flag"] = None
         if others:
             r = others[0]
-            it["duplicate_flag"] = f"Already tracked - order #{r['order_number']}, £{r['price']:.2f}"
+            it["duplicate_flag"] = f"Already tracked - order #{r['order_number']}, {symbol}{r['price']:.2f}"
     return preview_items
 
 

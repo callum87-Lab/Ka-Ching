@@ -45,7 +45,7 @@
              {% if day.count %}data-jump-date="{{ day.date_iso }}"{% endif %}>
           <span class="cal-day-num">{{ day.day }}</span>
           {% if day.count %}
-          <span class="cal-day-total mono">&pound;{{ "%.2f"|format(day.total) }}</span>
+          <span class="cal-day-total mono">{{ currency() }}{{ "%.2f"|format(day.total) }}</span>
           <span class="cal-day-count">{{ day.count }} issue{{ "s" if day.count != 1 else "" }}</span>
           {% endif %}
         </div>
@@ -75,7 +75,7 @@
       <div class="group-head cal-accordion-toggle" data-target="cal-body-{{ group.date }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
         <span class="group-head-right">
-          <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+          <span class="group-sub mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span>
           <span class="cal-accordion-arrow">&#9662;</span>
         </span>
       </div>
@@ -86,12 +86,12 @@
           <span class="source-label" style="color: {{ sg.color }};">
             <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
           </span>
-          <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
+          <span class="mono source-subtotal">{{ currency() }}{{ "%.2f"|format(sg.subtotal) }}</span>
         </li>
         {% for item in sg.entries %}
         <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }}">
           <span class="item-name">{{ item.name }}{% if item.charge_status == 'charged' %} <span class="readonly-paid-tag">paid</span>{% endif %}</span>
-          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
         </li>
         {% endfor %}
         {% endfor %}

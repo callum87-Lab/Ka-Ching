@@ -53,7 +53,7 @@
     {% for s in preview.postage_samples %}
     <div class="preview-simple-row">
       <span class="item-name">Shipment {{ s.shipment_index + 1 }}</span>
-      <span class="mono">&pound;{{ "%.2f"|format(s.amount) }}</span>
+      <span class="mono">{{ currency() }}{{ "%.2f"|format(s.amount) }}</span>
     </div>
     {% endfor %}
   </div>
@@ -92,13 +92,13 @@
     {% else %}
     <input type="hidden" name="order_shipping_json" value='{{ preview.order_shipping_map|tojson }}'>
     {% if preview.declared_total %}
-    <p class="muted">Order total on the page: <span class="mono">&pound;{{ "%.2f"|format(preview.declared_total) }}</span></p>
+    <p class="muted">Order total on the page: <span class="mono">{{ currency() }}{{ "%.2f"|format(preview.declared_total) }}</span></p>
     {% endif %}
     {% if preview.order_shipping_map %}
     <p class="muted preview-shipping-detected">
       Shipping detected (exact, from the order's own total):
       {% for order_num, amount in preview.order_shipping_map.items() %}
-      <span class="mono">&pound;{{ "%.2f"|format(amount) }}</span>{% if not loop.last %},{% endif %}
+      <span class="mono">{{ currency() }}{{ "%.2f"|format(amount) }}</span>{% if not loop.last %},{% endif %}
       {% endfor %}
     </p>
     {% endif %}

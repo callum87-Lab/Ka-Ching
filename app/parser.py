@@ -24,7 +24,10 @@ def parse_date(raw: str):
 
 
 def parse_price(raw: str):
-    raw = raw.strip().replace("£", "").replace(",", "")
+    raw = raw.strip()
+    for sign in ("£", "$", "€", "GBP", "USD", "EUR"):
+        raw = raw.replace(sign, "")
+    raw = raw.replace(",", "").strip()
     try:
         return float(raw)
     except ValueError:
@@ -805,12 +808,13 @@ def import_text(text: str):
 # rather than guessed at wrong - the review screen is where a person fills
 # in whatever's missing.
 
-_GENERIC_PRICE_RE = re.compile(r"(?:£|GBP\s?)\s?(\d+\.\d{2})")
+_CURRENCY_SIGN = r"(?:£|\$|€|GBP\s?|USD\s?|EUR\s?)"
+_GENERIC_PRICE_RE = re.compile(rf"{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})")
 _GENERIC_EXCLUDE_KEYWORDS = ["subtotal", "total", "postage", "p&p", "shipping"]
 _GENERIC_START_ANCHORS = [r"Line Items", r"Items Ordered", r"Item Description.*?Price", r"Order Details"]
 _GENERIC_ORDER_NUM_RE = re.compile(r"(?:Order\s*(?:Number|Ref|#)|Order\s*ID)\s*:?\s*#?\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
-_GENERIC_TOTAL_RE = re.compile(r"\b(?:Grand\s*Total|Total)\b\s*:?\s*(?:£|GBP\s?)\s?(\d+\.\d{2})", re.IGNORECASE)
-_GENERIC_SHIPPING_RE = re.compile(r"(?:Postage\s*&?\s*Packaging|P\s*&\s*P|Shipping|Postage)\s*:?\s*(?:£|GBP\s?)\s?(\d+\.\d{2})", re.IGNORECASE)
+_GENERIC_TOTAL_RE = re.compile(rf"\b(?:Grand\s*Total|Total)\b\s*:?\s*{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})", re.IGNORECASE)
+_GENERIC_SHIPPING_RE = re.compile(rf"(?:Postage\s*&?\s*Packaging|P\s*&\s*P|Shipping|Postage)\s*:?\s*{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})", re.IGNORECASE)
 _GENERIC_EXACT_DATE_RE = re.compile(
     r"(?:Expected Release|Release Date|Ships?)\s*:?\s*(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})",
     re.IGNORECASE,

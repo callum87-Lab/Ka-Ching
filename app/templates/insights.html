@@ -15,7 +15,7 @@
     {% if top_month %}
     <div class="insight-card">
       <span class="insight-card-label">Most expensive month ever</span>
-      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(top_month.total) }}</span>
+      <span class="insight-card-value mono">{{ currency() }}{{ "%.2f"|format(top_month.total) }}</span>
       <span class="insight-card-sub">{{ top_month.label }} &middot; {{ top_month.count }} issue{{ "s" if top_month.count != 1 else "" }}</span>
     </div>
     {% endif %}
@@ -23,7 +23,7 @@
     {% if priciest_item %}
     <div class="insight-card">
       <span class="insight-card-label">Priciest single issue</span>
-      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(priciest_item.price) }}</span>
+      <span class="insight-card-value mono">{{ currency() }}{{ "%.2f"|format(priciest_item.price) }}</span>
       <span class="insight-card-sub">
         <a href="/items/{{ priciest_item.id }}/edit">{{ priciest_item.name }}</a>
         &middot; {{ priciest_item.release_date_label }}
@@ -34,13 +34,13 @@
     <div class="insight-card">
       <span class="insight-card-label">Total issues tracked</span>
       <span class="insight-card-value mono">{{ total_issues }}</span>
-      <span class="insight-card-sub">&pound;{{ "%.2f"|format(total_all_spend) }} total, all time</span>
+      <span class="insight-card-sub">{{ currency() }}{{ "%.2f"|format(total_all_spend) }} total, all time</span>
     </div>
 
     <div class="insight-card">
       <span class="insight-card-label">Average per month</span>
-      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(avg_per_month) }}</span>
-      <span class="insight-card-sub">&pound;{{ "%.2f"|format(avg_per_issue) }} average per issue</span>
+      <span class="insight-card-value mono">{{ currency() }}{{ "%.2f"|format(avg_per_month) }}</span>
+      <span class="insight-card-sub">{{ currency() }}{{ "%.2f"|format(avg_per_issue) }} average per issue</span>
     </div>
 
     <div class="insight-card">
@@ -58,7 +58,7 @@
     {% if cancelled_saved %}
     <div class="insight-card">
       <span class="insight-card-label">Saved by cancelling</span>
-      <span class="insight-card-value mono">&pound;{{ "%.2f"|format(cancelled_saved) }}</span>
+      <span class="insight-card-value mono">{{ currency() }}{{ "%.2f"|format(cancelled_saved) }}</span>
       <span class="insight-card-sub">across everything you've dropped</span>
     </div>
     {% endif %}
@@ -73,7 +73,7 @@
     <div class="insight-top-title-row">
       <span class="insight-top-title-rank">{{ loop.index }}</span>
       <a href="/items/{{ t.id }}/edit" class="insight-top-title-name">{{ t.name }}</a>
-      <span class="mono">&pound;{{ "%.2f"|format(t.price) }}</span>
+      <span class="mono">{{ currency() }}{{ "%.2f"|format(t.price) }}</span>
     </div>
     {% endfor %}
   </div>
@@ -110,7 +110,7 @@
       <div class="insight-shop-bar-track">
         <div class="insight-shop-bar-fill" style="width: {{ s.pct }}%; background: {{ s.color }};"></div>
       </div>
-      <span class="insight-shop-total mono">&pound;{{ "%.2f"|format(s.total) }}</span>
+      <span class="insight-shop-total mono">{{ currency() }}{{ "%.2f"|format(s.total) }}</span>
       <span class="insight-shop-count muted">{{ s.count }} issue{{ "s" if s.count != 1 else "" }}</span>
     </div>
     {% if s.sub_shops %}
@@ -124,7 +124,7 @@
         <div class="insight-shop-bar-track">
           <div class="insight-shop-bar-fill" style="width: {{ sub.pct }}%; background: {{ sub.color }};"></div>
         </div>
-        <span class="insight-shop-total mono">&pound;{{ "%.2f"|format(sub.total) }}</span>
+        <span class="insight-shop-total mono">{{ currency() }}{{ "%.2f"|format(sub.total) }}</span>
         <span class="insight-shop-count muted">{{ sub.count }} issue{{ "s" if sub.count != 1 else "" }}</span>
       </div>
       {% endfor %}
@@ -157,9 +157,9 @@
         function show() {
           var d = hit.dataset;
           trendTooltip.querySelector('.trend-tooltip-label').textContent = d.label;
-          trendTooltip.querySelector('.trend-tooltip-comics').textContent = '\u00a3' + d.comics;
-          trendTooltip.querySelector('.trend-tooltip-shipping').textContent = '\u00a3' + d.shipping;
-          trendTooltip.querySelector('.trend-tooltip-total .mono').textContent = '\u00a3' + d.total;
+          trendTooltip.querySelector('.trend-tooltip-comics').textContent = '{{ currency() }}' + d.comics;
+          trendTooltip.querySelector('.trend-tooltip-shipping').textContent = '{{ currency() }}' + d.shipping;
+          trendTooltip.querySelector('.trend-tooltip-total .mono').textContent = '{{ currency() }}' + d.total;
           trendTooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' comic' : ' comics') + ' this month';
           trendTooltip.style.display = 'block';
           var cx = parseFloat(d.cx), cy = parseFloat(d.cy);

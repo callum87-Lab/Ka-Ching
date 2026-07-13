@@ -10,13 +10,15 @@ questions and nothing else:
 - **What's due this week, and what will it cost?**
 - **What's my forecast for this month (and next)?**
 
-> **Built for the UK.** Prices display in £ throughout (currently hardcoded,
-> not a setting), and the two shops with dedicated parsers - Forbidden
-> Planet and eBay - are both read in their UK forms
-> (forbiddenplanet.com, ebay.co.uk). It'll still work anywhere as a general
-> spend tracker via the manual add form or the generic paste-in parser
-> (which doesn't care about currency symbols), but the two purpose-built
-> parsers and the currency display are UK-specific as it stands today.
+> **Currency**: choose £/$/€ on the Settings page - this changes what's
+> shown everywhere in the app, and the paste-in importer and manual add
+> form both recognise prices in whichever one you pick, so this genuinely
+> works for US and European use, not just UK. The one thing that stays
+> UK-specific regardless of this setting: the two shops with *dedicated*
+> parsers, Forbidden Planet and eBay, are both built around their UK pages
+> specifically (forbiddenplanet.com, ebay.co.uk) - anywhere else, use the
+> manual add form or the generic paste-in parser, which don't care which
+> shop or currency they're reading.
 
 > **Not just comics, either.** Ka-Ching! doesn't actually check what kind of
 > thing it's tracking - a comic, a hardcover, an action figure, a manga
@@ -334,11 +336,13 @@ time you pick.
 - **Live calendar subscription** — "Subscribe (live)" alongside the .ics
   download, for calendar apps that support an updating feed rather than a
   one-off file.
-- **More Settings**: notification quiet-days toggle (stay silent or send a
-  health-check ping), budget cycle (monthly/weekly/28-day) with optional
-  rollover of unused budget, default landing page preference, automatic
-  daily backups (last 7 kept), and a factory reset (type-to-confirm, wipes
-  tracked items only - settings are kept).
+- **More Settings**: currency selection (£/$/€, changes the display and
+  what the importer recognises everywhere), notification quiet-days toggle
+  (stay silent or send a health-check ping), budget cycle
+  (monthly/weekly/28-day) with optional rollover of unused budget, default
+  landing page preference, automatic daily backups (last 7 kept), and a
+  factory reset (type-to-confirm, wipes tracked items only - settings are
+  kept).
 - **Mobile bottom nav bar** — single row, thumb-reach, instead of wrapping
   onto two lines.
 - **Tracking number** — optional field on the manual add/edit forms, and

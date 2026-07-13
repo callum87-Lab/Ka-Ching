@@ -54,7 +54,7 @@
         {% for item in dup.entries %}
         <li>
           <span class="item-name muted">Order #{{ item.order_number }}</span>
-          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
           <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
           <div class="actions-drawer">
@@ -100,7 +100,7 @@
         {% for item in ghost_items %}
         <li>
           <span class="item-name muted">{{ item.name }} &middot; {{ item.release_date }}</span>
-          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
           <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
           <div class="actions-drawer">
@@ -144,7 +144,7 @@
           <a href="/items/{{ item.id }}/edit" class="item-name-link">
             <span class="item-name">{{ item.name }} <span class="search-status-tag">{{ item.days_late }}d late</span></span>
           </a>
-          <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
           <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
           <div class="actions-drawer">
@@ -172,21 +172,21 @@
 <section class="hero">
   <div class="price-stamp">
     <span class="price-stamp-label">Still due &middot; {{ current_month_label }}</span>
-    <span class="price-stamp-value">&pound;{{ "%.2f"|format(hero_remaining_total) }}</span>
+    <span class="price-stamp-value">{{ currency() }}{{ "%.2f"|format(hero_remaining_total) }}</span>
   </div>
   <div class="hero-detail">
     <h1>{{ current_month_label }}</h1>
     <p class="hero-line">
-      <span class="mono">&pound;{{ "%.2f"|format(hero_spent_total) }}</span> spent so far
+      <span class="mono">{{ currency() }}{{ "%.2f"|format(hero_spent_total) }}</span> spent so far
       (<span class="mono">{{ hero_spent_count }}</span> issue{{ "s" if hero_spent_count != 1 else "" }}) &middot;
-      <span class="mono">&pound;{{ "%.2f"|format(hero_grand_total) }}</span> forecast total
+      <span class="mono">{{ currency() }}{{ "%.2f"|format(hero_grand_total) }}</span> forecast total
       for the month, comics + est. shipping.
     </p>
     <p class="hero-line muted">
-      {{ next_month_label }} is forecast at <span class="mono">&pound;{{ "%.2f"|format(next_month_total) }}</span> so far.
+      {{ next_month_label }} is forecast at <span class="mono">{{ currency() }}{{ "%.2f"|format(next_month_total) }}</span> so far.
     </p>
     <p class="hero-line muted shipping-note">
-      Shipping estimated at <span class="mono">&pound;{{ "%.2f"|format(shipping_estimate) }}</span> per parcel
+      Shipping estimated at <span class="mono">{{ currency() }}{{ "%.2f"|format(shipping_estimate) }}</span> per parcel
       {% if shipping_source == 'exact' %}
       &middot; based on <span class="mono">{{ shipping_samples }}</span> actual shipment{{ "s" if shipping_samples != 1 else "" }} from your order pages
       {% elif shipping_source == 'calibrated' %}
@@ -202,7 +202,7 @@
         <div class="budget-bar-fill {{ 'over' if budget_pct > 100 else ('near' if budget_pct >= 80 else '') }}" style="width: {{ budget_bar_pct }}%;"></div>
       </div>
       <span class="budget-bar-label muted">
-        &pound;{{ "%.2f"|format(cycle_spend) }} of &pound;{{ "%.2f"|format(monthly_budget) }} budget for {{ budget_cycle_label }}
+        {{ currency() }}{{ "%.2f"|format(cycle_spend) }} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }} budget for {{ budget_cycle_label }}
         ({{ "%.0f"|format(budget_pct) }}%{% if budget_pct > 100 %} &mdash; over{% endif %})
       </span>
     </div>
@@ -215,13 +215,13 @@
     <h2>{{ year_stats.year }} so far</h2>
   </div>
   <p class="hero-line">
-    <span class="mono">&pound;{{ "%.2f"|format(year_stats.spent) }}</span> spent &middot;
-    <span class="mono">&pound;{{ "%.2f"|format(year_stats.total) }}</span> tracked total across
+    <span class="mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</span> spent &middot;
+    <span class="mono">{{ currency() }}{{ "%.2f"|format(year_stats.total) }}</span> tracked total across
     <span class="mono">{{ year_stats.count }}</span> issue{{ "s" if year_stats.count != 1 else "" }} this year.
   </p>
   <p class="hero-line muted">
-    All time: <span class="mono">&pound;{{ "%.2f"|format(all_time_stats.spent) }}</span> spent &middot;
-    <span class="mono">&pound;{{ "%.2f"|format(all_time_stats.total) }}</span> tracked total across
+    All time: <span class="mono">{{ currency() }}{{ "%.2f"|format(all_time_stats.spent) }}</span> spent &middot;
+    <span class="mono">{{ currency() }}{{ "%.2f"|format(all_time_stats.total) }}</span> tracked total across
     <span class="mono">{{ all_time_stats.count }}</span> issue{{ "s" if all_time_stats.count != 1 else "" }}.
   </p>
 </section>
@@ -240,7 +240,7 @@
 <section class="block">
   <div class="block-head">
     <h2>This week</h2>
-    <span class="block-total mono">&pound;{{ "%.2f"|format(week_remaining) }} left of &pound;{{ "%.2f"|format(week_total) }}</span>
+    <span class="block-total mono">{{ currency() }}{{ "%.2f"|format(week_remaining) }} left of {{ currency() }}{{ "%.2f"|format(week_total) }}</span>
     <button type="button" class="section-collapse-toggle" data-target="week-body" aria-label="Collapse section">&#9662;</button>
   </div>
   <div class="section-body" id="week-body">
@@ -252,7 +252,7 @@
       <div class="group-head cal-accordion-toggle" data-target="week-body-{{ loop.index0 }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
         <span class="group-head-right">
-          <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+          <span class="group-sub mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span>
           <span class="cal-accordion-arrow">&#9662;</span>
         </span>
       </div>
@@ -261,7 +261,7 @@
       <div class="source-subgroup">
         <div class="source-label" style="color: {{ sg.color }};">
           <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
-          <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
+          <span class="mono source-subtotal">{{ currency() }}{{ "%.2f"|format(sg.subtotal) }}</span>
         </div>
         <ul class="item-list">
           {% for item in sg.entries %}
@@ -275,7 +275,7 @@
             </form>
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             {% if item.tracking_number %}<button type="button" class="track-copy-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number">&#128230; {{ item.tracking_number }}</button>{% endif %}
-            <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+            <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
             <div class="actions-drawer">
@@ -320,7 +320,7 @@
       <a href="/?chart_range={{ active_chart_range }}{% if active_source %}&source={{ active_source }}{% endif %}" class="month-nav-today">Today</a>
       {% endif %}
     </div>
-    <span class="block-total mono">&pound;{{ "%.2f"|format(viewed_remaining_total) }} left of &pound;{{ "%.2f"|format(viewed_grand_total) }}</span>
+    <span class="block-total mono">{{ currency() }}{{ "%.2f"|format(viewed_remaining_total) }} left of {{ currency() }}{{ "%.2f"|format(viewed_grand_total) }}</span>
     <button type="button" class="section-collapse-toggle" data-target="month-body" aria-label="Collapse section">&#9662;</button>
   </div>
   <div class="section-body" id="month-body">
@@ -332,7 +332,7 @@
       <div class="group-head cal-accordion-toggle" data-target="month-body-{{ loop.index0 }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
         <span class="group-head-right">
-          <span class="group-sub mono">&pound;{{ "%.2f"|format(group.subtotal) }}</span>
+          <span class="group-sub mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span>
           <span class="cal-accordion-arrow">&#9662;</span>
         </span>
       </div>
@@ -341,7 +341,7 @@
       <div class="source-subgroup">
         <div class="source-label" style="color: {{ sg.color }};">
           <span class="source-dot" style="background: {{ sg.color }};"></span>{{ sg.source }}
-          <span class="mono source-subtotal">&pound;{{ "%.2f"|format(sg.subtotal) }}</span>
+          <span class="mono source-subtotal">{{ currency() }}{{ "%.2f"|format(sg.subtotal) }}</span>
         </div>
         <ul class="item-list">
           {% for item in sg.entries %}
@@ -355,7 +355,7 @@
             </form>
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             {% if item.tracking_number %}<button type="button" class="track-copy-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number">&#128230; {{ item.tracking_number }}</button>{% endif %}
-            <span class="item-price mono">&pound;{{ "%.2f"|format(item.price) }}</span>
+            <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
             <div class="actions-drawer">
@@ -375,7 +375,7 @@
           </li>
           {% endfor %}
         </ul>
-        <div class="group-ship mono">+ &pound;{{ "%.2f"|format(sg.shipping_amount) }} {{ 'shipping' if sg.shipping_is_exact else 'est. shipping' }} ({{ sg.source }}){% if group.all_paid %} - paid{% endif %}</div>
+        <div class="group-ship mono">+ {{ currency() }}{{ "%.2f"|format(sg.shipping_amount) }} {{ 'shipping' if sg.shipping_is_exact else 'est. shipping' }} ({{ sg.source }}){% if group.all_paid %} - paid{% endif %}</div>
       </div>
       {% endfor %}
       </div>
@@ -402,7 +402,7 @@
         {% for item in recently_cancelled %}
         <li>
           <span class="item-name muted">{{ item.name }}</span>
-          <span class="item-price mono muted">&pound;{{ "%.2f"|format(item.price) }}</span>
+          <span class="item-price mono muted">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <form method="post" action="/items/{{ item.id }}/mark" class="inline-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
             <input type="hidden" name="action" value="undo">
@@ -502,9 +502,9 @@
   function showTooltip(hit, svg, dot, guide) {
     var d = hit.dataset;
     tooltip.querySelector('.trend-tooltip-label').textContent = d.label;
-    tooltip.querySelector('.trend-tooltip-comics').textContent = '\u00a3' + d.comics;
-    tooltip.querySelector('.trend-tooltip-shipping').textContent = '\u00a3' + d.shipping;
-    tooltip.querySelector('.trend-tooltip-total .mono').textContent = '\u00a3' + d.total;
+    tooltip.querySelector('.trend-tooltip-comics').textContent = '{{ currency() }}' + d.comics;
+    tooltip.querySelector('.trend-tooltip-shipping').textContent = '{{ currency() }}' + d.shipping;
+    tooltip.querySelector('.trend-tooltip-total .mono').textContent = '{{ currency() }}' + d.total;
     tooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' comic' : ' comics') + ' this period';
     tooltip.style.display = 'block';
 

@@ -132,7 +132,7 @@
     <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
     <div class="form-row">
       <label>
-        <span>Monthly budget (&pound;)</span>
+        <span>Monthly budget ({{ currency() }})</span>
         <input type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00">
       </label>
       <label>
@@ -169,15 +169,31 @@
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
     <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
-    <label>
-      <span>Default landing page</span>
-      <select name="default_landing_page">
-        <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
-        <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
-        <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
-        <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
-      </select>
-    </label>
+    <div class="form-row">
+      <label>
+        <span>Currency</span>
+        <select name="currency_symbol">
+          <option value="gbp" {{ 'selected' if values.currency_symbol == 'gbp' else '' }}>&pound; GBP</option>
+          <option value="usd" {{ 'selected' if values.currency_symbol == 'usd' else '' }}>$ USD</option>
+          <option value="eur" {{ 'selected' if values.currency_symbol == 'eur' else '' }}>&euro; EUR</option>
+        </select>
+      </label>
+      <label>
+        <span>Default landing page</span>
+        <select name="default_landing_page">
+          <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
+          <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
+          <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
+          <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
+        </select>
+      </label>
+    </div>
+    <p class="muted item-form-hint">
+      Changes the symbol shown everywhere in the app, and lets the paste-in
+      importer and manual add form recognise prices in that currency too.
+      The two dedicated shop parsers (Forbidden Planet, eBay) are still
+      built around their UK pages specifically, whatever this is set to.
+    </p>
     <label class="checkbox-row">
       <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }}>
       <span>Automatic daily backup (kept alongside the database, last 7 days retained)</span>
