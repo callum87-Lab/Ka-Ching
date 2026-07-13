@@ -93,7 +93,7 @@
     {% if result.skipped_no_order %}
     <br>
     &#9888; <span class="mono">{{ result.skipped_no_order }}</span> item{{ "s" if result.skipped_no_order != 1 else "" }} skipped - couldn't tell which order they belonged to
-    (likely a page-break in the pasted text). Check <code>docker logs pullcost</code> for "SKIPPED item" to see which ones.
+    (likely a page-break in the pasted text). Check <code>docker logs kaching</code> for "SKIPPED item" to see which ones.
     {% endif %}
     {% if result.release_matched or result.release_unmatched %}
     <br>

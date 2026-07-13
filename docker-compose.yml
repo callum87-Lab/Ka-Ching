@@ -1,7 +1,7 @@
 services:
-  pullcost:
+  kaching:
     build: .
-    container_name: pullcost
+    container_name: kaching
     restart: unless-stopped
     ports:
       - "8091:8000"

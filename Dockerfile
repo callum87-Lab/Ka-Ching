@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 
 RUN mkdir -p /data
-ENV DB_PATH=/data/pullcost.db
+ENV DB_PATH=/data/kaching.db
 ENV SHIPPING_ESTIMATE=4.00
 
 EXPOSE 8000

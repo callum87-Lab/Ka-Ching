@@ -26,7 +26,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.12.8"
+APP_VERSION = "2026.07.13.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -109,12 +109,12 @@ async def _daily_backup_loop():
             backup_dir = os.path.join(os.path.dirname(db.DB_PATH), "backups")
             os.makedirs(backup_dir, exist_ok=True)
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            dest = os.path.join(backup_dir, f"pullcost-auto-{stamp}.db")
+            dest = os.path.join(backup_dir, f"kaching-auto-{stamp}.db")
             shutil.copyfile(db.DB_PATH, dest)
             logger.info("AUTO BACKUP: saved %s", dest)
 
             existing = sorted(
-                (f for f in os.listdir(backup_dir) if f.startswith("pullcost-auto-")),
+                (f for f in os.listdir(backup_dir) if f.startswith("kaching-auto-")),
             )
             for old in existing[:-7]:
                 os.remove(os.path.join(backup_dir, old))

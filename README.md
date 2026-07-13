@@ -42,10 +42,6 @@ ever could. `Download backup` on the Settings page gives you the whole
 database as a single file whenever you want it — genuinely yours, not
 locked into anything.
 
-> Note: the folder, Docker container, and database file are all still called
-> `pullcost` under the hood — only the name on the page changed. Renaming the
-> deployed stack wasn't worth the disruption for a cosmetic change.
-
 The logo is a real image (`app/static/img/logo.png`), not CSS text — doubles
 as the browser tab favicon too. Swap that file for anything the same rough
 proportions to change it.
@@ -217,7 +213,7 @@ docker compose up -d --build
 
 Then visit `http://<server-ip>:8091`.
 
-Data lives in `./data/pullcost.db` (SQLite) — back it up like you would any
+Data lives in `./data/kaching.db` (SQLite) — back it up like you would any
 other stack config.
 
 ### Upgrading from an earlier version
@@ -380,7 +376,7 @@ time you pick.
   upload puts it back — it checks the file is genuinely a Ka-Ching database
   before touching anything, and automatically keeps a safety copy of
   whatever was live just before a restore (sitting in `/data` as
-  `pullcost.db.before-restore-<timestamp>`, not shown in the UI, but there
+  `kaching.db.before-restore-<timestamp>`, not shown in the UI, but there
   if a restore ever needs undoing manually).
 - **Install to home screen** — Ka-Ching! can be added to your phone's home
   screen like a normal app (look for "Add to Home Screen" or an install
@@ -439,7 +435,7 @@ before/after state. If a duplicate warning reappears, or anything else looks
 like it silently changed on its own, check:
 
 ```bash
-docker logs pullcost
+docker logs kaching
 ```
 
 Look for lines starting `MARK request`, `MARK result`, `IMPORT REFRESH`,
@@ -501,8 +497,8 @@ other scheduled jobs on Aegis - the folder path below is whatever this
 actually lives in on your server):
 
 ```cron
-0 8 * * 1   NTFY_TOPIC=kaching /opt/stacks/pullcost/scripts/ntfy-digest.sh weekly
-0 8 1 * *   NTFY_TOPIC=kaching /opt/stacks/pullcost/scripts/ntfy-digest.sh monthly
+0 8 * * 1   NTFY_TOPIC=kaching /opt/stacks/kaching/scripts/ntfy-digest.sh weekly
+0 8 1 * *   NTFY_TOPIC=kaching /opt/stacks/kaching/scripts/ntfy-digest.sh monthly
 ```
 
 This is left as a script you run yourself, rather than built into the

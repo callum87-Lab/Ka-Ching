@@ -1,7 +1,7 @@
 import os
 import sqlite3
 
-DB_PATH = os.environ.get("DB_PATH", "/data/pullcost.db")
+DB_PATH = os.environ.get("DB_PATH", "/data/kaching.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS items (

@@ -16,8 +16,8 @@
 #
 # Example crontab (adjust paths/times to suit - the folder path below is
 # whatever this actually lives in on your server):
-#   0 8 * * 1   NTFY_TOPIC=kaching /opt/stacks/pullcost/scripts/ntfy-digest.sh weekly
-#   0 8 1 * *   NTFY_TOPIC=kaching /opt/stacks/pullcost/scripts/ntfy-digest.sh monthly
+#   0 8 * * 1   NTFY_TOPIC=kaching /opt/stacks/kaching/scripts/ntfy-digest.sh weekly
+#   0 8 1 * *   NTFY_TOPIC=kaching /opt/stacks/kaching/scripts/ntfy-digest.sh monthly
 
 set -euo pipefail
 
