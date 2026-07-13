@@ -324,9 +324,13 @@ time you pick.
   optional order number and shipping cost fields on the manual form (feeds
   straight into that shop's exact shipping figure), and quick-select shop
   hints above the paste box.
-- **Search** now also matches order numbers and shop names, not just comic
-  titles; This Month/This Year quick date buttons; clicking an order number
-  in a result isolates every other item from that same order.
+- **Search** — find any comic you've ever tracked, filterable by shop, paid
+  status, or a custom date range, with sort options and a running total
+  (spent / still due) for whatever's currently filtered, not locked to the
+  current week or month like the dashboard. Matches order numbers and shop
+  names too, not just comic titles; This Month/This Year quick date
+  buttons; clicking an order number in a result isolates every other item
+  from that same order.
 - **Live calendar subscription** — "Subscribe (live)" alongside the .ics
   download, for calendar apps that support an updating feed rather than a
   one-off file.
@@ -344,7 +348,7 @@ time you pick.
 - **Release date change tracking** — when a re-import shows a different
   release date for something already tracked (Forbidden Planet does this
   often), a note appears on your next dashboard visit: which comic, old
-  date, new date. Previously this happened silently in the background.
+  date, new date.
 - **Insights page** — most expensive month ever, priciest single issue
   tracked, total issues tracked, average spend per month and per issue,
   pre-order vs released split, money saved by cancelling, shipping as a
@@ -355,7 +359,6 @@ time you pick.
   click it to expand and see each seller's own individual total.
 - **Shop filter on the Calendar page** — same filter tabs as the dashboard,
   carried through month navigation so switching months doesn't reset it.
-- **Database size and item count on Settings**, next to the backup button.
 - **Monthly budget bar** — set a target on the Settings page and the
   dashboard shows a progress bar for how close this month's forecast total
   is to it, colour-shifting from green to amber to pink as you approach or
@@ -363,10 +366,6 @@ time you pick.
 - **CSV export** — a "Download CSV" button on the Search page exports
   whatever's currently filtered (same name/shop/status/date-range filters)
   as a spreadsheet-ready file.
-- **Search** — find any comic you've ever tracked, filterable by shop, paid
-  status, or a custom date range, with sort options and a running total
-  (spent / still due) for whatever's currently filtered — not locked to the
-  current week or month like the dashboard.
 - **All-time totals** — alongside "this year so far" on the dashboard,
   there's now a lifetime total across everything ever tracked.
 - **Data backup and restore** — a "Download backup" button on the Settings
@@ -376,7 +375,8 @@ time you pick.
   before touching anything, and automatically keeps a safety copy of
   whatever was live just before a restore (sitting in `/data` as
   `kaching.db.before-restore-<timestamp>`, not shown in the UI, but there
-  if a restore ever needs undoing manually).
+  if a restore ever needs undoing manually). Database size and item count
+  show on the same Settings page, next to the backup button.
 - **Install to home screen** — Ka-Ching! can be added to your phone's home
   screen like a normal app (look for "Add to Home Screen" or an install
   icon in your browser). Still the same container underneath, just opens
@@ -385,34 +385,20 @@ time you pick.
   has already passed but is still sitting unpaid and unmarked. Usually just
   a normal short delay before the retailer charges, but worth a look if
   something's been sitting there a while.
-- **Version number** — the footer now shows which build is currently
-  running, so "did the update actually land" is a glance instead of a
-  guessing game.
-- **No more losing your place** — marking something paid, cancelling, or
-  removing an item used to always bounce you back to today's month or a
-  blank search. Now it returns you to exactly where you were - same month,
-  same search filters - so cleaning things up as you browse doesn't mean
-  re-navigating from scratch after every click.
+- **Your place is kept** — marking something paid, cancelling, removing an
+  item, or browsing to a different month all return you to exactly where
+  you were - same section, same month, same search filters - rather than
+  bouncing back to the top of the page or today's date every time.
 - **Bulk select** — a small checkbox on every item (dashboard and search)
   lets you select several at once; a toolbar appears with Mark paid,
   Cancel, and Remove, applying to everything selected in one go instead of
   one click-confirm-reload cycle per item.
-- **Month arrows stay where you were** — browsing to a different month
-  still reloads the page (that part needs a real page load, since it's
-  genuinely different data), but it now lands you back at that section
-  instead of the very top of the page, so there's no more scrolling down
-  again after every click.
-- **Shop label always shows** — every item now shows which shop it's from,
-  even when everything on a given day is from the same place. Previously
-  this only showed up when a day had comics from more than one shop.
-- **Chart tabs no longer reload the page** — clicking Week/Month/6M used to
-  send you back to the top of the dashboard. All three versions of the
-  chart now load at once (hidden until picked) and switching between them
-  happens instantly in the browser, with no reload and no lost scroll
-  position. Your last-picked range is also remembered between visits.
-- **Spend trend chart, redesigned** — a smooth gradient area for total
-  spend (comics + shipping, now correctly matching the hero's own
-  figures - previously the chart only counted comics), with a second thin
+- **Chart tabs switch instantly** — Week/Month/6M all load at once (hidden
+  until picked), so switching between them happens right in the browser
+  with no reload and no lost scroll position. Your last-picked range is
+  also remembered between visits.
+- **Spend trend chart** — a smooth gradient area for total spend (comics +
+  shipping, matching the hero's own figures exactly), with a second thin
   bar strip beneath showing how many comics released each period. Hover
   any point for the exact breakdown - comics, shipping, total, and item
   count. Hand-built in plain SVG, so it works with no internet connection
