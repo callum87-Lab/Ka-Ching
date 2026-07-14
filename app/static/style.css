@@ -388,6 +388,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.item-actions-group .bulk-select,
+.item-actions-group .actions-drawer-toggle {
+  flex-shrink: 0;
 }
 .actions-drawer-toggle {
   display: inline-block;
@@ -402,6 +407,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   display: none;
   align-items: center;
   gap: 6px;
+  flex-basis: 100%;
+  justify-content: flex-end;
 }
 .item-actions-group.drawer-open .actions-drawer { display: flex; }
 
