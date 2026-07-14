@@ -33,6 +33,7 @@
         <option value="ntfy" {{ 'selected' if values.notify_provider == 'ntfy' else '' }}>ntfy</option>
         <option value="gotify" {{ 'selected' if values.notify_provider == 'gotify' else '' }}>Gotify</option>
         <option value="telegram" {{ 'selected' if values.notify_provider == 'telegram' else '' }}>Telegram</option>
+        <option value="webhook" {{ 'selected' if values.notify_provider == 'webhook' else '' }}>Custom webhook</option>
       </select>
     </label>
 
@@ -73,6 +74,24 @@
           <input type="text" name="telegram_chat_id" value="{{ values.telegram_chat_id }}" placeholder="e.g. 123456789">
         </label>
       </div>
+    </div>
+
+    <div class="provider-fields" data-provider="webhook">
+      <label>
+        <span>Webhook URL</span>
+        <input type="text" name="webhook_url" value="{{ values.webhook_url }}" placeholder="https://your-service.example.com/hook">
+      </label>
+      <label>
+        <span>JSON payload template</span>
+        <textarea name="webhook_json_template" rows="2" placeholder='{"title": "{title}", "message": "{message}"}'>{{ values.webhook_json_template }}</textarea>
+      </label>
+      <p class="muted item-form-hint">
+        Ka-Ching! POSTs this as JSON to the URL above, with <code>{title}</code>
+        and <code>{message}</code> swapped for the real text - works with
+        Discord, Slack, Home Assistant, Node-RED, or any custom script that
+        can accept a webhook, without Ka-Ching! needing to know that service
+        specifically.
+      </p>
     </div>
 
     <label>
@@ -126,6 +145,8 @@
     <input type="hidden" name="gotify_token" value="{{ values.gotify_token }}">
     <input type="hidden" name="telegram_bot_token" value="{{ values.telegram_bot_token }}">
     <input type="hidden" name="telegram_chat_id" value="{{ values.telegram_chat_id }}">
+    <input type="hidden" name="webhook_url" value="{{ values.webhook_url }}">
+    <input type="hidden" name="webhook_json_template" value="{{ values.webhook_json_template }}">
     <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
     <input type="hidden" name="currency_symbol" value="{{ values.currency_symbol }}">
     <input type="hidden" name="default_landing_page" value="{{ values.default_landing_page }}">
@@ -165,6 +186,8 @@
     <input type="hidden" name="gotify_token" value="{{ values.gotify_token }}">
     <input type="hidden" name="telegram_bot_token" value="{{ values.telegram_bot_token }}">
     <input type="hidden" name="telegram_chat_id" value="{{ values.telegram_chat_id }}">
+    <input type="hidden" name="webhook_url" value="{{ values.webhook_url }}">
+    <input type="hidden" name="webhook_json_template" value="{{ values.webhook_json_template }}">
     <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">

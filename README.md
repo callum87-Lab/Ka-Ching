@@ -76,15 +76,18 @@ list — its Order Summary shows a "Postage" breakdown with the exact cost of
 each shipment), Ka-Ching! recognises it as Forbidden Planet and shows every
 item on the same editable review screen as any other import - name, price,
 and shop pre-filled - alongside the exact shipping figure(s), which get
-saved automatically once confirmed. This page type never shows a release
-date though (just dispatch status), so that field is left blank for you to
-fill in if you want it. Once there's enough real shipping data, it's used
-for your real average. Multiple order-detail pages can be pasted
-concatenated together in one go. Without any of this, shipping falls back to
-an approximation from the order-history list (declared total minus item
-costs, split across shipments), and only falls back further to a flat guess
-if neither has enough data yet. A note under the hero shows which one it's
-currently using.
+saved automatically once confirmed. Dispatched items get marked paid
+automatically; a "Charged" status (payment taken, not yet dispatched) gets
+marked paid too, without falsely claiming it's shipped. This page type
+never shows a release date for anything still pending though (just its
+current status), so that field is left blank for you to fill in if you want
+it. Once there's enough real shipping data, it's used for your real
+average. Multiple order-detail pages can be pasted concatenated together in
+one go. Without any of this, shipping falls back to an approximation from
+the order-history list (declared total minus item costs, split across
+shipments), and only falls back further to a flat guess if neither has
+enough data yet. A note under the hero shows which one it's currently
+using.
 
 Every item has a small circle next to it — tap it to mark that item paid.
 Its cost moves from "still due" into "spent" immediately (it stays visible,
@@ -297,10 +300,16 @@ you configure, grouped by shop, e.g. *"Tomorrow: 3 comics, £11.48 — Forbidden
 Planet: 2 items, £8.49 · Cocktails and Comics: 1 item, £2.99."* Stays
 completely silent on quiet days — no pointless daily pings when nothing's due.
 
-Supports **ntfy**, **Gotify**, or **Telegram** — pick one from the dropdown,
-fill in its details (server URL + topic for ntfy, server URL + app token for
-Gotify, bot token + chat ID for Telegram), and set what time of day the check
-should run.
+Supports **ntfy**, **Gotify**, **Telegram**, or a **custom webhook** — pick
+one from the dropdown, fill in its details (server URL + topic for ntfy,
+server URL + app token for Gotify, bot token + chat ID for Telegram), and set
+what time of day the check should run.
+
+The custom webhook option covers anything else - Discord, Slack, Home
+Assistant, Node-RED, a script of your own. Set the URL and a JSON template
+with `{title}` and `{message}` placeholders, and Ka-Ching! POSTs that
+payload whenever it would otherwise notify you - no native integration code
+needed for whatever service you actually want to use.
 
 Two buttons let you confirm it's actually working before relying on it:
 - **Send test notification** — an immediate, generic ping, just to prove the
@@ -319,9 +328,9 @@ time you pick.
   the dashboard; Calendar's daily release list is a per-day accordion that
   auto-expands the nearest upcoming date, and tapping a day in the grid
   jumps straight to (and opens) its details below.
-- **Mobile action drawer** — on narrow screens, the bulk checkbox, cancel,
-  and remove buttons tuck behind a small "&#8942;" toggle per row instead
-  of always taking up space.
+- **Action menu** — the bulk checkbox, cancel, and remove buttons tuck
+  behind a small "&#8942;" toggle per row, on every screen size, rather than
+  always sitting there taking up space and inviting an accidental tap.
 - **Log Orders** (renamed from "+ Add") — Paste Invoice / Manual Entry tabs,
   optional order number and shipping cost fields on the manual form (feeds
   straight into that shop's exact shipping figure), and quick-select shop
@@ -347,8 +356,9 @@ time you pick.
   onto two lines.
 - **Tracking number** — optional field on the manual add/edit forms, and
   auto-filled from eBay imports (it's already sitting right there in the
-  order text). Shows next to the item with a one-tap copy button, for
-  pasting into whichever carrier site you want to check it on yourself.
+  order text). Shows next to the item with a link straight to
+  PostTrack.com's tracking page and a one-tap copy button for pasting the
+  number in once you're there.
 - **Release date change tracking** — when a re-import shows a different
   release date for something already tracked (Forbidden Planet does this
   often), a note appears on your next dashboard visit: which comic, old

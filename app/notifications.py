@@ -8,7 +8,7 @@ from . import db
 logger = logging.getLogger("kaching")
 
 SETTINGS_KEYS = [
-    "notify_provider",      # "none" | "ntfy" | "gotify" | "telegram"
+    "notify_provider",      # "none" | "ntfy" | "gotify" | "telegram" | "webhook"
     "notify_hour",          # "0".."23"
     "ntfy_url",
     "ntfy_topic",
@@ -16,6 +16,8 @@ SETTINGS_KEYS = [
     "gotify_token",
     "telegram_bot_token",
     "telegram_chat_id",
+    "webhook_url",
+    "webhook_json_template",
     "monthly_budget",       # "" or a number, e.g. "80.00"
     "notify_on_quiet_days", # "yes" | "no" - send a "nothing due" digest on quiet days, or stay silent
     "budget_cycle",         # "monthly" | "weekly" | "28day"
@@ -29,6 +31,7 @@ DEFAULTS = {
     "notify_provider": "none",
     "notify_hour": "8",
     "ntfy_url": "https://ntfy.sh",
+    "webhook_json_template": '{"title": "{title}", "message": "{message}"}',
     "notify_on_quiet_days": "no",
     "budget_cycle": "monthly",
     "budget_rollover": "no",
@@ -105,6 +108,27 @@ def send_telegram(bot_token: str, chat_id: str, title: str, message: str):
     urllib.request.urlopen(req, timeout=10)
 
 
+def send_webhook(url: str, template: str, title: str, message: str):
+    """Posts a JSON payload built from the person's own template - lets
+    Ka-Ching! reach any service without needing native code for each one
+    (Discord, Slack, Home Assistant, a custom script, whatever). Title and
+    message get JSON-escaped before being substituted in, so a comic name
+    with a quote or an ampersand in it can't break the payload."""
+    if not url:
+        raise ValueError("No webhook URL configured")
+    title_escaped = json.dumps(title)[1:-1]
+    message_escaped = json.dumps(message)[1:-1]
+    body = (template or '{"title": "{title}", "message": "{message}"}').replace(
+        "{title}", title_escaped
+    ).replace("{message}", message_escaped)
+    json.loads(body)  # fail loudly here if the template produces invalid JSON,
+    # rather than silently posting something broken to someone's endpoint
+    payload = body.encode("utf-8")
+    req = urllib.request.Request(url, data=payload, method="POST")
+    req.add_header("Content-Type", "application/json")
+    urllib.request.urlopen(req, timeout=10)
+
+
 def send_via_configured_provider(cur, title: str, message: str):
     """Returns (ok: bool, error: str | None)."""
     provider = get_setting(cur, "notify_provider", "none")
@@ -115,6 +139,8 @@ def send_via_configured_provider(cur, title: str, message: str):
             send_gotify(get_setting(cur, "gotify_url"), get_setting(cur, "gotify_token"), title, message)
         elif provider == "telegram":
             send_telegram(get_setting(cur, "telegram_bot_token"), get_setting(cur, "telegram_chat_id"), title, message)
+        elif provider == "webhook":
+            send_webhook(get_setting(cur, "webhook_url"), get_setting(cur, "webhook_json_template"), title, message)
         else:
             return False, "No notification provider is set up yet."
         return True, None

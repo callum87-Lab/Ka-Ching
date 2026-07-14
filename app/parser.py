@@ -423,9 +423,9 @@ _ORDER_DETAIL_CONFIRMED_RE = re.compile(
     r"(?:Confirmed on:|Placed)\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
 )
 _ORDER_DETAIL_ITEM_RE = re.compile(
-    r"^\[([^\[\]]+?)\]\s*\n"
+    r"^[ \t]*\*?\s*\[([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
     r"(?:[^\n]*\n)??"
-    r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled)\b[^\n]*\n"
+    r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled|Charged)\b[^\n]*\n"
     r"(?:[^\n]*\n)*?"
     r"£\s*([\d,]+\.\d{2})",
     re.MULTILINE,
@@ -442,15 +442,21 @@ def parse_order_detail_items(text: str):
         return None
     items = []
     for m in _ORDER_DETAIL_ITEM_RE.finditer(text):
-        if m.group(2).lower() == "cancelled":
+        page_status = m.group(2).lower()
+        if page_status == "cancelled":
             continue
         try:
             price = float(m.group(3).replace(",", ""))
         except ValueError:
             continue
-        status = "dispatched" if m.group(2).lower() == "dispatched" else "preorder"
+        # "Dispatched" means it's already happened - shipped and paid.
+        # "Charged" means payment's been taken but it hasn't shipped yet
+        # (this page can show "Charged" alongside "this item is running
+        # late", so charged and dispatched are genuinely different things
+        # here, not the same status under two names).
+        status = "dispatched" if page_status == "dispatched" else "preorder"
         name = _ORDER_DETAIL_IMAGE_SUFFIX_RE.sub("", m.group(1).strip()).strip()
-        items.append({"name": name, "price": price, "status": status})
+        items.append({"name": name, "price": price, "status": status, "page_status": page_status})
     if not items:
         return None
 
@@ -546,9 +552,11 @@ def _build_order_detail_preview(text: str, order_detail: dict) -> dict:
             "order_number": order_detail["order_number"],
             "placed_date": order_detail["placed_date"] or "",
             "status": it["status"],
-            "charge_status": "charged" if it["status"] == "dispatched" else "not_charged",
+            "charge_status": "charged" if it["page_status"] in ("dispatched", "charged") else "not_charged",
             "note": (
                 None if it["status"] == "dispatched"
+                else "Payment taken, not dispatched yet - no release date shown on this page. Fill in a date if you know one."
+                if it["page_status"] == "charged"
                 else "No release date shown on this page - just dispatch status. Fill in a date if you know one."
             ),
             "tracking_number": "",

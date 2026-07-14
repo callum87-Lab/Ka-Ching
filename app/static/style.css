@@ -387,10 +387,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
-.actions-drawer { display: contents; }
 .actions-drawer-toggle {
-  display: none;
+  display: inline-block;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -398,6 +398,12 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   padding: 4px 6px;
   cursor: pointer;
 }
+.item-actions-group .actions-drawer {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+.item-actions-group.drawer-open .actions-drawer { display: flex; }
 
 .section-collapse-toggle {
   background: none;
@@ -410,6 +416,14 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .section-body.collapsed { display: none; }
 
+.track-link-btn {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 12px;
+  margin-left: 8px;
+  opacity: 0.75;
+}
+.track-link-btn:hover { opacity: 1; }
 .track-copy-btn {
   background: none;
   border: 1px solid var(--border-strong);
@@ -418,7 +432,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   padding: 2px 7px;
   color: var(--text-muted);
   cursor: pointer;
-  margin-left: 8px;
+  margin-left: 4px;
 }
 .track-copy-btn:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
 
@@ -1392,17 +1406,6 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   .hero-detail { flex-basis: auto; min-width: 0; }
   .price-stamp { width: 140px; height: 140px; }
   .chart { height: 130px; }
-  .actions-drawer-toggle { display: inline-block; }
-  .item-actions-group { flex-wrap: wrap; }
-  .item-actions-group .actions-drawer {
-    display: none;
-    align-items: center;
-    gap: 6px;
-    flex-basis: 100%;
-    justify-content: flex-end;
-    margin-top: 6px;
-  }
-  .item-actions-group.drawer-open .actions-drawer { display: flex; }
   .trend-axis-label { font-size: 15px !important; }
   .trend-axis-label-alt { display: none; }
   .item-list li { font-size: 13px; grid-template-columns: 18px 1fr auto; row-gap: 4px; }

@@ -27,7 +27,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.13.2"
+APP_VERSION = "2026.07.13.3"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1925,6 +1925,8 @@ def save_settings(
     gotify_token: str = Form(""),
     telegram_bot_token: str = Form(""),
     telegram_chat_id: str = Form(""),
+    webhook_url: str = Form(""),
+    webhook_json_template: str = Form(""),
     monthly_budget: str = Form(""),
     notify_on_quiet_days: str = Form("no"),
     budget_cycle: str = Form("monthly"),
@@ -1942,6 +1944,8 @@ def save_settings(
         "gotify_token": gotify_token.strip(),
         "telegram_bot_token": telegram_bot_token.strip(),
         "telegram_chat_id": telegram_chat_id.strip(),
+        "webhook_url": webhook_url.strip(),
+        "webhook_json_template": webhook_json_template.strip() or '{"title": "{title}", "message": "{message}"}',
         "monthly_budget": monthly_budget.strip(),
         "notify_on_quiet_days": notify_on_quiet_days,
         "budget_cycle": budget_cycle,

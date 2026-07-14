@@ -99,7 +99,7 @@ document.querySelectorAll('.track-copy-btn').forEach(function (btn) {
       navigator.clipboard.writeText(tracking).then(function () {
         var original = btn.innerHTML;
         btn.innerHTML = 'Copied!';
-        setTimeout(function () { btn.innerHTML = '&#128230; ' + tracking; }, 1200);
+        setTimeout(function () { btn.innerHTML = tracking; }, 1200);
       });
     }
   });
