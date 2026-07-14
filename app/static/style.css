@@ -362,6 +362,12 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 .item-list li:first-child { border-top: none; }
 .item-name { color: var(--text); min-width: 0; overflow-wrap: break-word; }
 .item-price { color: var(--text-muted); text-align: right; }
+.item-price-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+}
 
 .item-list-simple li {
   grid-template-columns: 1fr auto auto;
