@@ -328,9 +328,12 @@ time you pick.
   the dashboard; Calendar's daily release list is a per-day accordion that
   auto-expands the nearest upcoming date, and tapping a day in the grid
   jumps straight to (and opens) its details below.
-- **Action menu** — the bulk checkbox, cancel, and remove buttons tuck
-  behind a small "&#8942;" toggle per row, on every screen size, rather than
-  always sitting there taking up space and inviting an accidental tap.
+- **Action menu** — cancel and remove tuck behind a small "&#8942;" toggle
+  per row, on every screen size, rather than always sitting there taking
+  up space and inviting an accidental tap. The bulk-select checkbox stays
+  visible outside it though, so selecting several items doesn't mean
+  opening each row's menu just to reach it. Click anywhere outside an open
+  menu (or open a different one) and it closes on its own.
 - **Log Orders** (renamed from "+ Add") — Paste Invoice / Manual Entry tabs,
   optional order number and shipping cost fields on the manual form (feeds
   straight into that shop's exact shipping figure), and quick-select shop
@@ -356,9 +359,9 @@ time you pick.
   onto two lines.
 - **Tracking number** — optional field on the manual add/edit forms, and
   auto-filled from eBay imports (it's already sitting right there in the
-  order text). Shows next to the item with a link straight to
-  PostTrack.com's tracking page and a one-tap copy button for pasting the
-  number in once you're there.
+  order text). The number itself is a link - clicking it copies the number
+  and opens PostTrack.com's tracking page in one go, so it's usually
+  already sitting on the clipboard the moment you land there.
 - **Release date change tracking** — when a re-import shows a different
   release date for something already tracked (Forbidden Planet does this
   often), a note appears on your next dashboard visit: which comic, old

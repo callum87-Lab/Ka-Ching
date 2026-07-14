@@ -77,7 +77,18 @@ document.querySelectorAll('.item-actions-group').forEach(function (grp) {
   if (!toggle) return;
   toggle.addEventListener('click', function (e) {
     e.stopPropagation();
-    grp.classList.toggle('drawer-open');
+    var wasOpen = grp.classList.contains('drawer-open');
+    document.querySelectorAll('.item-actions-group.drawer-open').forEach(function (g) {
+      g.classList.remove('drawer-open');
+    });
+    if (!wasOpen) grp.classList.add('drawer-open');
+  });
+});
+
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.item-actions-group')) return;
+  document.querySelectorAll('.item-actions-group.drawer-open').forEach(function (g) {
+    g.classList.remove('drawer-open');
   });
 });
 
@@ -91,17 +102,16 @@ document.querySelectorAll('.cal-accordion-toggle').forEach(function (head) {
   });
 });
 
-document.querySelectorAll('.track-copy-btn').forEach(function (btn) {
-  btn.addEventListener('click', function (e) {
-    e.preventDefault();
-    var tracking = btn.getAttribute('data-tracking');
+document.querySelectorAll('.track-link-btn').forEach(function (link) {
+  link.addEventListener('click', function () {
+    var tracking = link.getAttribute('data-tracking');
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(tracking).then(function () {
-        var original = btn.innerHTML;
-        btn.innerHTML = 'Copied!';
-        setTimeout(function () { btn.innerHTML = tracking; }, 1200);
-      });
+      navigator.clipboard.writeText(tracking);
     }
+    // Deliberately not calling preventDefault() - the link still opens
+    // PostTrack in a new tab as normal, this just also puts the number
+    // on the clipboard first so it's ready to paste (and PostTrack
+    // itself picks it straight up from there automatically).
   });
 });
 </script>

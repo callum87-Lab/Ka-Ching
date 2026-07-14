@@ -56,9 +56,9 @@
           <span class="item-name muted">Order #{{ item.order_number }}</span>
           <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
+          <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
           <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
           <div class="actions-drawer">
-            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
           <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
             <input type="hidden" name="action" value="cancel">
@@ -102,9 +102,9 @@
           <span class="item-name muted">{{ item.name }} &middot; {{ item.release_date }}</span>
           <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
+          <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
           <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
           <div class="actions-drawer">
-            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <a href="/items/{{ item.id }}/edit" class="btn-tiny">Edit</a>
             <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
@@ -146,9 +146,9 @@
           </a>
           <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
+          <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
           <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
           <div class="actions-drawer">
-            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
           <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
             <input type="hidden" name="action" value="cancel">
@@ -274,12 +274,12 @@
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
-            {% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" title="Open PostTrack to look this up">&#128230;</a><button type="button" class="track-copy-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number">{{ item.tracking_number }}</button>{% endif %}
+            {% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number and open PostTrack">&#128230; {{ item.tracking_number }}</a>{% endif %}
             <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
+            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
             <div class="actions-drawer">
-            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="cancel">
@@ -354,12 +354,12 @@
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
-            {% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" title="Open PostTrack to look this up">&#128230;</a><button type="button" class="track-copy-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number">{{ item.tracking_number }}</button>{% endif %}
+            {% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number and open PostTrack">&#128230; {{ item.tracking_number }}</a>{% endif %}
             <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
             <div class="item-actions-group">
+            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
             <div class="actions-drawer">
-            <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="cancel">

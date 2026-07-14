@@ -418,23 +418,17 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 
 .track-link-btn {
   display: inline-block;
-  text-decoration: none;
-  font-size: 12px;
-  margin-left: 8px;
-  opacity: 0.75;
-}
-.track-link-btn:hover { opacity: 1; }
-.track-copy-btn {
   background: none;
   border: 1px solid var(--border-strong);
   border-radius: 5px;
   font-size: 11px;
   padding: 2px 7px;
   color: var(--text-muted);
+  text-decoration: none;
   cursor: pointer;
-  margin-left: 4px;
+  margin-left: 8px;
 }
-.track-copy-btn:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
+.track-link-btn:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
 
 .toggle-form, .cancel-form, .remove-form, .inline-form { margin: 0; display: contents; }
 
