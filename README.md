@@ -29,6 +29,29 @@ questions and nothing else:
 > and Black Series action figures mixed in with the comics imported and
 > tracked exactly the same as everything else, no special handling needed.
 
+## Gallery
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Calendar
+![Calendar](screenshots/calendar.png)
+
+### Log Orders — paste-in importing
+![Log Orders](screenshots/log-orders.png)
+
+### Search
+![Search](screenshots/search.png)
+
+### Insights
+![Insights](screenshots/insights.png)
+
+### Settings
+![Settings](screenshots/settings.png)
+
+### Running in Dockge
+![Running in Dockge](screenshots/dockge.png)
+
 ## Your data is yours
 
 Ka-Ching! runs entirely on your own server, under your own control. There's
