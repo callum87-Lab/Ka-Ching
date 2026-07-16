@@ -423,14 +423,27 @@ _ORDER_DETAIL_CONFIRMED_RE = re.compile(
     r"(?:Confirmed on:|Placed)\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
 )
 _ORDER_DETAIL_ITEM_RE = re.compile(
-    r"^[ \t]*\*?\s*\[([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
+    r"^[ \t]*\*?\s*\[(?!Cancel item\])([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
     r"(?:[^\n]*\n)??"
     r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled|Charged)\b[^\n]*\n"
     r"(?:[^\n]*\n)*?"
     r"£\s*([\d,]+\.\d{2})",
-    re.MULTILINE,
+    re.MULTILINE | re.IGNORECASE,
 )
 _ORDER_DETAIL_IMAGE_SUFFIX_RE = re.compile(r"\s*\(Product Image\)\s*$", re.IGNORECASE)
+_ORDER_DETAIL_RELEASE_LINE_RE = re.compile(
+    r"Release date:\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
+)
+
+
+def _parse_day_month_year(day, month, year):
+    date_str = f"{day} {month} {year}"
+    for fmt in ("%d %b %Y", "%d %B %Y"):
+        try:
+            return datetime.strptime(date_str, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
 
 
 def parse_order_detail_items(text: str):
@@ -456,7 +469,18 @@ def parse_order_detail_items(text: str):
         # here, not the same status under two names).
         status = "dispatched" if page_status == "dispatched" else "preorder"
         name = _ORDER_DETAIL_IMAGE_SUFFIX_RE.sub("", m.group(1).strip()).strip()
-        items.append({"name": name, "price": price, "status": status, "page_status": page_status})
+        # Genuine pre-orders on this page do show their own real release
+        # date ("Release date: 12 Aug 2026") - only items already
+        # dispatched/charged lack one, so grab it here when it's there
+        # rather than always leaving it blank.
+        release_line = _ORDER_DETAIL_RELEASE_LINE_RE.search(m.group(0))
+        page_release_date = (
+            _parse_day_month_year(*release_line.groups()) if release_line else None
+        )
+        items.append({
+            "name": name, "price": price, "status": status,
+            "page_status": page_status, "page_release_date": page_release_date,
+        })
     if not items:
         return None
 
@@ -543,18 +567,21 @@ def _build_order_detail_preview(text: str, order_detail: dict) -> dict:
         {
             "name": it["name"],
             "price": it["price"],
-            # Dispatched items have already happened, same logic as eBay
-            # orders - there's no meaningful future release date to wait
-            # for, so the date it was confirmed/placed is far more useful
-            # than leaving it blank. Anything not yet dispatched genuinely
-            # has no known date on this page, so that stays blank.
-            "release_date": (order_detail["placed_date"] or "") if it["status"] == "dispatched" else "",
+            # A genuine "Release date:" line on the page beats everything
+            # else - it's the real answer, not a stand-in. Failing that,
+            # dispatched items use the order's own placed date (already
+            # happened, same logic as eBay), and anything else genuinely
+            # has no date available on this page, so stays blank.
+            "release_date": (
+                it["page_release_date"]
+                or ((order_detail["placed_date"] or "") if it["status"] == "dispatched" else "")
+            ),
             "order_number": order_detail["order_number"],
             "placed_date": order_detail["placed_date"] or "",
             "status": it["status"],
             "charge_status": "charged" if it["page_status"] in ("dispatched", "charged") else "not_charged",
             "note": (
-                None if it["status"] == "dispatched"
+                None if it["page_release_date"] or it["status"] == "dispatched"
                 else "Payment taken, not dispatched yet - no release date shown on this page. Fill in a date if you know one."
                 if it["page_status"] == "charged"
                 else "No release date shown on this page - just dispatch status. Fill in a date if you know one."
