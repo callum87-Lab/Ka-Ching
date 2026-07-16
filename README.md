@@ -31,26 +31,28 @@ questions and nothing else:
 
 ## Gallery
 
+Click any screenshot to view it full-size.
+
 ### Dashboard
-![Dashboard](screenshots/dashboard.png)
+<a href="screenshots/dashboard.png"><img src="screenshots/dashboard.png" width="500"></a>
 
 ### Calendar
-![Calendar](screenshots/calendar.png)
+<a href="screenshots/calendar.png"><img src="screenshots/calendar.png" width="500"></a>
 
 ### Log Orders — paste-in importing
-![Log Orders](screenshots/log-orders.png)
+<a href="screenshots/log-orders.png"><img src="screenshots/log-orders.png" width="500"></a>
 
 ### Search
-![Search](screenshots/search.png)
+<a href="screenshots/search.png"><img src="screenshots/search.png" width="500"></a>
 
 ### Insights
-![Insights](screenshots/insights.png)
+<a href="screenshots/insights.png"><img src="screenshots/insights.png" width="500"></a>
 
 ### Settings
-![Settings](screenshots/settings.png)
+<a href="screenshots/settings.png"><img src="screenshots/settings.png" width="500"></a>
 
 ### Running in Dockge
-![Running in Dockge](screenshots/dockge.png)
+<a href="screenshots/dockge.png"><img src="screenshots/dockge.png" width="500"></a>
 
 ## Your data is yours
 
