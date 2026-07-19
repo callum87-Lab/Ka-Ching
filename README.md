@@ -573,6 +573,25 @@ If you're comfortable writing the parser yourself, pull requests work the
 same way - just make sure any example text included with it is sanitised
 the same way first.
 
+## AI involvement
+
+Ka-Ching! was built through heavy, iterative collaboration with an LLM
+(Claude). A lot of the actual code came out of that process rather than
+being hand-typed line by line - but every feature, every parser, and every
+decision about what this should and shouldn't do was directed and made by
+a real person, not generated and shipped unchecked.
+
+In practice that meant: every parser here was built from a real, messy,
+copy-pasted example rather than a guessed-at format, tested against actual
+orders before being trusted, and fixed properly (sometimes across several
+rounds) when real data revealed something a reasonable guess wouldn't have
+caught. Scope decisions - what Ka-Ching! does and deliberately doesn't do,
+the licence, what got rejected outright - were all real calls made by a
+person, not defaults left unquestioned.
+
+Happy to go into more detail on the actual process if anyone's curious -
+open an issue.
+
 ## Licence
 
 All rights reserved, for now. This code is public on GitHub so you can read
