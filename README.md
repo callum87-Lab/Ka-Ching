@@ -573,16 +573,16 @@ If you're comfortable writing the parser yourself, pull requests work the
 same way - just make sure any example text included with it is sanitised
 the same way first.
 
-## License
+## Licence
 
 All rights reserved, for now. This code is public on GitHub so you can read
 it, learn from it, and see exactly what it does with your data - but there's
-no open-source license attached at the moment, so reusing, modifying, or
+no open-source licence attached at the moment, so reusing, modifying, or
 redistributing it isn't permitted without asking first. This is a deliberate
 choice while it's actively maintained, not an oversight.
 
 If time to maintain it actively becomes harder to find down the line, the
-plan is to open it up properly under AGPL-3.0 - a license that still allows
+plan is to open it up properly under AGPL-3.0 - a licence that still allows
 forks and contributions, but requires anyone who modifies and runs their own
 version (including as a hosted service) to keep it open source too, rather
 than it quietly becoming someone else's closed, rebranded product.
