@@ -153,10 +153,10 @@
   {% endif %}
 
   <div class="settings-test-actions">
-    <a href="/settings/export-notifications.json" class="btn-tiny">Export notification config</a>
+    <a href="/settings/export-notifications.json" class="btn-tiny btn-test">Export notification config</a>
     <form method="post" action="/settings/import-notifications" enctype="multipart/form-data" class="inline-form">
       <input type="file" name="notification_config_file" accept=".json" required>
-      <button type="submit" class="btn-tiny">Import</button>
+      <button type="submit" class="btn-tiny btn-test">Import</button>
     </form>
   </div>
   <p class="muted item-form-hint">
