@@ -125,7 +125,6 @@
       </select>
     </label>
 
-    <button type="submit">Save settings</button>
   </form>
 
   <div class="settings-test-actions">
@@ -165,6 +164,8 @@
     for moving to a new server without needing a full database backup for
     only this.
   </p>
+
+  <button type="submit" form="settings-form">Save settings</button>
 </section>
 
 <section class="block">
@@ -304,7 +305,7 @@
     &middot; database file is <span class="mono">{{ db_size_label }}</span>
   </p>
   <a href="/settings/backup" class="btn-tiny btn-test">Download backup</a>
-  <a href="/settings/export-all.csv" class="btn-tiny">Download full spend history (CSV)</a>
+  <a href="/settings/export-all.csv" class="btn-tiny btn-test">Download full spend history (CSV)</a>
   <p class="muted item-form-hint">
     The database backup above is for restoring everything into Ka-Ching!
     itself. This CSV is a plain spreadsheet of every tracked item, for

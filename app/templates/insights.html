@@ -69,9 +69,9 @@
 
     {% if busiest_weekday %}
     <div class="insight-card">
-      <span class="insight-card-label">Busiest release day</span>
-      <span class="insight-card-value mono">{{ busiest_weekday }}</span>
-      <span class="insight-card-sub">{{ busiest_weekday_count }} issue{{ "s" if busiest_weekday_count != 1 else "" }} released on this day of the week</span>
+      <span class="insight-card-label">Busiest day of the week for releases</span>
+      <span class="insight-card-value mono">{{ busiest_weekday }}s</span>
+      <span class="insight-card-sub">{{ busiest_weekday_count }} issue{{ "s" if busiest_weekday_count != 1 else "" }} total, added up across every {{ busiest_weekday }} you've ever had a release on</span>
     </div>
     {% endif %}
 

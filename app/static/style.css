@@ -727,7 +727,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   flex: 1 1 140px;
 }
 .search-filter-row select,
-.search-filter-row input[type="date"] {
+.search-filter-row input[type="date"],
+.search-filter-row input[type="number"] {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -740,7 +741,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   padding: 9px 10px;
 }
 .search-filter-row select:focus,
-.search-filter-row input[type="date"]:focus {
+.search-filter-row input[type="date"]:focus,
+.search-filter-row input[type="number"]:focus {
   outline: none;
   border-color: var(--neon-blue);
   box-shadow: 0 0 0 2px rgba(47, 216, 255, 0.2);
