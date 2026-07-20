@@ -61,16 +61,26 @@
         <span>To</span>
         <input type="date" name="end_date" id="search-end-date" value="{{ end_date }}">
       </label>
+      <label>
+        <span>Min price</span>
+        <input type="number" step="0.01" min="0" name="min_price" value="{{ min_price }}" placeholder="0.00">
+      </label>
+      <label>
+        <span>Max price</span>
+        <input type="number" step="0.01" min="0" name="max_price" value="{{ max_price }}" placeholder="0.00">
+      </label>
       <button type="submit" class="search-submit-btn">Search</button>
     </div>
     <div class="search-date-presets">
       <button type="button" class="date-preset-btn {{ 'active' if active_date_preset == 'month' else '' }}" data-preset="month">This Month</button>
       <button type="button" class="date-preset-btn {{ 'active' if active_date_preset == 'year' else '' }}" data-preset="year">This Year</button>
+      <button type="button" class="date-preset-btn" id="sort-most-expensive-btn">Most expensive</button>
+      <button type="button" class="date-preset-btn" id="sort-cheapest-btn">Cheapest</button>
     </div>
   </form>
 
   <script>
-  document.querySelectorAll('.date-preset-btn').forEach(function (btn) {
+  document.querySelectorAll('.date-preset-btn[data-preset]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var now = new Date();
       var y = now.getFullYear(), m = now.getMonth();
@@ -87,6 +97,14 @@
       document.getElementById('search-end-date').value = end;
       btn.closest('form').submit();
     });
+  });
+  document.getElementById('sort-most-expensive-btn').addEventListener('click', function () {
+    document.querySelector('select[name="sort"]').value = 'price_desc';
+    this.closest('form').submit();
+  });
+  document.getElementById('sort-cheapest-btn').addEventListener('click', function () {
+    document.querySelector('select[name="sort"]').value = 'price_asc';
+    this.closest('form').submit();
   });
   </script>
 

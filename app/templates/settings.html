@@ -108,6 +108,23 @@
       <span>Also send a "nothing due tomorrow" ping on quiet days, to confirm notifications are still working</span>
     </label>
 
+    <label class="checkbox-row">
+      <input type="checkbox" name="weekly_digest_enabled" value="yes" {{ 'checked' if values.weekly_digest_enabled == 'yes' else '' }}>
+      <span>Also send a weekly overview, alongside the daily one</span>
+    </label>
+    <label>
+      <span>Weekly digest day</span>
+      <select name="weekly_digest_day">
+        <option value="0" {{ 'selected' if values.weekly_digest_day == '0' else '' }}>Monday</option>
+        <option value="1" {{ 'selected' if values.weekly_digest_day == '1' else '' }}>Tuesday</option>
+        <option value="2" {{ 'selected' if values.weekly_digest_day == '2' else '' }}>Wednesday</option>
+        <option value="3" {{ 'selected' if values.weekly_digest_day == '3' else '' }}>Thursday</option>
+        <option value="4" {{ 'selected' if values.weekly_digest_day == '4' else '' }}>Friday</option>
+        <option value="5" {{ 'selected' if values.weekly_digest_day == '5' else '' }}>Saturday</option>
+        <option value="6" {{ 'selected' if values.weekly_digest_day == '6' else '' }}>Sunday</option>
+      </select>
+    </label>
+
     <button type="submit">Save settings</button>
   </form>
 
@@ -118,6 +135,9 @@
     <form method="post" action="/settings/test-digest" class="inline-form">
       <button type="submit" class="btn-tiny btn-test">Test tomorrow's digest now</button>
     </form>
+    <form method="post" action="/settings/test-weekly-digest" class="inline-form">
+      <button type="submit" class="btn-tiny btn-test">Test weekly digest now</button>
+    </form>
   </div>
 
   <p class="muted item-form-hint">
@@ -125,6 +145,25 @@
     works before relying on it. "Test tomorrow's digest" sends the real message
     you'd get tomorrow (or says "nothing releasing" if the day's quiet) &mdash;
     useful for checking the format without waiting for the scheduled time.
+  </p>
+
+  {% if notif_import_result == 'ok' %}
+  <div class="result-banner">Notification settings imported.</div>
+  {% elif notif_import_result == 'bad_file' %}
+  <div class="result-banner result-banner-error">That file didn't look like a valid notification config export.</div>
+  {% endif %}
+
+  <div class="settings-test-actions">
+    <a href="/settings/export-notifications.json" class="btn-tiny">Export notification config</a>
+    <form method="post" action="/settings/import-notifications" enctype="multipart/form-data" class="inline-form">
+      <input type="file" name="notification_config_file" accept=".json" required>
+      <button type="submit" class="btn-tiny">Import</button>
+    </form>
+  </div>
+  <p class="muted item-form-hint">
+    Just the notification setup (provider, server details, schedule) - handy
+    for moving to a new server without needing a full database backup for
+    only this.
   </p>
 </section>
 
@@ -148,6 +187,8 @@
     <input type="hidden" name="webhook_url" value="{{ values.webhook_url }}">
     <input type="hidden" name="webhook_json_template" value="{{ values.webhook_json_template }}">
     <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
+    <input type="hidden" name="weekly_digest_enabled" value="{{ values.weekly_digest_enabled }}">
+    <input type="hidden" name="weekly_digest_day" value="{{ values.weekly_digest_day }}">
     <input type="hidden" name="currency_symbol" value="{{ values.currency_symbol }}">
     <input type="hidden" name="default_landing_page" value="{{ values.default_landing_page }}">
     <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
@@ -189,6 +230,8 @@
     <input type="hidden" name="webhook_url" value="{{ values.webhook_url }}">
     <input type="hidden" name="webhook_json_template" value="{{ values.webhook_json_template }}">
     <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
+    <input type="hidden" name="weekly_digest_enabled" value="{{ values.weekly_digest_enabled }}">
+    <input type="hidden" name="weekly_digest_day" value="{{ values.weekly_digest_day }}">
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
     <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
@@ -261,6 +304,13 @@
     &middot; database file is <span class="mono">{{ db_size_label }}</span>
   </p>
   <a href="/settings/backup" class="btn-tiny btn-test">Download backup</a>
+  <a href="/settings/export-all.csv" class="btn-tiny">Download full spend history (CSV)</a>
+  <p class="muted item-form-hint">
+    The database backup above is for restoring everything into Ka-Ching!
+    itself. This CSV is a plain spreadsheet of every tracked item, for
+    opening in Excel or Google Sheets - not something Ka-Ching! can restore
+    from.
+  </p>
 
   <div class="restore-section">
     {% if restore_result == 'ok' %}

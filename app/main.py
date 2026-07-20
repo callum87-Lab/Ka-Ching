@@ -27,7 +27,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.20.1"
+APP_VERSION = "2026.07.20.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -118,6 +118,42 @@ async def _daily_notification_loop():
             await asyncio.sleep(3600)
 
 
+async def _weekly_notification_loop():
+    """Runs forever in the background: once a week, on whichever day is
+    configured in Settings, sends the optional weekly digest - same notify
+    hour as the daily one, just a different day-of-week gate. Does nothing
+    if the weekly digest is turned off."""
+    while True:
+        try:
+            conn = db.get_db()
+            cur = conn.cursor()
+            try:
+                notify_hour = int(notifications.get_setting(cur, "notify_hour", "8") or 8)
+            except (TypeError, ValueError):
+                notify_hour = 8
+            try:
+                digest_day = int(notifications.get_setting(cur, "weekly_digest_day", "0") or 0)
+            except (TypeError, ValueError):
+                digest_day = 0
+            conn.close()
+
+            now = datetime.now()
+            target = now.replace(hour=notify_hour, minute=0, second=0, microsecond=0)
+            days_ahead = (digest_day - now.weekday()) % 7
+            target += timedelta(days=days_ahead)
+            if target <= now:
+                target += timedelta(days=7)
+            wait_seconds = max(1.0, (target - now).total_seconds())
+            logger.info("WEEKLY NOTIFY SCHEDULER: sleeping %.0fs until %s", wait_seconds, target.isoformat())
+            await asyncio.sleep(wait_seconds)
+
+            result = await asyncio.to_thread(notifications.check_and_notify_week)
+            logger.info("WEEKLY NOTIFY SCHEDULER: weekly check ran, result=%s", result)
+        except Exception:
+            logger.exception("WEEKLY NOTIFY SCHEDULER: weekly check failed, will retry next week")
+            await asyncio.sleep(3600)
+
+
 async def _daily_backup_loop():
     """Runs forever in the background: once a day, if auto-backup is turned
     on in Settings, copies the database into a timestamped file under
@@ -159,6 +195,7 @@ async def _daily_backup_loop():
 @app.on_event("startup")
 async def start_notification_scheduler():
     asyncio.create_task(_daily_notification_loop())
+    asyncio.create_task(_weekly_notification_loop())
     asyncio.create_task(_daily_backup_loop())
 
 
@@ -1076,10 +1113,14 @@ def new_items_form(request: Request):
     conn = db.get_db()
     cur = conn.cursor()
     all_sources = get_all_sources(cur)
+    cur.execute("SELECT source FROM items ORDER BY imported_at DESC LIMIT 1")
+    last_row = cur.fetchone()
+    last_used_source = last_row["source"] if last_row else DEFAULT_SOURCE
     conn.close()
     return templates.TemplateResponse("add_items.html", {
         "request": request,
         "all_sources": all_sources,
+        "last_used_source": last_used_source,
         "result": None,
     })
 
@@ -1210,10 +1251,11 @@ SEARCH_SORT_OPTIONS = {
     "price_desc": ("price DESC, name", "Price (highest)"),
     "price_asc": ("price ASC, name", "Price (lowest)"),
     "name_asc": ("name ASC", "Name (A-Z)"),
+    "added_desc": ("imported_at DESC", "Recently added"),
 }
 
 
-def build_search_query(q, source, status, start_date, end_date):
+def build_search_query(q, source, status, start_date, end_date, min_price=None, max_price=None):
     """Returns (where_clause, params) shared by the search page and CSV
     export, so both stay in sync with exactly the same filtering logic."""
     conditions = []
@@ -1238,6 +1280,12 @@ def build_search_query(q, source, status, start_date, end_date):
     if end_date:
         conditions.append("release_date <= ?")
         params.append(end_date)
+    if min_price is not None:
+        conditions.append("price >= ?")
+        params.append(min_price)
+    if max_price is not None:
+        conditions.append("price <= ?")
+        params.append(max_price)
     where_clause = " AND ".join(conditions) if conditions else "1=1"
     return where_clause, params
 
@@ -1329,6 +1377,38 @@ def insights_page(request: Request):
     cur.execute("SELECT price FROM items WHERE status = 'cancelled'")
     cancelled_saved = round(sum(r["price"] for r in cur.fetchall()), 2)
 
+    # Next month forecast - same calculation the dashboard hero uses, just
+    # surfaced here too as its own stat card.
+    today = date.today()
+    nm_start = shift_month(today.replace(day=1), 1)
+    nm_end = nm_start.replace(day=calendar.monthrange(nm_start.year, nm_start.month)[1])
+    next_month_items = fetch_items_between(cur, nm_start, nm_end)
+    next_month_groups = group_by_date(next_month_items)
+    next_month_comics_total = round(sum(i["price"] for i in next_month_items), 2)
+    next_month_shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, next_month_groups)
+    next_month_forecast = round(next_month_comics_total + next_month_shipping_total, 2)
+    next_month_forecast_label = nm_start.strftime("%B %Y")
+
+    avg_shipping_per_month = round(total_all_shipping / months_with_data, 2)
+
+    # Busiest release day of the week - which weekday has the most issues
+    # released on it, across everything dated.
+    weekday_counts = {}
+    for it in dated_items:
+        wd = date.fromisoformat(it["release_date"]).strftime("%A")
+        weekday_counts[wd] = weekday_counts.get(wd, 0) + 1
+    busiest_weekday = max(weekday_counts, key=weekday_counts.get) if weekday_counts else None
+    busiest_weekday_count = weekday_counts.get(busiest_weekday, 0) if busiest_weekday else 0
+
+    # Biggest and cheapest single shipping charge ever actually captured -
+    # real per-shipment amounts, not an estimate.
+    cur.execute("SELECT amount, source FROM shipment_postage ORDER BY amount DESC LIMIT 1")
+    biggest_shipping_row = cur.fetchone()
+    biggest_shipping = dict(biggest_shipping_row) if biggest_shipping_row else None
+    cur.execute("SELECT amount, source FROM shipment_postage ORDER BY amount ASC LIMIT 1")
+    cheapest_shipping_row = cur.fetchone()
+    cheapest_shipping = dict(cheapest_shipping_row) if cheapest_shipping_row else None
+
     by_shop = {}
     for it in all_items:
         by_shop.setdefault(it["source"], []).append(it)
@@ -1393,6 +1473,13 @@ def insights_page(request: Request):
         "cancelled_saved": cancelled_saved,
         "shipping_ratio_pct": shipping_ratio_pct,
         "total_all_spend": total_all_spend,
+        "next_month_forecast": next_month_forecast,
+        "next_month_forecast_label": next_month_forecast_label,
+        "avg_shipping_per_month": avg_shipping_per_month,
+        "busiest_weekday": busiest_weekday,
+        "busiest_weekday_count": busiest_weekday_count,
+        "biggest_shipping": biggest_shipping,
+        "cheapest_shipping": cheapest_shipping,
     })
 
 
@@ -1405,6 +1492,8 @@ def search_items(
     start_date: str | None = None,
     end_date: str | None = None,
     sort: str | None = None,
+    min_price: str | None = None,
+    max_price: str | None = None,
 ):
     conn = db.get_db()
     cur = conn.cursor()
@@ -1412,6 +1501,19 @@ def search_items(
 
     active_status = status or "all"
     active_sort = sort if sort in SEARCH_SORT_OPTIONS else "date_desc"
+
+    min_price_val = None
+    if min_price and min_price.strip():
+        try:
+            min_price_val = float(min_price)
+        except ValueError:
+            min_price_val = None
+    max_price_val = None
+    if max_price and max_price.strip():
+        try:
+            max_price_val = float(max_price)
+        except ValueError:
+            max_price_val = None
 
     active_date_preset = None
     active_date_preset_label = None
@@ -1428,6 +1530,7 @@ def search_items(
 
     has_filter = bool(
         (q and q.strip()) or source or (status and status != "all") or start_date or end_date
+        or min_price_val is not None or max_price_val is not None
     )
 
     results = []
@@ -1437,7 +1540,9 @@ def search_items(
     truncated = False
 
     if has_filter:
-        where_clause, params = build_search_query(q, source, active_status, start_date, end_date)
+        where_clause, params = build_search_query(
+            q, source, active_status, start_date, end_date, min_price_val, max_price_val
+        )
         order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
 
         cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
@@ -1468,6 +1573,8 @@ def search_items(
         "active_status": active_status,
         "start_date": start_date or "",
         "end_date": end_date or "",
+        "min_price": min_price or "",
+        "max_price": max_price or "",
         "active_sort": active_sort,
         "active_date_preset": active_date_preset,
         "active_date_preset_label": active_date_preset_label,
@@ -1489,6 +1596,8 @@ def export_search_csv(
     start_date: str | None = None,
     end_date: str | None = None,
     sort: str | None = None,
+    min_price: str | None = None,
+    max_price: str | None = None,
 ):
     """Downloads whatever's currently filtered on the search page as a CSV
     file - reuses the exact same query-building logic, so the export always
@@ -1496,9 +1605,24 @@ def export_search_csv(
     active_status = status or "all"
     active_sort = sort if sort in SEARCH_SORT_OPTIONS else "date_desc"
 
+    min_price_val = None
+    if min_price and min_price.strip():
+        try:
+            min_price_val = float(min_price)
+        except ValueError:
+            min_price_val = None
+    max_price_val = None
+    if max_price and max_price.strip():
+        try:
+            max_price_val = float(max_price)
+        except ValueError:
+            max_price_val = None
+
     conn = db.get_db()
     cur = conn.cursor()
-    where_clause, params = build_search_query(q, source, active_status, start_date, end_date)
+    where_clause, params = build_search_query(
+        q, source, active_status, start_date, end_date, min_price_val, max_price_val
+    )
     order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
     cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
     rows = [dict(r) for r in cur.fetchall()]
@@ -1888,6 +2012,7 @@ def settings_form(
     restore_result: str | None = None,
     restore_count: int | None = None,
     reset_result: str | None = None,
+    notif_import_result: str | None = None,
 ):
     conn = db.get_db()
     cur = conn.cursor()
@@ -1910,6 +2035,7 @@ def settings_form(
         "restore_result": restore_result,
         "restore_count": restore_count,
         "reset_result": reset_result,
+        "notif_import_result": notif_import_result,
         "item_count": item_count,
         "db_size_label": db_size_label,
     })
@@ -1929,6 +2055,8 @@ def save_settings(
     webhook_json_template: str = Form(""),
     monthly_budget: str = Form(""),
     notify_on_quiet_days: str = Form("no"),
+    weekly_digest_enabled: str = Form("no"),
+    weekly_digest_day: str = Form("0"),
     budget_cycle: str = Form("monthly"),
     budget_rollover: str = Form("no"),
     currency_symbol: str = Form("gbp"),
@@ -1948,6 +2076,8 @@ def save_settings(
         "webhook_json_template": webhook_json_template.strip() or '{"title": "{title}", "message": "{message}"}',
         "monthly_budget": monthly_budget.strip(),
         "notify_on_quiet_days": notify_on_quiet_days,
+        "weekly_digest_enabled": weekly_digest_enabled,
+        "weekly_digest_day": weekly_digest_day,
         "budget_cycle": budget_cycle,
         "budget_rollover": budget_rollover,
         "currency_symbol": currency_symbol,
@@ -1982,6 +2112,17 @@ def test_digest():
     return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
 
 
+@app.post("/settings/test-weekly-digest")
+def test_weekly_digest():
+    result = notifications.check_and_notify_week(force=True)
+    if result is None:
+        return RedirectResponse(url="/settings?test_error=No+provider+configured", status_code=303)
+    ok, err = result
+    if ok:
+        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+
+
 @app.post("/settings/factory-reset")
 def factory_reset(confirm: str = Form(...)):
     if confirm != "RESET":
@@ -1996,6 +2137,81 @@ def factory_reset(confirm: str = Form(...)):
     conn.close()
     logger.warning("FACTORY RESET: all tracked items and order data wiped, settings kept")
     return RedirectResponse(url="/settings?reset_result=done", status_code=303)
+
+
+NOTIFICATION_SETTINGS_KEYS = [
+    "notify_provider", "notify_hour", "ntfy_url", "ntfy_topic",
+    "gotify_url", "gotify_token", "telegram_bot_token", "telegram_chat_id",
+    "webhook_url", "webhook_json_template", "notify_on_quiet_days",
+    "weekly_digest_enabled", "weekly_digest_day",
+]
+
+
+@app.get("/settings/export-notifications.json")
+def export_notification_config():
+    """Downloads just the notification setup - handy when moving to a new
+    server, without needing a full database backup for just this."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    config = {key: notifications.get_setting(cur, key, "") for key in NOTIFICATION_SETTINGS_KEYS}
+    conn.close()
+    payload = json.dumps(config, indent=2).encode("utf-8")
+    filename = f"kaching-notification-config-{date.today().isoformat()}.json"
+    return Response(
+        content=payload,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/settings/import-notifications")
+async def import_notification_config(notification_config_file: UploadFile = File(...)):
+    contents = await notification_config_file.read()
+    try:
+        config = json.loads(contents)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        logger.warning("NOTIFICATION CONFIG IMPORT rejected: not valid JSON (filename=%s)", notification_config_file.filename)
+        return RedirectResponse(url="/settings?notif_import_result=bad_file", status_code=303)
+
+    if not isinstance(config, dict):
+        return RedirectResponse(url="/settings?notif_import_result=bad_file", status_code=303)
+
+    to_apply = {key: str(config[key]) for key in NOTIFICATION_SETTINGS_KEYS if key in config}
+    notifications.save_settings(to_apply)
+    logger.info("NOTIFICATION CONFIG IMPORTED: %s keys applied", len(to_apply))
+    return RedirectResponse(url="/settings?notif_import_result=ok", status_code=303)
+
+
+@app.get("/settings/export-all.csv")
+def export_all_csv():
+    """Downloads every tracked item, unfiltered - the full spend history,
+    not just whatever's currently filtered on the Search page."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM items ORDER BY release_date DESC, name")
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number"])
+    for r in rows:
+        writer.writerow([
+            r["name"],
+            f"{r['price']:.2f}",
+            r["release_date"] or "",
+            r["source"],
+            r["status"],
+            "Yes" if r["charge_status"] == "charged" else "No",
+            r["order_number"] or "",
+        ])
+    csv_bytes = buffer.getvalue().encode("utf-8")
+    filename = f"kaching-full-export-{date.today().isoformat()}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/settings/backup")

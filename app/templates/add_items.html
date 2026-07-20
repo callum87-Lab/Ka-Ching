@@ -20,7 +20,7 @@
       </label>
       <label>
         <span>Source / retailer</span>
-        <input type="text" name="source" list="known-sources" required value="Forbidden Planet" placeholder="e.g. Forbidden Planet">
+        <input type="text" name="source" list="known-sources" required value="{{ last_used_source }}" placeholder="e.g. Forbidden Planet">
         <datalist id="known-sources">
           {% for s in all_sources %}
           <option value="{{ s }}">

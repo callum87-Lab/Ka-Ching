@@ -334,6 +334,10 @@ you configure, grouped by shop, e.g. *"Tomorrow: 3 comics, £11.48 — Forbidden
 Planet: 2 items, £8.49 · Cocktails and Comics: 1 item, £2.99."* Stays
 completely silent on quiet days — no pointless daily pings when nothing's due.
 
+An optional weekly digest can run alongside the daily one - same idea, but
+covering the next 7 days rather than just tomorrow, sent once a week on
+whichever day you pick.
+
 Supports **ntfy**, **Gotify**, **Telegram**, or a **custom webhook** — pick
 one from the dropdown, fill in its details (server URL + topic for ntfy,
 server URL + app token for Gotify, bot token + chat ID for Telegram), and set
@@ -370,15 +374,19 @@ time you pick.
   menu (or open a different one) and it closes on its own.
 - **Log Orders** (renamed from "+ Add") — Paste Invoice / Manual Entry tabs,
   optional order number and shipping cost fields on the manual form (feeds
-  straight into that shop's exact shipping figure), and quick-select shop
-  hints above the paste box.
+  straight into that shop's exact shipping figure), quick-select shop
+  hints above the paste box, and the manual form's shop field remembers
+  whichever shop you actually used last, rather than always defaulting to
+  the same one.
 - **Search** — find any comic you've ever tracked, filterable by shop, paid
-  status, or a custom date range, with sort options and a running total
-  (spent / still due) for whatever's currently filtered, not locked to the
-  current week or month like the dashboard. Matches order numbers and shop
-  names too, not just comic titles; This Month/This Year quick date
-  buttons; clicking an order number in a result isolates every other item
-  from that same order.
+  status, a custom date range, or a min/max price range, with sort options
+  (including a "recently added" one, handy right after a big import) and a
+  running total (spent / still due) for whatever's currently filtered, not
+  locked to the current week or month like the dashboard. Matches order
+  numbers and shop names too, not just comic titles; This Month/This Year
+  quick date buttons, plus one-click "Most expensive"/"Cheapest" shortcuts;
+  clicking an order number in a result isolates every other item from that
+  same order.
 - **Live calendar subscription** — "Subscribe (live)" alongside the .ics
   download, for calendar apps that support an updating feed rather than a
   one-off file.
@@ -402,12 +410,15 @@ time you pick.
   date, new date.
 - **Insights page** — most expensive month ever, priciest single issue
   tracked, total issues tracked, average spend per month and per issue,
-  pre-order vs released split, money saved by cancelling, shipping as a
-  percentage of cover price, top 3 most expensive titles, a 12-month
-  rolling spend trend, and spend by shop across all time, each shop's real
-  shipping worked in the same exact-first way as everywhere else. eBay
-  sellers are grouped into one row (same as everywhere else in the app) -
-  click it to expand and see each seller's own individual total.
+  pre-order vs released split, shipping as a percentage of cover price,
+  next month's forecast so far, average shipping per month, the busiest
+  release day of the week, the biggest and cheapest single shipping charge
+  ever actually captured, money saved by cancelling, top 3 most expensive
+  titles, a 12-month rolling spend trend, and spend by shop across all
+  time, each shop's real shipping worked in the same exact-first way as
+  everywhere else. eBay sellers are grouped into one row (same as
+  everywhere else in the app) - click it to expand and see each seller's
+  own individual total.
 - **Shop filter on the Calendar page** — same filter tabs as the dashboard,
   carried through month navigation so switching months doesn't reset it.
 - **Monthly budget bar** — set a target on the Settings page and the
@@ -427,7 +438,12 @@ time you pick.
   whatever was live just before a restore (sitting in `/data` as
   `kaching.db.before-restore-<timestamp>`, not shown in the UI, but there
   if a restore ever needs undoing manually). Database size and item count
-  show on the same Settings page, next to the backup button.
+  show on the same Settings page, next to the backup button. A separate
+  "Download full spend history (CSV)" button exports everything ever
+  tracked as a plain spreadsheet, for opening elsewhere rather than
+  restoring into Ka-Ching! itself; notification setup can also be exported
+  and re-imported on its own, handy when moving to a new server without
+  needing a full database backup for just that.
 - **Install to home screen** — Ka-Ching! can be added to your phone's home
   screen like a normal app (look for "Add to Home Screen" or an install
   icon in your browser). Still the same container underneath, just opens

@@ -20,6 +20,8 @@ SETTINGS_KEYS = [
     "webhook_json_template",
     "monthly_budget",       # "" or a number, e.g. "80.00"
     "notify_on_quiet_days", # "yes" | "no" - send a "nothing due" digest on quiet days, or stay silent
+    "weekly_digest_enabled", # "yes" | "no" - optional Monday-style weekly overview, alongside the daily one
+    "weekly_digest_day",    # "0".."6" (Monday=0 .. Sunday=6)
     "budget_cycle",         # "monthly" | "weekly" | "28day"
     "budget_rollover",      # "yes" | "no"
     "currency_symbol",      # "gbp" | "usd" | "eur"
@@ -33,6 +35,8 @@ DEFAULTS = {
     "ntfy_url": "https://ntfy.sh",
     "webhook_json_template": '{"title": "{title}", "message": "{message}"}',
     "notify_on_quiet_days": "no",
+    "weekly_digest_enabled": "no",
+    "weekly_digest_day": "0",
     "budget_cycle": "monthly",
     "budget_rollover": "no",
     "currency_symbol": "gbp",
@@ -201,4 +205,59 @@ def check_and_notify_tomorrow(force: bool = False):
     result = send_via_configured_provider(cur, title, message)
     conn.close()
     logger.info("DAILY DIGEST: tomorrow=%s items=%d result=%s", tomorrow.isoformat(), len(items), result)
+    return result
+
+
+def check_and_notify_week(force: bool = False):
+    """Looks at what's releasing over the next 7 days and sends one weekly
+    digest, grouped by shop - an optional companion to the daily one, for
+    a Monday-morning-style overview rather than a day-by-day ping."""
+    conn = db.get_db()
+    cur = conn.cursor()
+
+    provider = get_setting(cur, "notify_provider", "none")
+    if provider == "none" and not force:
+        conn.close()
+        return None
+
+    enabled = get_setting(cur, "weekly_digest_enabled", "no") == "yes"
+    if not enabled and not force:
+        conn.close()
+        return None
+
+    today = date.today()
+    week_end = today + timedelta(days=6)
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND release_date >= ? AND release_date <= ?
+        ORDER BY source, name
+        """,
+        (today.isoformat(), week_end.isoformat()),
+    )
+    items = [dict(r) for r in cur.fetchall()]
+
+    if not items:
+        ok, err = send_via_configured_provider(cur, "Ka-Ching!", "Nothing releasing this week.")
+        conn.close()
+        return (ok, err)
+
+    by_source = {}
+    for it in items:
+        by_source.setdefault(it["source"], []).append(it)
+
+    currency_symbol = {"gbp": "\u00a3", "usd": "$", "eur": "\u20ac"}.get(
+        get_setting(cur, "currency_symbol", "gbp"), "\u00a3"
+    )
+    total = sum(i["price"] for i in items)
+    lines = []
+    for src, its in sorted(by_source.items()):
+        sub = sum(i["price"] for i in its)
+        lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:.2f}")
+    message = "\n".join(lines)
+    title = f"This week: {len(items)} comic{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
+
+    result = send_via_configured_provider(cur, title, message)
+    conn.close()
+    logger.info("WEEKLY DIGEST: week=%s to %s items=%d result=%s", today.isoformat(), week_end.isoformat(), len(items), result)
     return result

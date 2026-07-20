@@ -55,6 +55,34 @@
       <span class="insight-card-sub">of comic spend goes to postage</span>
     </div>
 
+    <div class="insight-card">
+      <span class="insight-card-label">Next month forecast</span>
+      <span class="insight-card-value mono">{{ currency() }}{{ "%.2f"|format(next_month_forecast) }}</span>
+      <span class="insight-card-sub">{{ next_month_forecast_label }} so far</span>
+    </div>
+
+    <div class="insight-card">
+      <span class="insight-card-label">Average shipping per month</span>
+      <span class="insight-card-value mono">{{ currency() }}{{ "%.2f"|format(avg_shipping_per_month) }}</span>
+      <span class="insight-card-sub">across every month tracked</span>
+    </div>
+
+    {% if busiest_weekday %}
+    <div class="insight-card">
+      <span class="insight-card-label">Busiest release day</span>
+      <span class="insight-card-value mono">{{ busiest_weekday }}</span>
+      <span class="insight-card-sub">{{ busiest_weekday_count }} issue{{ "s" if busiest_weekday_count != 1 else "" }} released on this day of the week</span>
+    </div>
+    {% endif %}
+
+    {% if biggest_shipping %}
+    <div class="insight-card">
+      <span class="insight-card-label">Biggest shipping charge</span>
+      <span class="insight-card-value mono">{{ currency() }}{{ "%.2f"|format(biggest_shipping.amount) }}</span>
+      <span class="insight-card-sub">{{ biggest_shipping.source }}{% if cheapest_shipping %} &middot; cheapest was {{ currency() }}{{ "%.2f"|format(cheapest_shipping.amount) }}{% endif %}</span>
+    </div>
+    {% endif %}
+
     {% if cancelled_saved %}
     <div class="insight-card">
       <span class="insight-card-label">Saved by cancelling</span>
