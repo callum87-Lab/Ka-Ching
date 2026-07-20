@@ -92,15 +92,42 @@ document.addEventListener('click', function (e) {
   });
 });
 
-document.querySelectorAll('.cal-accordion-toggle').forEach(function (head) {
-  head.addEventListener('click', function () {
-    var body = document.getElementById(head.getAttribute('data-target'));
+(function () {
+  var STORAGE_KEY = 'kaching-accordion-overrides';
+  var overrides = {};
+  try {
+    overrides = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  } catch (e) {
+    overrides = {};
+  }
+
+  document.querySelectorAll('.cal-accordion-toggle').forEach(function (head) {
+    var target = head.getAttribute('data-target');
+    var body = document.getElementById(target);
     if (!body) return;
-    var collapsed = body.classList.toggle('collapsed');
-    var arrow = head.querySelector('.cal-accordion-arrow');
-    if (arrow) arrow.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+    // Apply any remembered override from a previous visit, regardless of
+    // which way the server rendered it by default.
+    if (Object.prototype.hasOwnProperty.call(overrides, target)) {
+      var shouldCollapse = overrides[target];
+      body.classList.toggle('collapsed', shouldCollapse);
+      var arrowInit = head.querySelector('.cal-accordion-arrow');
+      if (arrowInit) arrowInit.innerHTML = shouldCollapse ? '&#9656;' : '&#9662;';
+    }
+
+    head.addEventListener('click', function () {
+      var collapsed = body.classList.toggle('collapsed');
+      var arrow = head.querySelector('.cal-accordion-arrow');
+      if (arrow) arrow.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+      overrides[target] = collapsed;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+      } catch (e) {
+        // Storage full or unavailable - the toggle still works for this
+        // visit, it just won't be remembered next time.
+      }
+    });
   });
-});
+})();
 
 document.querySelectorAll('.track-link-btn').forEach(function (link) {
   link.addEventListener('click', function () {

@@ -249,14 +249,14 @@
   <div class="groups">
     {% for group in week_groups %}
     <div class="group {{ 'group-paid' if group.all_paid else '' }}">
-      <div class="group-head cal-accordion-toggle" data-target="week-body-{{ loop.index0 }}">
+      <div class="group-head cal-accordion-toggle" data-target="week-body-{{ group.date }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
         <span class="group-head-right">
           <span class="group-sub mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span>
           <span class="cal-accordion-arrow">&#9662;</span>
         </span>
       </div>
-      <div class="cal-accordion-body" id="week-body-{{ loop.index0 }}">
+      <div class="cal-accordion-body" id="week-body-{{ group.date }}">
       {% for sg in group.source_groups %}
       <div class="source-subgroup">
         <div class="source-label" style="color: {{ sg.color }};">
@@ -328,14 +328,14 @@
   <div class="groups">
     {% for group in viewed_groups %}
     <div class="group {{ 'group-paid' if group.all_paid else '' }}">
-      <div class="group-head cal-accordion-toggle" data-target="month-body-{{ loop.index0 }}">
+      <div class="group-head cal-accordion-toggle" data-target="month-body-{{ group.date }}">
         <span class="group-date">{{ group.date_label }}{% if group.all_paid %} &middot; paid{% endif %}</span>
         <span class="group-head-right">
           <span class="group-sub mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span>
           <span class="cal-accordion-arrow">&#9662;</span>
         </span>
       </div>
-      <div class="cal-accordion-body" id="month-body-{{ loop.index0 }}">
+      <div class="cal-accordion-body" id="month-body-{{ group.date }}">
       {% for sg in group.source_groups %}
       <div class="source-subgroup">
         <div class="source-label" style="color: {{ sg.color }};">
@@ -517,8 +517,13 @@
 
   function positionTooltip(e) {
     var rect = document.querySelector('.frame').getBoundingClientRect();
-    var x = e.clientX - rect.left + 14;
-    var y = e.clientY - rect.top - 10;
+    var cursorX = e.clientX - rect.left;
+    var cursorY = e.clientY - rect.top;
+    var tooltipWidth = tooltip.offsetWidth || 220;
+    var x = (cursorX + 14 + tooltipWidth > rect.width)
+      ? cursorX - 14 - tooltipWidth
+      : cursorX + 14;
+    var y = cursorY - 10;
     tooltip.style.left = x + 'px';
     tooltip.style.top = y + 'px';
   }

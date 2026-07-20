@@ -169,8 +169,14 @@
         function move(e) {
           var wrap = hit.closest('.insight-chart-wrap');
           var rect = wrap.getBoundingClientRect();
-          trendTooltip.style.left = (e.clientX - rect.left + 14) + 'px';
-          trendTooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+          var cursorX = e.clientX - rect.left;
+          var cursorY = e.clientY - rect.top;
+          var tooltipWidth = trendTooltip.offsetWidth || 220;
+          var x = (cursorX + 14 + tooltipWidth > rect.width)
+            ? cursorX - 14 - tooltipWidth
+            : cursorX + 14;
+          trendTooltip.style.left = x + 'px';
+          trendTooltip.style.top = (cursorY - 10) + 'px';
         }
         hit.addEventListener('mouseenter', show);
         hit.addEventListener('mousemove', move);
