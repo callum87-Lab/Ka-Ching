@@ -603,7 +603,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   display: flex;
   gap: 6px;
 }
-.range-tab {
+.range-tab,
+.shop-filter-tab {
   font-family: var(--font-display);
   font-weight: 800;
   font-stretch: condensed;
@@ -618,19 +619,22 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   box-shadow: 0 0 6px rgba(47, 216, 255, 0.12);
   transition: box-shadow 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
-.range-tab:hover {
+.range-tab:hover,
+.shop-filter-tab:hover {
   color: var(--text);
   text-decoration: none;
   border-color: var(--neon-blue);
   box-shadow: 0 0 10px rgba(47, 216, 255, 0.35);
 }
-.range-tab.active {
+.range-tab.active,
+.shop-filter-tab.active {
   background: var(--neon-blue);
   color: #04121a;
   border-color: var(--neon-blue);
   box-shadow: 0 0 16px rgba(47, 216, 255, 0.7);
 }
-.range-tab.active:hover { color: #04121a; }
+.range-tab.active:hover,
+.shop-filter-tab.active:hover { color: #04121a; }
 
 .chart { padding: 8px 0 0; }
 .trend-svg {

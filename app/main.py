@@ -27,7 +27,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.20.4"
+APP_VERSION = "2026.07.23.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -53,6 +53,7 @@ async def currency_context_middleware(request: Request, call_next):
         symbol = get_currency_symbol(conn.cursor())
         conn.close()
     except Exception:
+        logger.warning("CURRENCY MIDDLEWARE: couldn't read currency setting, defaulting to £", exc_info=True)
         symbol = "\u00a3"
     token = _currency_ctx.set(symbol)
     try:

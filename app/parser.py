@@ -285,17 +285,6 @@ def store_parsed_items(items, order_totals):
     }
 
 
-def parse_and_store(text: str):
-    items, order_totals, skipped_no_order = parse_order_history(text)
-    logger.info(
-        "IMPORT PARSE: found %d items, captured %d order totals, skipped %d (no order number): %s",
-        len(items), len(order_totals), len(skipped_no_order), order_totals,
-    )
-    result = store_parsed_items(items, order_totals)
-    result["skipped_no_order"] = len(skipped_no_order)
-    return result
-
-
 # --- Release-date-change notification emails -------------------------------
 #
 # Forbidden Planet sends a short email whenever a pre-order's release date
@@ -813,23 +802,6 @@ def detect_import(text: str, shop_hint: str | None = None):
             if generic["order_number"] and generic["shipping"] else {}
         ),
     }
-
-
-def import_text(text: str):
-    """Single entry point the Import page calls - handles a pasted
-    order-history export, a pasted release-date-change email, and pasted
-    order-detail pages (for exact shipment postage), since there's no
-    reason to make the person pick which kind of paste it is."""
-    result = parse_and_store(text)
-    updates = parse_release_date_updates(text)
-    update_result = apply_release_date_updates(updates)
-    result["release_matched"] = update_result["matched"]
-    result["release_unmatched"] = update_result["unmatched"]
-    result["release_changes"] = update_result["changes"]
-
-    postage_samples = parse_shipment_postage(text)
-    result["postage_captured"] = store_shipment_postage(postage_samples)
-    return result
 
 
 # --- Generic order confirmation parser ("Shopify-style") --------------------

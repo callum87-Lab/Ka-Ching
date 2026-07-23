@@ -21,10 +21,10 @@
   {% if filter_tab_sources|length > 1 %}
   <div class="source-filter-row">
     <a href="/calendar?month={{ viewed_month_param }}"
-       class="range-tab {{ 'active' if not active_source else '' }}">All shops</a>
+       class="shop-filter-tab {{ 'active' if not active_source else '' }}">All shops</a>
     {% for s in filter_tab_sources %}
     <a href="/calendar?month={{ viewed_month_param }}&source={{ s }}"
-       class="range-tab {{ 'active' if active_source == s else '' }}">{{ s }}</a>
+       class="shop-filter-tab {{ 'active' if active_source == s else '' }}">{{ s }}</a>
     {% endfor %}
   </div>
   {% endif %}
