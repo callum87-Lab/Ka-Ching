@@ -30,7 +30,12 @@
   </div>
 
   <div class="insight-card">
-    <div class="insight-card-title">Spend overview</div>
+    <div class="insight-card-title-row">
+      <div class="insight-card-icon" style="background: rgba(47,216,255,0.14);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2fd8ff" stroke-width="2.2" stroke-linecap="round"><path d="M3 17l5-5 4 4 8-9"/></svg>
+      </div>
+      <span class="insight-card-title">Spend overview</span>
+    </div>
     <div class="insight-card-stats">
       <div class="insight-stat">
         <span class="insight-stat-label">Priciest month</span>
@@ -40,12 +45,23 @@
       <div class="insight-stat">
         <span class="insight-stat-label">Avg per month</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(avg_per_month) }}</span>
+        {% if month_trend %}
+        <span class="trend-pill {{ 'trend-up' if month_trend.above_average else 'trend-down' }}">
+          {{ "▲" if month_trend.above_average else "▼" }} {{ month_trend.pct }}% vs {{ month_trend.label }}
+        </span>
+        {% endif %}
       </div>
       <div class="insight-stat">
         <span class="insight-stat-label">Next month</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(next_month_forecast) }}</span>
         <span class="insight-stat-sub">forecast so far</span>
       </div>
+      {% if spend_sparkline_svg %}
+      <div class="insight-spark-wrap">
+        {{ spend_sparkline_svg|safe }}
+        <div class="insight-spark-caption">6-month trend</div>
+      </div>
+      {% endif %}
     </div>
     <p class="insight-card-note">
       {% if top_month %}{{ top_month.label }} was your priciest month so far.{% else %}Nothing dated yet - add a few items to see spend patterns.{% endif %}
@@ -53,7 +69,12 @@
   </div>
 
   <div class="insight-card">
-    <div class="insight-card-title">Per issue</div>
+    <div class="insight-card-title-row">
+      <div class="insight-card-icon" style="background: rgba(155,123,255,0.14);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9b7bff" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      <span class="insight-card-title">Per issue</span>
+    </div>
     <div class="insight-card-stats">
       <div class="insight-stat">
         <span class="insight-stat-label">Total tracked</span>
@@ -63,10 +84,12 @@
       <div class="insight-stat">
         <span class="insight-stat-label">Priciest issue</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(priciest_item.price) if priciest_item else "0.00" }}</span>
+        <div class="insight-mini-bar-track"><div class="insight-mini-bar-fill" style="width: {{ priciest_issue_bar_pct }}%; background: var(--neon-violet);"></div></div>
       </div>
       <div class="insight-stat">
         <span class="insight-stat-label">Average issue</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(avg_per_issue) }}</span>
+        <div class="insight-mini-bar-track"><div class="insight-mini-bar-fill" style="width: {{ avg_issue_bar_pct }}%; background: var(--neon-blue);"></div></div>
       </div>
     </div>
     {% if priciest_item %}
@@ -77,7 +100,12 @@
   </div>
 
   <div class="insight-card">
-    <div class="insight-card-title">Shipping and patterns</div>
+    <div class="insight-card-title-row">
+      <div class="insight-card-icon" style="background: rgba(255,77,141,0.14);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff4d8d" stroke-width="2.2" stroke-linecap="round"><path d="M3 9l9-6 9 6-9 6-9-6z"/><path d="M3 9v6l9 6 9-6V9"/></svg>
+      </div>
+      <span class="insight-card-title">Shipping and patterns</span>
+    </div>
     <div class="insight-card-stats insight-card-stats-2">
       <div class="insight-stat">
         <span class="insight-stat-label">Busiest release day</span>
@@ -87,12 +115,8 @@
         <span class="insight-stat-label">Saved by cancelling</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(cancelled_saved) }}</span>
       </div>
+      <div class="insight-ring-wrap">{{ shipping_ring_svg|safe }}</div>
     </div>
-    <div class="insight-bar-row">
-      <span>Shipping vs cover price</span>
-      <span class="mono">{{ shipping_ratio_pct }}%</span>
-    </div>
-    <div class="insight-bar-track"><div class="insight-bar-fill" style="width: {{ shipping_bar_pct }}%;"></div></div>
     <p class="insight-card-note">
       {% if biggest_shipping %}Biggest shipping charge was {{ currency() }}{{ "%.2f"|format(biggest_shipping.amount) }} ({{ biggest_shipping.source }}) &middot; averaging {{ currency() }}{{ "%.2f"|format(avg_shipping_per_month) }}/month.{% else %}Biggest shipping charge and avg shipping/month need a few real postage figures logged first.{% endif %}
     </p>

@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.29.2"
+APP_VERSION = "2026.07.29.3"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -445,11 +445,10 @@ def _smooth_svg_path(points):
     return d
 
 
-def render_progress_ring_svg(percent: float, is_over: bool = False) -> str:
+def render_progress_ring_svg(percent: float, is_over: bool = False, size: int = 96, stroke: int = 10, font_size: int = 20) -> str:
     """A single value against a fixed ceiling (e.g. budget) - same visual
     language as the app's own dashboard rings, generated server-side
     since this app has no client-side JS layer to do it in the browser."""
-    size, stroke = 96, 10
     r = (size - stroke) / 2
     circumference = 2 * math.pi * r
     clamped = min(percent, 100)
@@ -461,7 +460,7 @@ def render_progress_ring_svg(percent: float, is_over: bool = False) -> str:
     stroke-linecap="round" stroke-dasharray="{circumference}" stroke-dashoffset="{offset}"
     transform="rotate(-90 {size / 2} {size / 2})"/>
   <text x="{size / 2}" y="{size / 2}" text-anchor="middle" dominant-baseline="central"
-    class="progress-ring-label" fill="{color}">{round(percent)}%</text>
+    class="progress-ring-label" style="font-size:{font_size}px" fill="{color}">{round(percent)}%</text>
 </svg>'''
 
 
@@ -484,6 +483,27 @@ def render_two_segment_ring_svg(pct1: float, color1: str, pct2: float, color2: s
     transform="rotate(-90 {size / 2} {size / 2})"/>
   <text x="{size / 2}" y="{size / 2 - 4}" text-anchor="middle" font-size="20" font-weight="700" fill="var(--text)">{center_value}</text>
   <text x="{size / 2}" y="{size / 2 + 12}" text-anchor="middle" font-size="8" fill="var(--text-muted)">{center_label}</text>
+</svg>'''
+
+
+def render_sparkline_svg(values: list, width: int = 110, height: int = 40, color: str = "var(--neon-blue)") -> str | None:
+    """A minimal trend line for the empty space in a stat row - not a
+    full chart, just enough shape to show direction at a glance."""
+    if not values or len(values) < 2:
+        return None
+    vmin, vmax = min(values), max(values)
+    span = (vmax - vmin) or 1
+    n = len(values)
+    pts = []
+    for i, v in enumerate(values):
+        x = (i / (n - 1)) * width
+        y = height - 4 - ((v - vmin) / span) * (height - 8)
+        pts.append((x, y))
+    points_str = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    last_x, last_y = pts[-1]
+    return f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+  <polyline points="{points_str}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="3" fill="{color}"/>
 </svg>'''
 
 
@@ -1451,6 +1471,34 @@ def insights_page(request: Request):
         preorder_count + released_count, "issues",
     )
     shipping_bar_pct = min(shipping_ratio_pct, 100)
+    shipping_ring_svg = render_progress_ring_svg(shipping_bar_pct, is_over=False, size=56, stroke=7, font_size=13)
+
+    # Trend badge: how the last fully-completed month compares to the
+    # all-time monthly average. The current month is deliberately excluded
+    # from this comparison since it's always partial (still accumulating),
+    # which would make every month look artificially "down" against the
+    # average purely from being incomplete rather than genuinely cheaper.
+    month_trend = None
+    if len(twelve_month_data) >= 2 and avg_per_month:
+        last_complete = twelve_month_data[-2]
+        if last_complete["total"] > 0:
+            diff_pct = round(((last_complete["total"] - avg_per_month) / avg_per_month) * 100)
+            if diff_pct != 0:
+                month_trend = {
+                    "pct": abs(diff_pct),
+                    "above_average": diff_pct > 0,
+                    "label": last_complete["label"],
+                }
+
+    # Sparkline: the same 12-month rolling data already built for the big
+    # trend chart above, just the last 6 points of it - no new aggregation.
+    spend_sparkline_svg = render_sparkline_svg([m["total"] for m in twelve_month_data[-6:]])
+
+    priciest_issue_bar_pct = 100.0
+    avg_issue_bar_pct = (
+        round((avg_per_issue / priciest_item["price"]) * 100, 1)
+        if priciest_item and priciest_item["price"] else 0.0
+    )
 
     cur.execute("SELECT price FROM items WHERE status = 'cancelled'")
     cancelled_saved = round(sum(r["price"] for r in cur.fetchall()), 2)
@@ -1551,6 +1599,11 @@ def insights_page(request: Request):
         "released_pct": released_pct,
         "preorder_ring_svg": preorder_ring_svg,
         "shipping_bar_pct": shipping_bar_pct,
+        "shipping_ring_svg": shipping_ring_svg,
+        "month_trend": month_trend,
+        "spend_sparkline_svg": spend_sparkline_svg,
+        "priciest_issue_bar_pct": priciest_issue_bar_pct,
+        "avg_issue_bar_pct": avg_issue_bar_pct,
         "cancelled_saved": cancelled_saved,
         "shipping_ratio_pct": shipping_ratio_pct,
         "total_all_spend": total_all_spend,
