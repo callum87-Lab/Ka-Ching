@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.29.5"
+APP_VERSION = "2026.07.29.6"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -486,7 +486,7 @@ def render_two_segment_ring_svg(pct1: float, color1: str, pct2: float, color2: s
 </svg>'''
 
 
-def render_sparkline_svg(values: list, width: int = 110, height: int = 40, color: str = "var(--neon-blue)") -> str | None:
+def render_sparkline_svg(values: list, width: int = 140, height: int = 52, color: str = "var(--neon-blue)") -> str | None:
     """A minimal trend line for the empty space in a stat row - not a
     full chart, just enough shape to show direction at a glance."""
     if not values or len(values) < 2:
@@ -1484,7 +1484,7 @@ def insights_page(request: Request):
         r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
 
     shipping_bar_pct = min(shipping_ratio_pct, 100)
-    shipping_ring_svg = render_progress_ring_svg(shipping_bar_pct, is_over=False, size=56, stroke=7, font_size=13)
+    shipping_ring_svg = render_progress_ring_svg(shipping_bar_pct, is_over=False, size=68, stroke=8, font_size=15)
 
     # Trend badge: how the last fully-completed month compares to the
     # all-time monthly average. The current month is deliberately excluded

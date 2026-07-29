@@ -1458,7 +1458,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .ratio-legend-value { font-size: 13px; font-weight: 700; }
 
 .insight-card-title {
-  font-size: 10.5px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
@@ -1466,16 +1466,16 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .insight-card-stats { display: flex; justify-content: flex-start; gap: 48px; margin-bottom: 14px; }
 .insight-card-stats-2 { justify-content: space-between; }
-.insight-stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.insight-stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .insight-stat-right { align-items: flex-end; text-align: right; }
-.insight-stat-label { font-size: 10px; color: var(--text-muted); }
-.insight-stat-value { font-size: 16px; font-weight: 700; color: var(--neon-blue); }
-.insight-stat-sub { font-size: 9.5px; color: var(--text-muted); }
+.insight-stat-label { font-size: 12px; color: var(--text-muted); }
+.insight-stat-value { font-size: 19px; font-weight: 700; color: var(--neon-blue); }
+.insight-stat-sub { font-size: 12px; color: var(--text-muted); }
 .insight-card-note {
   border-top: 1px solid var(--border);
   padding-top: 10px;
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 .insight-card-note-link {
@@ -1483,7 +1483,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   border-top: 1px solid var(--border);
   padding-top: 10px;
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
   text-decoration: underline;
 }
@@ -1505,9 +1505,9 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 20px;
   margin-top: 2px;
   width: fit-content;
@@ -1515,17 +1515,17 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .trend-up { background: rgba(255, 77, 141, 0.14); color: var(--neon-pink); }
 .trend-down { background: rgba(60, 242, 166, 0.14); color: var(--neon-green); }
 .insight-spark-wrap { margin-left: auto; flex-shrink: 0; text-align: right; }
-.insight-spark-caption { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
-.insight-mini-bar-track { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; margin-top: 6px; width: 90px; }
-.insight-mini-bar-fill { height: 100%; border-radius: 3px; }
+.insight-spark-caption { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.insight-mini-bar-track { height: 10px; border-radius: 5px; background: var(--surface); overflow: hidden; margin-top: 6px; width: 110px; }
+.insight-mini-bar-fill { height: 100%; border-radius: 5px; }
 .insight-ring-wrap { flex-shrink: 0; margin-left: auto; }
 
 /* --- Insights: recent releases list beside the pre-order/released ring --- */
 .ring-row-divider { width: 1px; align-self: stretch; background: var(--border); flex-shrink: 0; }
 .recent-releases { flex: 1; min-width: 0; max-width: 100%; overflow: hidden; }
-.recent-releases-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
-.recent-release-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 12.5px; border-bottom: 1px solid var(--border); width: 100%; }
+.recent-releases-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.recent-release-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; font-size: 14px; border-bottom: 1px solid var(--border); width: 100%; }
 .recent-release-row:last-child { border-bottom: none; }
-.recent-release-date { color: var(--text-muted); font-size: 10.5px; width: 56px; flex-shrink: 0; }
+.recent-release-date { color: var(--text-muted); font-size: 12px; width: 60px; flex-shrink: 0; }
 .recent-release-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 10px; }
 .recent-release-price { flex-shrink: 0; }
