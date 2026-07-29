@@ -2409,6 +2409,7 @@ async def api_sync(request: Request, payload: SyncRequest):
     cur = conn.cursor()
     applied = []
     conflicts = []
+    skipped_duplicates = []
 
     for item in payload.push:
         cur.execute("SELECT * FROM items WHERE uuid = ?", (item.uuid,))
@@ -2431,37 +2432,53 @@ async def api_sync(request: Request, payload: SyncRequest):
             })
             continue
 
-        if item.deleted:
-            if existing is not None:
+        try:
+            if item.deleted:
+                if existing is not None:
+                    cur.execute(
+                        "UPDATE items SET deleted_at = ?, updated_at = ? WHERE uuid = ?",
+                        (item.updated_at, item.updated_at, item.uuid),
+                    )
+            elif existing is not None:
                 cur.execute(
-                    "UPDATE items SET deleted_at = ?, updated_at = ? WHERE uuid = ?",
-                    (item.updated_at, item.updated_at, item.uuid),
+                    """
+                    UPDATE items
+                    SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
+                        charge_status = ?, price = ?, note = ?, source = ?, tracking_number = ?,
+                        manual_override = ?, updated_at = ?, deleted_at = NULL
+                    WHERE uuid = ?
+                    """,
+                    (item.name, item.order_number, item.placed_date, item.status, item.release_date,
+                     item.charge_status, item.price, item.note, item.source, item.tracking_number,
+                     int(item.manual_override), item.updated_at, item.uuid),
                 )
-        elif existing is not None:
-            cur.execute(
-                """
-                UPDATE items
-                SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
-                    charge_status = ?, price = ?, note = ?, source = ?, tracking_number = ?,
-                    manual_override = ?, updated_at = ?, deleted_at = NULL
-                WHERE uuid = ?
-                """,
-                (item.name, item.order_number, item.placed_date, item.status, item.release_date,
-                 item.charge_status, item.price, item.note, item.source, item.tracking_number,
-                 int(item.manual_override), item.updated_at, item.uuid),
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO items
+                        (name, order_number, placed_date, status, release_date, charge_status,
+                         price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (item.name, item.order_number, item.placed_date, item.status, item.release_date,
+                     item.charge_status, item.price, item.note, now, int(item.manual_override),
+                     item.source, item.tracking_number, item.uuid, item.updated_at),
+                )
+        except sqlite3.IntegrityError:
+            # This exact (order_number, name, price) already exists here
+            # under a DIFFERENT uuid - almost always real order history
+            # that existed on both sides independently before sync ever
+            # existed, not a genuine new duplicate. Don't crash the whole
+            # batch over it; skip this one item so everything else still
+            # goes through. Properly linking these up as the same item is
+            # the first-time reconciliation pass, not this endpoint.
+            logger.warning(
+                "SYNC: skipped item uuid=%s (%r) - collided with an existing un-reconciled row "
+                "matching the same order_number/name/price",
+                item.uuid, item.name,
             )
-        else:
-            cur.execute(
-                """
-                INSERT INTO items
-                    (name, order_number, placed_date, status, release_date, charge_status,
-                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (item.name, item.order_number, item.placed_date, item.status, item.release_date,
-                 item.charge_status, item.price, item.note, now, int(item.manual_override),
-                 item.source, item.tracking_number, item.uuid, item.updated_at),
-            )
+            skipped_duplicates.append(item.uuid)
+            continue
         applied.append(item.uuid)
 
     # Pull: anything that changed here - via this push just above, the
@@ -2486,13 +2503,15 @@ async def api_sync(request: Request, payload: SyncRequest):
     conn.close()
 
     logger.info(
-        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d pulled=%d",
-        payload.client_id, payload.client_label, len(payload.push), len(applied), len(conflicts), len(changes),
+        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d skipped_duplicates=%d pulled=%d",
+        payload.client_id, payload.client_label, len(payload.push), len(applied), len(conflicts),
+        len(skipped_duplicates), len(changes),
     )
 
     return {
         "server_time": now,
         "applied": applied,
         "conflicts": conflicts,
+        "skipped_duplicates": skipped_duplicates,
         "changes": changes,
     }
