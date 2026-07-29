@@ -271,6 +271,46 @@
 
 <section class="block">
   <div class="block-head">
+    <h2>Sync</h2>
+  </div>
+  <p class="muted item-form-hint">
+    Lets the Android app connect straight to this server so both stay in
+    step. Direct connection only - nothing else is in the loop, and nothing
+    about this is ever sent anywhere but the device you connect yourself.
+  </p>
+  {% if sync_api_key %}
+  <div class="form-row">
+    <label>
+      <span>Sync key</span>
+      <input type="text" class="mono sync-key-copy-btn" data-key="{{ sync_api_key }}" value="{{ sync_api_key }}" readonly>
+    </label>
+  </div>
+  <p class="muted item-form-hint">
+    Paste this into the app's Settings &rarr; Sync screen. Click the key
+    above to copy it.
+  </p>
+  <form method="post" action="/settings/sync/generate-key" class="item-edit-form"
+        onsubmit="return confirm('This invalidates the current key - any device already using it will need the new one pasted in again. Continue?');">
+    <button type="submit" class="btn-tiny btn-test">Regenerate key</button>
+  </form>
+  {% else %}
+  <form method="post" action="/settings/sync/generate-key" class="item-edit-form">
+    <button type="submit">Generate sync key</button>
+  </form>
+  {% endif %}
+
+  {% if synced_devices %}
+  <p class="muted db-stats-line" style="margin-top: 1rem;">Devices that have synced with this server:</p>
+  <ul class="item-form-hint">
+    {% for dev in synced_devices %}
+    <li>{{ dev.client_label or "Unnamed device" }} &mdash; last synced {{ dev.last_synced_at }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<section class="block">
+  <div class="block-head">
     <h2>Danger zone</h2>
   </div>
   {% if reset_result == 'done' %}

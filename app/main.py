@@ -7,15 +7,17 @@ import io
 import json
 import logging
 import os
+import secrets
 import shutil
 import sqlite3
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import quote
 
-from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from . import db, notifications, parser
 
@@ -2033,6 +2035,9 @@ def settings_form(
     values = notifications.get_all_settings(cur)
     cur.execute("SELECT COUNT(*) AS n FROM items")
     item_count = cur.fetchone()["n"]
+    sync_api_key = notifications.get_setting(cur, "sync_api_key", None)
+    cur.execute("SELECT client_id, client_label, last_synced_at FROM sync_state ORDER BY last_synced_at DESC")
+    synced_devices = cur.fetchall()
     conn.close()
 
     try:
@@ -2052,7 +2057,23 @@ def settings_form(
         "notif_import_result": notif_import_result,
         "item_count": item_count,
         "db_size_label": db_size_label,
+        "sync_api_key": sync_api_key,
+        "synced_devices": synced_devices,
     })
+
+
+@app.post("/settings/sync/generate-key")
+def generate_sync_key():
+    # Regenerating invalidates whatever key any already-connected device is
+    # using - a deliberate choice (lost/compromised key should actually stop
+    # working), just means the person needs to re-paste the new one into any
+    # device they still want syncing.
+    conn = db.get_db()
+    cur = conn.cursor()
+    notifications.set_setting(cur, "sync_api_key", secrets.token_urlsafe(24))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/settings", status_code=303)
 
 
 @app.post("/settings")
@@ -2311,4 +2332,167 @@ def api_summary():
         "month_spent": round(month_spent_comics + month_spent_shipping, 2),
         "month_remaining": round(month_remaining_comics + month_remaining_shipping, 2),
         "month": today.strftime("%B %Y"),
+    }
+
+
+# --- App sync ---------------------------------------------------------------
+#
+# Two-way sync between this server and the Android app. Direct connection
+# only - the app talks straight to this server with a token it was given
+# once, nothing else is in the loop. No accounts, no telemetry, no data
+# about this ever leaves this server other than to the device the person
+# themselves connected.
+#
+# Known gap: `shipping` (real postage captured against `shipment_postage`
+# on this side, a plain per-item column on the app's side) isn't part of
+# the sync payload yet - the two sides model it too differently to fold in
+# here safely. Doesn't cause data loss, it just doesn't round-trip yet.
+
+SYNC_ITEM_FIELDS = [
+    "uuid", "name", "order_number", "placed_date", "status", "release_date",
+    "charge_status", "price", "note", "source", "tracking_number",
+]
+
+
+class SyncPushItem(BaseModel):
+    uuid: str
+    name: str
+    order_number: str | None = None
+    placed_date: str | None = None
+    status: str = "preorder"
+    release_date: str | None = None
+    charge_status: str = "not_charged"
+    price: float
+    note: str | None = None
+    source: str = "Unknown shop"
+    tracking_number: str | None = None
+    manual_override: bool = False
+    updated_at: str
+    deleted: bool = False
+
+
+class SyncRequest(BaseModel):
+    client_id: str
+    client_label: str | None = None
+    since: str | None = None
+    push: list[SyncPushItem] = []
+
+
+def _item_row_to_sync_dict(row: sqlite3.Row) -> dict:
+    out = {field: row[field] for field in SYNC_ITEM_FIELDS}
+    out["manual_override"] = bool(row["manual_override"])
+    out["updated_at"] = row["updated_at"]
+    out["deleted"] = bool(row["deleted_at"])
+    return out
+
+
+def _require_sync_key(request: Request):
+    conn = db.get_db()
+    stored_key = notifications.get_setting(conn.cursor(), "sync_api_key", None)
+    conn.close()
+    if not stored_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Sync isn't set up on this server yet - generate a sync key in Settings first.",
+        )
+    provided = request.headers.get("X-Sync-Key")
+    if not provided or not secrets.compare_digest(provided, stored_key):
+        raise HTTPException(status_code=401, detail="Invalid or missing sync key.")
+
+
+@app.post("/api/sync")
+async def api_sync(request: Request, payload: SyncRequest):
+    _require_sync_key(request)
+
+    now = db.utc_now()
+    conn = db.get_db()
+    cur = conn.cursor()
+    applied = []
+    conflicts = []
+
+    for item in payload.push:
+        cur.execute("SELECT * FROM items WHERE uuid = ?", (item.uuid,))
+        existing = cur.fetchone()
+
+        # Something changed here for this item after the client's own last
+        # successful checkpoint, and the client also wants to change it now
+        # - don't silently pick a winner, surface both versions and let the
+        # person decide (per the "flag it and let me pick" conflict policy).
+        # Note: on a client's very first sync (since=None) there's nothing
+        # to compare against, so a same-uuid row here just gets overwritten
+        # - fine for a brand new item, but if this is really the same phone
+        # re-syncing from scratch that's a rough edge the reconciliation
+        # step still needs to close, not this one.
+        if existing is not None and payload.since and existing["updated_at"] > payload.since:
+            conflicts.append({
+                "uuid": item.uuid,
+                "mine": item.model_dump(),
+                "theirs": _item_row_to_sync_dict(existing),
+            })
+            continue
+
+        if item.deleted:
+            if existing is not None:
+                cur.execute(
+                    "UPDATE items SET deleted_at = ?, updated_at = ? WHERE uuid = ?",
+                    (item.updated_at, item.updated_at, item.uuid),
+                )
+        elif existing is not None:
+            cur.execute(
+                """
+                UPDATE items
+                SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
+                    charge_status = ?, price = ?, note = ?, source = ?, tracking_number = ?,
+                    manual_override = ?, updated_at = ?, deleted_at = NULL
+                WHERE uuid = ?
+                """,
+                (item.name, item.order_number, item.placed_date, item.status, item.release_date,
+                 item.charge_status, item.price, item.note, item.source, item.tracking_number,
+                 int(item.manual_override), item.updated_at, item.uuid),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO items
+                    (name, order_number, placed_date, status, release_date, charge_status,
+                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (item.name, item.order_number, item.placed_date, item.status, item.release_date,
+                 item.charge_status, item.price, item.note, now, int(item.manual_override),
+                 item.source, item.tracking_number, item.uuid, item.updated_at),
+            )
+        applied.append(item.uuid)
+
+    # Pull: anything that changed here - via this push just above, the
+    # webui, or another device - since this client's last checkpoint.
+    if payload.since:
+        cur.execute("SELECT * FROM items WHERE updated_at > ?", (payload.since,))
+    else:
+        cur.execute("SELECT * FROM items")
+    changes = [_item_row_to_sync_dict(row) for row in cur.fetchall()]
+
+    cur.execute(
+        """
+        INSERT INTO sync_state (client_id, client_label, last_synced_at, created_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(client_id) DO UPDATE SET
+            client_label = excluded.client_label, last_synced_at = excluded.last_synced_at
+        """,
+        (payload.client_id, payload.client_label, now, now),
+    )
+
+    conn.commit()
+    conn.close()
+
+    logger.info(
+        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d pulled=%d",
+        payload.client_id, payload.client_label, len(payload.push), len(applied), len(conflicts), len(changes),
+    )
+
+    return {
+        "server_time": now,
+        "applied": applied,
+        "conflicts": conflicts,
+        "changes": changes,
     }

@@ -141,6 +141,14 @@ document.querySelectorAll('.track-link-btn').forEach(function (link) {
     // itself picks it straight up from there automatically).
   });
 });
+document.querySelectorAll('.sync-key-copy-btn').forEach(function (field) {
+  field.addEventListener('click', function () {
+    field.select();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(field.getAttribute('data-key'));
+    }
+  });
+});
 </script>
 </body>
 </html>
