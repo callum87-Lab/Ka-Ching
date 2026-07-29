@@ -285,30 +285,35 @@ def shift_month(d: date, delta: int) -> date:
 
 
 def fetch_items_between(cur, start: date, end: date, source: str | None = None):
+    # Falls back to placed_date when release_date isn't set yet - matches
+    # the app's own effectiveDate() behaviour, so an item without a
+    # confirmed release date still shows up somewhere sensible on both
+    # sides instead of only ever appearing in Search here.
     query = """
         SELECT * FROM items
         WHERE status != 'cancelled'
-          AND release_date IS NOT NULL
-          AND date(release_date) BETWEEN date(?) AND date(?)
+          AND COALESCE(release_date, placed_date) IS NOT NULL
+          AND date(COALESCE(release_date, placed_date)) BETWEEN date(?) AND date(?)
     """
     params = [start.isoformat(), end.isoformat()]
     if source:
         clause, extra_params = source_filter_sql(source)
         query += f" AND {clause}"
         params.extend(extra_params)
-    query += " ORDER BY release_date, name"
+    query += " ORDER BY COALESCE(release_date, placed_date), name"
     cur.execute(query, params)
     return [dict(r) for r in cur.fetchall()]
 
 
 def group_by_date(items):
-    """Groups items by release date, then sub-groups each date by source/
-    retailer (Forbidden Planet, or wherever else), so a day with releases
-    from more than one shop shows each shop's items separately rather than
-    one undifferentiated pile."""
+    """Groups items by release date (falling back to placed_date if no
+    release date is set yet, same as fetch_items_between above), then
+    sub-groups each date by source/retailer (Forbidden Planet, or
+    wherever else), so a day with releases from more than one shop shows
+    each shop's items separately rather than one undifferentiated pile."""
     groups = {}
     for it in items:
-        key = it["release_date"]
+        key = it["release_date"] or it["placed_date"]
         groups.setdefault(key, []).append(it)
     result = []
     for key in sorted(groups.keys()):
