@@ -1443,9 +1443,10 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   border-radius: var(--radius);
   padding: 14px;
   flex: 1;
+  min-width: 0;
 }
 .ratio-ring-wrap { flex-shrink: 0; }
-.ratio-ring-legend { display: flex; flex-direction: column; gap: 10px; max-width: 220px; }
+.ratio-ring-legend { display: flex; flex-direction: column; gap: 10px; max-width: 220px; flex-shrink: 0; }
 .ratio-legend-row {
   display: flex;
   align-items: center;
@@ -1520,10 +1521,10 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .insight-ring-wrap { flex-shrink: 0; margin-left: auto; }
 
 /* --- Insights: recent releases list beside the pre-order/released ring --- */
-.ring-row-divider { width: 1px; align-self: stretch; background: var(--border); }
-.recent-releases { flex: 1; min-width: 0; }
+.ring-row-divider { width: 1px; align-self: stretch; background: var(--border); flex-shrink: 0; }
+.recent-releases { flex: 1; min-width: 0; max-width: 100%; overflow: hidden; }
 .recent-releases-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
-.recent-release-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 12.5px; border-bottom: 1px solid var(--border); }
+.recent-release-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 12.5px; border-bottom: 1px solid var(--border); width: 100%; }
 .recent-release-row:last-child { border-bottom: none; }
 .recent-release-date { color: var(--text-muted); font-size: 10.5px; width: 56px; flex-shrink: 0; }
 .recent-release-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 10px; }
