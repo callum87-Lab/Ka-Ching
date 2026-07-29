@@ -2410,6 +2410,7 @@ async def api_sync(request: Request, payload: SyncRequest):
     applied = []
     conflicts = []
     skipped_duplicates = []
+    reconciled = []
 
     for item in payload.push:
         cur.execute("SELECT * FROM items WHERE uuid = ?", (item.uuid,))
@@ -2422,8 +2423,8 @@ async def api_sync(request: Request, payload: SyncRequest):
         # Note: on a client's very first sync (since=None) there's nothing
         # to compare against, so a same-uuid row here just gets overwritten
         # - fine for a brand new item, but if this is really the same phone
-        # re-syncing from scratch that's a rough edge the reconciliation
-        # step still needs to close, not this one.
+        # re-syncing from scratch that's a rough edge reconciliation still
+        # doesn't close, since it only matches on (order_number, name, price).
         if existing is not None and payload.since and existing["updated_at"] > payload.since:
             conflicts.append({
                 "uuid": item.uuid,
@@ -2432,54 +2433,90 @@ async def api_sync(request: Request, payload: SyncRequest):
             })
             continue
 
+        if item.deleted:
+            if existing is not None:
+                cur.execute(
+                    "UPDATE items SET deleted_at = ?, updated_at = ? WHERE uuid = ?",
+                    (item.updated_at, item.updated_at, item.uuid),
+                )
+                applied.append(item.uuid)
+            # If it never existed here under this uuid, there's nothing to
+            # delete - a delete colliding with an un-reconciled row under a
+            # different uuid is a rarer edge case reconciliation doesn't
+            # cover yet, just a silent no-op rather than a crash.
+            continue
+
+        if existing is not None:
+            cur.execute(
+                """
+                UPDATE items
+                SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
+                    charge_status = ?, price = ?, note = ?, source = ?, tracking_number = ?,
+                    manual_override = ?, updated_at = ?, deleted_at = NULL
+                WHERE uuid = ?
+                """,
+                (item.name, item.order_number, item.placed_date, item.status, item.release_date,
+                 item.charge_status, item.price, item.note, item.source, item.tracking_number,
+                 int(item.manual_override), item.updated_at, item.uuid),
+            )
+            applied.append(item.uuid)
+            continue
+
         try:
-            if item.deleted:
-                if existing is not None:
-                    cur.execute(
-                        "UPDATE items SET deleted_at = ?, updated_at = ? WHERE uuid = ?",
-                        (item.updated_at, item.updated_at, item.uuid),
-                    )
-            elif existing is not None:
+            cur.execute(
+                """
+                INSERT INTO items
+                    (name, order_number, placed_date, status, release_date, charge_status,
+                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (item.name, item.order_number, item.placed_date, item.status, item.release_date,
+                 item.charge_status, item.price, item.note, now, int(item.manual_override),
+                 item.source, item.tracking_number, item.uuid, item.updated_at),
+            )
+            applied.append(item.uuid)
+        except sqlite3.IntegrityError:
+            # This exact (order_number, name, price) already exists here
+            # under a DIFFERENT uuid - almost always real order history
+            # that existed on both sides independently before sync ever
+            # existed, not a genuine new duplicate. First-time
+            # reconciliation: find that row, let whichever side's data is
+            # actually newer win, and tell the client to adopt the
+            # server's uuid for it going forward instead of leaving the
+            # two as permanently separate records.
+            cur.execute(
+                "SELECT * FROM items WHERE order_number IS ? AND name = ? AND price = ?",
+                (item.order_number, item.name, item.price),
+            )
+            match = cur.fetchone()
+            if match is None:
+                # Constraint fired but a plain re-query found nothing -
+                # shouldn't happen, but don't crash the batch over it.
+                logger.warning(
+                    "SYNC: collision on uuid=%s (%r) but no matching row found on re-query - skipping",
+                    item.uuid, item.name,
+                )
+                skipped_duplicates.append(item.uuid)
+                continue
+
+            if item.updated_at > match["updated_at"]:
                 cur.execute(
                     """
                     UPDATE items
                     SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
                         charge_status = ?, price = ?, note = ?, source = ?, tracking_number = ?,
-                        manual_override = ?, updated_at = ?, deleted_at = NULL
+                        manual_override = ?, updated_at = ?
                     WHERE uuid = ?
                     """,
                     (item.name, item.order_number, item.placed_date, item.status, item.release_date,
                      item.charge_status, item.price, item.note, item.source, item.tracking_number,
-                     int(item.manual_override), item.updated_at, item.uuid),
+                     int(item.manual_override), item.updated_at, match["uuid"]),
                 )
-            else:
-                cur.execute(
-                    """
-                    INSERT INTO items
-                        (name, order_number, placed_date, status, release_date, charge_status,
-                         price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (item.name, item.order_number, item.placed_date, item.status, item.release_date,
-                     item.charge_status, item.price, item.note, now, int(item.manual_override),
-                     item.source, item.tracking_number, item.uuid, item.updated_at),
-                )
-        except sqlite3.IntegrityError:
-            # This exact (order_number, name, price) already exists here
-            # under a DIFFERENT uuid - almost always real order history
-            # that existed on both sides independently before sync ever
-            # existed, not a genuine new duplicate. Don't crash the whole
-            # batch over it; skip this one item so everything else still
-            # goes through. Properly linking these up as the same item is
-            # the first-time reconciliation pass, not this endpoint.
-            logger.warning(
-                "SYNC: skipped item uuid=%s (%r) - collided with an existing un-reconciled row "
-                "matching the same order_number/name/price",
-                item.uuid, item.name,
+            logger.info(
+                "SYNC: reconciled uuid=%s (%r) with existing server row uuid=%s",
+                item.uuid, item.name, match["uuid"],
             )
-            skipped_duplicates.append(item.uuid)
-            continue
-        applied.append(item.uuid)
+            reconciled.append({"local_uuid": item.uuid, "server_uuid": match["uuid"]})
 
     # Pull: anything that changed here - via this push just above, the
     # webui, or another device - since this client's last checkpoint.
@@ -2503,15 +2540,16 @@ async def api_sync(request: Request, payload: SyncRequest):
     conn.close()
 
     logger.info(
-        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d skipped_duplicates=%d pulled=%d",
+        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d reconciled=%d skipped_duplicates=%d pulled=%d",
         payload.client_id, payload.client_label, len(payload.push), len(applied), len(conflicts),
-        len(skipped_duplicates), len(changes),
+        len(reconciled), len(skipped_duplicates), len(changes),
     )
 
     return {
         "server_time": now,
         "applied": applied,
         "conflicts": conflicts,
+        "reconciled": reconciled,
         "skipped_duplicates": skipped_duplicates,
         "changes": changes,
     }
