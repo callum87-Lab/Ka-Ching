@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.29.3"
+APP_VERSION = "2026.07.29.4"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1470,6 +1470,19 @@ def insights_page(request: Request):
         preorder_pct, "var(--neon-blue)", released_pct, "var(--neon-violet)",
         preorder_count + released_count, "issues",
     )
+
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) <= date(?)
+        ORDER BY release_date DESC LIMIT 10
+        """,
+        (date.today().isoformat(),),
+    )
+    recent_releases = [dict(r) for r in cur.fetchall()]
+    for r in recent_releases:
+        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
+
     shipping_bar_pct = min(shipping_ratio_pct, 100)
     shipping_ring_svg = render_progress_ring_svg(shipping_bar_pct, is_over=False, size=56, stroke=7, font_size=13)
 
@@ -1600,6 +1613,7 @@ def insights_page(request: Request):
         "preorder_ring_svg": preorder_ring_svg,
         "shipping_bar_pct": shipping_bar_pct,
         "shipping_ring_svg": shipping_ring_svg,
+        "recent_releases": recent_releases,
         "month_trend": month_trend,
         "spend_sparkline_svg": spend_sparkline_svg,
         "priciest_issue_bar_pct": priciest_issue_bar_pct,

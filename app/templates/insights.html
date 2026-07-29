@@ -26,6 +26,24 @@
           <span class="mono ratio-legend-value" style="color: var(--neon-violet);">{{ released_pct }}%</span>
         </div>
       </div>
+      {% if recent_releases %}
+      <div class="ring-row-divider"></div>
+      <div class="recent-releases">
+        <div class="block-head">
+          <span class="recent-releases-title">10 most recent releases</span>
+          <button type="button" class="section-collapse-toggle" data-target="recent-releases-body" aria-label="Collapse section">&#9662;</button>
+        </div>
+        <div class="section-body" id="recent-releases-body">
+          {% for r in recent_releases %}
+          <div class="recent-release-row">
+            <span class="recent-release-date mono">{{ r.release_date_label }}</span>
+            <span class="recent-release-name">{{ r.name }}</span>
+            <span class="recent-release-price mono">{{ currency() }}{{ "%.2f"|format(r.price) }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -253,6 +271,16 @@
     });
   }
 })();
+
+document.querySelectorAll('.section-collapse-toggle').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var body = document.getElementById(btn.getAttribute('data-target'));
+    if (!body) return;
+    var collapsed = body.classList.toggle('collapsed');
+    btn.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+    btn.setAttribute('aria-label', collapsed ? 'Expand section' : 'Collapse section');
+  });
+});
 </script>
 
 {% endblock %}
