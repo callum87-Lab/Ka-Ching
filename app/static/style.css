@@ -1418,10 +1418,10 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .dual-ring-row {
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  gap: 12px;
+  justify-content: center;
+  gap: 32px;
 }
-.dual-ring-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+.dual-ring-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .dual-ring-wrap { flex-shrink: 0; }
 .dual-ring-divider { width: 1px; align-self: stretch; background: var(--border); }
 .dual-ring-label { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
@@ -1445,7 +1445,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   flex: 1;
 }
 .ratio-ring-wrap { flex-shrink: 0; }
-.ratio-ring-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.ratio-ring-legend { display: flex; flex-direction: column; gap: 10px; max-width: 220px; }
 .ratio-legend-row {
   display: flex;
   align-items: center;
@@ -1463,7 +1463,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   color: var(--text-muted);
   margin-bottom: 14px;
 }
-.insight-card-stats { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.insight-card-stats { display: flex; justify-content: flex-start; gap: 48px; margin-bottom: 14px; }
 .insight-card-stats-2 { justify-content: space-between; }
 .insight-stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .insight-stat-right { align-items: flex-end; text-align: right; }
