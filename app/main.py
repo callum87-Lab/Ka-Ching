@@ -959,6 +959,8 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
     before_dict = dict(before) if before else None
     logger.info("MARK request: item_id=%s action=%s before=%s", item_id, action, before_dict)
 
+    now = db.utc_now()
+
     if action == "paid":
         cur.execute(
             """
@@ -966,10 +968,11 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
             SET prev_status = CASE WHEN manual_override = 0 THEN status ELSE prev_status END,
                 prev_charge_status = CASE WHEN manual_override = 0 THEN charge_status ELSE prev_charge_status END,
                 charge_status = 'charged',
-                manual_override = 1
+                manual_override = 1,
+                updated_at = ?
             WHERE id = ?
             """,
-            (item_id,),
+            (now, item_id),
         )
     elif action == "cancel":
         cur.execute(
@@ -978,10 +981,11 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
             SET prev_status = CASE WHEN manual_override = 0 THEN status ELSE prev_status END,
                 prev_charge_status = CASE WHEN manual_override = 0 THEN charge_status ELSE prev_charge_status END,
                 status = 'cancelled',
-                manual_override = 1
+                manual_override = 1,
+                updated_at = ?
             WHERE id = ?
             """,
-            (item_id,),
+            (now, item_id),
         )
     elif action == "undo":
         cur.execute(
@@ -991,14 +995,18 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
                 charge_status = COALESCE(prev_charge_status, charge_status),
                 manual_override = 0,
                 prev_status = NULL,
-                prev_charge_status = NULL
+                prev_charge_status = NULL,
+                updated_at = ?
             WHERE id = ?
             """,
-            (item_id,),
+            (now, item_id),
         )
     elif action == "remove":
         # Permanent delete - for bad data (duplicate line items, parsing
         # artifacts) rather than a real-world cancellation. No Undo.
+        # Still hard-deleted for now - soft-delete (deleted_at) so removals
+        # propagate over sync instead of just vanishing locally is coming
+        # in the sync endpoint work itself, not this schema pass.
         cur.execute("DELETE FROM items WHERE id = ?", (item_id,))
     else:
         logger.warning("MARK request with unknown action=%s item_id=%s - no update applied", action, item_id)
@@ -1040,6 +1048,7 @@ def bulk_item_action(
     conn = db.get_db()
     cur = conn.cursor()
     now_ids = [int(i) for i in item_ids if i.isdigit()]
+    now = db.utc_now()
 
     if bulk_action == "remove":
         cur.executemany("DELETE FROM items WHERE id = ?", [(i,) for i in now_ids])
@@ -1051,10 +1060,11 @@ def bulk_item_action(
             SET prev_status = CASE WHEN manual_override = 0 THEN status ELSE prev_status END,
                 prev_charge_status = CASE WHEN manual_override = 0 THEN charge_status ELSE prev_charge_status END,
                 status = 'cancelled',
-                manual_override = 1
+                manual_override = 1,
+                updated_at = ?
             WHERE id = ?
             """,
-            [(i,) for i in now_ids],
+            [(now, i) for i in now_ids],
         )
         logger.info("BULK ACTION: cancelled %d items: %s", len(now_ids), now_ids)
     elif bulk_action == "paid":
@@ -1064,10 +1074,11 @@ def bulk_item_action(
             SET prev_status = CASE WHEN manual_override = 0 THEN status ELSE prev_status END,
                 prev_charge_status = CASE WHEN manual_override = 0 THEN charge_status ELSE prev_charge_status END,
                 charge_status = 'charged',
-                manual_override = 1
+                manual_override = 1,
+                updated_at = ?
             WHERE id = ?
             """,
-            [(i,) for i in now_ids],
+            [(now, i) for i in now_ids],
         )
         logger.info("BULK ACTION: marked %d items paid: %s", len(now_ids), now_ids)
     else:
@@ -1158,10 +1169,11 @@ async def create_items(request: Request):
             """
             INSERT INTO items
                 (name, order_number, placed_date, status, release_date, charge_status,
-                 price, note, imported_at, manual_override, source, tracking_number)
-            VALUES (?, ?, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?, ?)
+                 price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
+            VALUES (?, ?, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?, ?, ?, ?)
             """,
-            (clean_name, order_number, today.isoformat(), release_iso, charge_status, price_val, now, source, tracking_number),
+            (clean_name, order_number, today.isoformat(), release_iso, charge_status, price_val, now, source,
+             tracking_number, db.new_uuid(), now),
         )
         created.append((cur.lastrowid, clean_name, price_val))
 
@@ -1230,10 +1242,11 @@ def update_item(
     cur.execute(
         """
         UPDATE items
-        SET name = ?, price = ?, release_date = ?, source = ?, charge_status = ?, manual_override = 1, tracking_number = ?
+        SET name = ?, price = ?, release_date = ?, source = ?, charge_status = ?, manual_override = 1,
+            tracking_number = ?, updated_at = ?
         WHERE id = ?
         """,
-        (name.strip(), price, release_iso, source_clean, charge_status, tracking_clean, item_id),
+        (name.strip(), price, release_iso, source_clean, charge_status, tracking_clean, db.utc_now(), item_id),
     )
     conn.commit()
     conn.close()
@@ -1967,13 +1980,13 @@ async def import_confirm(request: Request):
                 """
                 INSERT INTO items
                     (name, order_number, placed_date, status, release_date, charge_status,
-                     price, note, imported_at, manual_override, source, tracking_number)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
                 """,
                 (
                     it["name"], it["order_number"], today.isoformat(), it["status"] or "preorder",
                     release_iso, it["charge_status"] or "not_charged", it["price"], it["note"], now, item_source,
-                    it["tracking_number"],
+                    it["tracking_number"], db.new_uuid(), now,
                 ),
             )
             created.append((cur.lastrowid, it["name"], it["price"], item_source))

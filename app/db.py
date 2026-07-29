@@ -1,7 +1,17 @@
 import os
 import sqlite3
+import uuid
+from datetime import datetime, timezone
 
 DB_PATH = os.environ.get("DB_PATH", "/data/kaching.db")
+
+
+def new_uuid() -> str:
+    return str(uuid.uuid4())
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS items (
@@ -48,6 +58,16 @@ CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT
 );
+
+-- One row per app/device that has ever synced with this server. Lets the
+-- server hand back "everything changed since your last checkpoint" instead
+-- of the app having to re-fetch the whole item table on every sync.
+CREATE TABLE IF NOT EXISTS sync_state (
+    client_id TEXT PRIMARY KEY,
+    client_label TEXT,
+    last_synced_at TEXT,
+    created_at TEXT NOT NULL
+);
 """
 
 # Columns added after each table's initial release. Listed here so an
@@ -61,6 +81,9 @@ MIGRATIONS = {
         ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
         ("tracking_number", "TEXT"),
         ("prev_release_date", "TEXT"),
+        ("uuid", "TEXT"),
+        ("updated_at", "TEXT"),
+        ("deleted_at", "TEXT"),
     ],
     "shipment_postage": [
         ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
@@ -85,9 +108,32 @@ def _migrate(conn):
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_def}")
 
 
+def _backfill_sync_columns(conn):
+    """Existing installs will have items with uuid/updated_at still NULL
+    right after the ALTER TABLE above adds the columns. Give every such
+    row a real uuid and a best-guess updated_at (falling back to
+    imported_at, which is NOT NULL and always present) so the sync
+    endpoint has something correct to compare against from day one,
+    rather than treating pre-existing data as "never changed"."""
+    rows = conn.execute("SELECT id, imported_at FROM items WHERE uuid IS NULL").fetchall()
+    for row in rows:
+        conn.execute(
+            "UPDATE items SET uuid = ? WHERE id = ?",
+            (new_uuid(), row["id"]),
+        )
+    conn.execute(
+        "UPDATE items SET updated_at = imported_at WHERE updated_at IS NULL"
+    )
+    # Unique index rather than a UNIQUE column constraint - SQLite can't add
+    # a column-level UNIQUE via ALTER TABLE, and this only needs to be safe
+    # to (re)create once every row above has a real uuid.
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_items_uuid ON items(uuid)")
+
+
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
     _migrate(conn)
+    _backfill_sync_columns(conn)
     conn.commit()
     conn.close()
