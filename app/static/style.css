@@ -957,36 +957,13 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 
 /* ---- Insights page ---- */
 
-.insight-cards {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 28px;
-}
 .insight-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   background: var(--surface-raised);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px 20px;
-  min-width: 220px;
-  flex: 1;
+  padding: 14px;
+  margin-bottom: 12px;
 }
-.insight-card-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-.insight-card-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--neon-blue);
-}
-.insight-card-sub { font-size: 13px; color: var(--text-muted); }
-.insight-card-sub a { color: var(--text); }
 .insight-shop-head { margin-top: 8px; }
 .insight-shop-list {
   display: flex;
@@ -1436,3 +1413,80 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   .comic-row-name { flex: 1 1 100%; }
   .comic-row-price { flex: 1 1 auto; }
 }
+
+/* --- Dashboard/Insights progress rings (SVG generated server-side) --- */
+.dual-ring-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 12px;
+}
+.dual-ring-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+.dual-ring-wrap { flex-shrink: 0; }
+.dual-ring-divider { width: 1px; align-self: stretch; background: var(--border); }
+.dual-ring-label { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.dual-ring-value { font-size: 14px; font-weight: 700; color: var(--neon-blue); }
+.progress-ring-label {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+}
+
+/* --- Insights: pre-order/released ring + grouped cards (backported from the app) --- */
+.ratio-ring-row { display: flex; margin-bottom: 12px; }
+.ratio-ring-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  flex: 1;
+}
+.ratio-ring-wrap { flex-shrink: 0; }
+.ratio-ring-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.ratio-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.ratio-legend-row > span:nth-child(2) { flex: 1; }
+.ratio-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ratio-legend-value { font-size: 13px; font-weight: 700; }
+
+.insight-card-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.insight-card-stats { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.insight-card-stats-2 { justify-content: space-between; }
+.insight-stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.insight-stat-right { align-items: flex-end; text-align: right; }
+.insight-stat-label { font-size: 10px; color: var(--text-muted); }
+.insight-stat-value { font-size: 16px; font-weight: 700; color: var(--neon-blue); }
+.insight-stat-sub { font-size: 9.5px; color: var(--text-muted); }
+.insight-card-note {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.insight-card-note-link {
+  display: block;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+.insight-bar-row { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px; }
+.insight-bar-row .mono { color: var(--neon-blue); font-weight: 700; }
+.insight-bar-track { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.insight-bar-fill { height: 100%; background: var(--neon-blue); border-radius: 3px; }

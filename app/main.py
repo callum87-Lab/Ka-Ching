@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import logging
+import math
 import os
 import secrets
 import shutil
@@ -444,6 +445,48 @@ def _smooth_svg_path(points):
     return d
 
 
+def render_progress_ring_svg(percent: float, is_over: bool = False) -> str:
+    """A single value against a fixed ceiling (e.g. budget) - same visual
+    language as the app's own dashboard rings, generated server-side
+    since this app has no client-side JS layer to do it in the browser."""
+    size, stroke = 96, 10
+    r = (size - stroke) / 2
+    circumference = 2 * math.pi * r
+    clamped = min(percent, 100)
+    offset = circumference * (1 - clamped / 100)
+    color = "var(--neon-pink)" if is_over else "var(--neon-blue)"
+    return f'''<svg viewBox="0 0 {size} {size}" width="{size}" height="{size}" class="progress-ring-svg">
+  <circle cx="{size / 2}" cy="{size / 2}" r="{r}" fill="none" stroke="var(--border)" stroke-width="{stroke}"/>
+  <circle cx="{size / 2}" cy="{size / 2}" r="{r}" fill="none" stroke="{color}" stroke-width="{stroke}"
+    stroke-linecap="round" stroke-dasharray="{circumference}" stroke-dashoffset="{offset}"
+    transform="rotate(-90 {size / 2} {size / 2})"/>
+  <text x="{size / 2}" y="{size / 2}" text-anchor="middle" dominant-baseline="central"
+    class="progress-ring-label" fill="{color}">{round(percent)}%</text>
+</svg>'''
+
+
+def render_two_segment_ring_svg(pct1: float, color1: str, pct2: float, color2: str, center_value, center_label: str) -> str:
+    """A genuine part-to-whole split (e.g. pre-order vs released) rather
+    than a value against a ceiling - distinct from the single-value ring
+    above, same as the app's own two ring helpers."""
+    size, stroke = 100, 12
+    r = (size - stroke) / 2
+    circumference = 2 * math.pi * r
+    offset1 = circumference * (1 - pct1 / 100)
+    offset2 = -(circumference * pct1 / 100)
+    return f'''<svg viewBox="0 0 {size} {size}" width="{size}" height="{size}" class="progress-ring-svg">
+  <circle cx="{size / 2}" cy="{size / 2}" r="{r}" fill="none" stroke="var(--border)" stroke-width="{stroke}"/>
+  <circle cx="{size / 2}" cy="{size / 2}" r="{r}" fill="none" stroke="{color1}" stroke-width="{stroke}"
+    stroke-linecap="round" stroke-dasharray="{circumference}" stroke-dashoffset="{offset1}"
+    transform="rotate(-90 {size / 2} {size / 2})"/>
+  <circle cx="{size / 2}" cy="{size / 2}" r="{r}" fill="none" stroke="{color2}" stroke-width="{stroke}"
+    stroke-linecap="round" stroke-dasharray="{circumference}" stroke-dashoffset="{offset2}"
+    transform="rotate(-90 {size / 2} {size / 2})"/>
+  <text x="{size / 2}" y="{size / 2 - 4}" text-anchor="middle" font-size="20" font-weight="700" fill="var(--text)">{center_value}</text>
+  <text x="{size / 2}" y="{size / 2 + 12}" text-anchor="middle" font-size="8" fill="var(--text-muted)">{center_label}</text>
+</svg>'''
+
+
 def render_trend_svg(chart_data, range_key):
     """Self-contained SVG spend-trend chart - no external chart library, so
     the dashboard never needs to reach the internet to render it. A smooth
@@ -839,6 +882,12 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     hero_spent_total = round(hero_spent_comics + hero_spent_shipping, 2)
     hero_remaining_total = round(hero_remaining_comics + hero_remaining_shipping, 2)
 
+    # Still Due ring: what fraction of this month's forecast total is
+    # already paid off, same visual language as the app's own dashboard.
+    hero_paid_pct = round((hero_spent_total / hero_grand_total) * 100) if hero_grand_total > 0 else 0
+    still_due_ring_svg = render_progress_ring_svg(hero_paid_pct, is_over=False)
+    budget_ring_svg = render_progress_ring_svg(budget_pct, is_over=budget_pct > 100) if monthly_budget else None
+
     nm_start = shift_month(today, 1)
     nm_end = nm_start.replace(day=calendar.monthrange(nm_start.year, nm_start.month)[1])
     next_month_items = fetch_items_between(cur, nm_start, nm_end)
@@ -911,6 +960,8 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "hero_spent_total": hero_spent_total,
         "hero_remaining_total": hero_remaining_total,
         "hero_grand_total": hero_grand_total,
+        "still_due_ring_svg": still_due_ring_svg,
+        "budget_ring_svg": budget_ring_svg,
         "monthly_budget": monthly_budget,
         "budget_pct": budget_pct,
         "budget_bar_pct": budget_bar_pct,
@@ -1394,6 +1445,12 @@ def insights_page(request: Request):
     preorder_count = sum(1 for i in all_items if i["status"] == "preorder")
     released_count = total_issues - preorder_count
     preorder_pct = round((preorder_count / total_issues) * 100, 1) if total_issues else 0.0
+    released_pct = round(100 - preorder_pct, 1) if total_issues else 0.0
+    preorder_ring_svg = render_two_segment_ring_svg(
+        preorder_pct, "var(--neon-blue)", released_pct, "var(--neon-violet)",
+        preorder_count + released_count, "issues",
+    )
+    shipping_bar_pct = min(shipping_ratio_pct, 100)
 
     cur.execute("SELECT price FROM items WHERE status = 'cancelled'")
     cancelled_saved = round(sum(r["price"] for r in cur.fetchall()), 2)
@@ -1491,6 +1548,9 @@ def insights_page(request: Request):
         "preorder_count": preorder_count,
         "released_count": released_count,
         "preorder_pct": preorder_pct,
+        "released_pct": released_pct,
+        "preorder_ring_svg": preorder_ring_svg,
+        "shipping_bar_pct": shipping_bar_pct,
         "cancelled_saved": cancelled_saved,
         "shipping_ratio_pct": shipping_ratio_pct,
         "total_all_spend": total_all_spend,

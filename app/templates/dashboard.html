@@ -170,9 +170,20 @@
 {% endif %}
 
 <section class="hero">
-  <div class="price-stamp">
-    <span class="price-stamp-label">Still due &middot; {{ current_month_label }}</span>
-    <span class="price-stamp-value">{{ currency() }}{{ "%.2f"|format(hero_remaining_total) }}</span>
+  <div class="dual-ring-row">
+    <div class="dual-ring-col">
+      <div class="dual-ring-wrap">{{ still_due_ring_svg|safe }}</div>
+      <span class="dual-ring-label">Still due &middot; {{ current_month_label }}</span>
+      <span class="dual-ring-value mono">{{ currency() }}{{ "%.2f"|format(hero_remaining_total) }}</span>
+    </div>
+    {% if monthly_budget %}
+    <div class="dual-ring-divider"></div>
+    <div class="dual-ring-col">
+      <div class="dual-ring-wrap">{{ budget_ring_svg|safe }}</div>
+      <span class="dual-ring-label">Budget</span>
+      <span class="dual-ring-value mono">{{ currency() }}{{ "%.2f"|format(cycle_spend) }} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }}</span>
+    </div>
+    {% endif %}
   </div>
   <div class="hero-detail">
     <h1>{{ current_month_label }}</h1>
@@ -197,15 +208,9 @@
       {% endif %}
     </p>
     {% if monthly_budget %}
-    <div class="budget-bar-wrap">
-      <div class="budget-bar-track">
-        <div class="budget-bar-fill {{ 'over' if budget_pct > 100 else ('near' if budget_pct >= 80 else '') }}" style="width: {{ budget_bar_pct }}%;"></div>
-      </div>
-      <span class="budget-bar-label muted">
-        {{ currency() }}{{ "%.2f"|format(cycle_spend) }} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }} budget for {{ budget_cycle_label }}
-        ({{ "%.0f"|format(budget_pct) }}%{% if budget_pct > 100 %} &mdash; over{% endif %})
-      </span>
-    </div>
+    <p class="hero-line muted">
+      {{ "%.0f"|format(budget_pct) }}% of {{ budget_cycle_label }}'s budget{% if budget_pct > 100 %} &mdash; over{% endif %}
+    </p>
     {% endif %}
   </div>
 </section>
