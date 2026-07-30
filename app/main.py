@@ -8,6 +8,7 @@ import json
 import logging
 import math
 import os
+import re
 import secrets
 import shutil
 import sqlite3
@@ -30,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.9"
+APP_VERSION = "2026.07.30.12"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1478,6 +1479,37 @@ def insights_page(request: Request):
             if priciest_item["release_date"] else "no date set"
         )
     top_titles = sorted(all_items, key=lambda i: -i["price"])[:3]
+
+    # Price creep: group items into a "series" by stripping the issue
+    # number and anything after it (variant info usually follows the
+    # issue number), then compare the earliest vs most recent price for
+    # any series with real history. A one-shot with no "#N" in its name
+    # just won't match anything else, which is correct - there's no
+    # series to track creep across.
+    series_groups = {}
+    for it in all_items:
+        m = re.match(r"^(.*?)\s*#\d+", it["name"])
+        if not m:
+            continue
+        series_key = m.group(1).strip()
+        sort_key = it["release_date"] or it["placed_date"] or ""
+        series_groups.setdefault(series_key, []).append((sort_key, it["price"], it["name"]))
+
+    price_creep = []
+    for series_key, entries in series_groups.items():
+        entries.sort(key=lambda e: e[0])
+        first_price = entries[0][1]
+        latest_price = entries[-1][1]
+        if latest_price > first_price + 0.01:
+            price_creep.append({
+                "series": series_key,
+                "first_price": first_price,
+                "latest_price": latest_price,
+                "increase_pct": round(((latest_price - first_price) / first_price) * 100) if first_price else 0,
+                "issue_count": len(entries),
+            })
+    price_creep.sort(key=lambda p: -(p["latest_price"] - p["first_price"]))
+    price_creep = price_creep[:3]
     for t in top_titles:
         t["release_date_label"] = (
             date.fromisoformat(t["release_date"]).strftime("%d %b %Y") if t["release_date"] else "no date set"
@@ -1681,6 +1713,7 @@ def insights_page(request: Request):
         "total_issues": total_issues,
         "twelve_month_svg": twelve_month_svg,
         "top_titles": top_titles,
+        "price_creep": price_creep,
         "avg_per_month": avg_per_month,
         "avg_per_issue": avg_per_issue,
         "preorder_count": preorder_count,
@@ -2274,6 +2307,26 @@ def settings_form(
     except OSError:
         db_size_label = "unknown"
 
+    past_backups = []
+    backup_dir = os.path.join(os.path.dirname(db.DB_PATH), "backups")
+    if os.path.isdir(backup_dir):
+        for fname in sorted(os.listdir(backup_dir), reverse=True):
+            if not _AUTO_BACKUP_NAME_RE.match(fname):
+                continue
+            full_path = os.path.join(backup_dir, fname)
+            try:
+                size_bytes = os.path.getsize(full_path)
+            except OSError:
+                continue
+            size_label = f"{size_bytes / 1024 / 1024:.2f} MB" if size_bytes >= 1024 * 1024 else f"{size_bytes / 1024:.1f} KB"
+            # Filename is kaching-auto-YYYYMMDD-HHMMSS.db
+            stamp = fname.replace("kaching-auto-", "").replace(".db", "")
+            try:
+                taken_at = datetime.strptime(stamp, "%Y%m%d-%H%M%S").strftime("%d %b %Y, %H:%M")
+            except ValueError:
+                taken_at = fname
+            past_backups.append({"filename": fname, "size_label": size_label, "taken_at": taken_at})
+
     return templates.TemplateResponse("settings.html", {
         "request": request,
         "values": values,
@@ -2289,6 +2342,7 @@ def settings_form(
         "synced_devices": synced_devices,
         "all_shops": all_shops,
         "notification_log": notification_log,
+        "past_backups": past_backups,
     })
 
 
@@ -2505,6 +2559,24 @@ def export_all_csv():
 def download_backup():
     backup_name = f"kaching-backup-{date.today().isoformat()}.db"
     return FileResponse(db.DB_PATH, filename=backup_name, media_type="application/octet-stream")
+
+
+_AUTO_BACKUP_NAME_RE = re.compile(r"^kaching-auto-\d{8}-\d{6}\.db$")
+
+
+@app.get("/settings/backups/{filename}")
+def download_auto_backup(filename: str):
+    """Downloads one specific auto-backup by name. The filename pattern is
+    checked strictly (fixed prefix, all-digit timestamp, .db suffix) before
+    it's ever joined onto a path, so nothing after the URL's own routing
+    can point outside the backups folder."""
+    if not _AUTO_BACKUP_NAME_RE.match(filename):
+        raise HTTPException(status_code=404, detail="Not found")
+    backup_dir = os.path.join(os.path.dirname(db.DB_PATH), "backups")
+    full_path = os.path.join(backup_dir, filename)
+    if not os.path.isfile(full_path):
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(full_path, filename=filename, media_type="application/octet-stream")
 
 
 @app.post("/settings/restore")

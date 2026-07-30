@@ -401,6 +401,24 @@
     from.
   </p>
 
+  {% if past_backups %}
+  <div class="block-head" style="margin-top: 18px;">
+    <span class="muted item-form-hint" style="margin: 0;">Automatic backups (last {{ past_backups|length }}):</span>
+    <button type="button" class="section-collapse-toggle" data-target="past-backups-body" aria-label="Expand section">&#9656;</button>
+  </div>
+  <div class="section-body collapsed" id="past-backups-body">
+    <ul class="past-backups-list">
+      {% for b in past_backups %}
+      <li>
+        <span class="muted">{{ b.taken_at }}</span>
+        <span class="muted">{{ b.size_label }}</span>
+        <a href="/settings/backups/{{ b.filename }}" class="btn-tiny">Download</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <div class="restore-section">
     {% if restore_result == 'ok' %}
     <div class="result-banner">Restored &mdash; {{ restore_count }} item(s) loaded from that backup.</div>

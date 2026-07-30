@@ -1597,3 +1597,46 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .notification-log-status { font-size: 11px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
 .notification-log-ok { color: var(--neon-green); }
 .notification-log-bad { color: var(--neon-pink); cursor: help; }
+
+/* --- Mobile: stack the Insights/Dashboard stat rows instead of squeezing
+   them into narrow columns. Placed at the end of the file deliberately -
+   CSS cascade order means a media query earlier in the file loses to a
+   same-specificity rule declared later, regardless of which one actually
+   matches the viewport. --- */
+@media (max-width: 560px) {
+  .insight-card-stats { flex-direction: column; gap: 14px; align-items: stretch; }
+  .insight-card-stats-2 { flex-direction: column; align-items: stretch; }
+  .insight-stat-right { align-items: flex-start; text-align: left; }
+  .ratio-ring-card { flex-direction: column; }
+  .ring-row-divider { width: 100%; height: 1px; }
+  .recent-releases, .insight-next-list { max-width: 100%; width: 100%; margin-left: 0; }
+  .insight-next-list-row { justify-content: space-between; }
+}
+
+/* --- Insights: price creep --- */
+.insight-price-creep-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.insight-price-creep-name { color: var(--text); }
+
+/* --- Settings: past auto-backups --- */
+.past-backups-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.past-backups-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.past-backups-list li:last-child { border-bottom: none; }
+.past-backups-list li > span:first-child { width: 150px; flex-shrink: 0; }
+.past-backups-list li > span:nth-child(2) { flex: 1; }

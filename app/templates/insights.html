@@ -198,6 +198,25 @@
   </div>
   {% endif %}
 
+  {% if price_creep %}
+  <div class="block-head insight-shop-head">
+    <h2>Price creep</h2>
+  </div>
+  <div class="insight-top-titles">
+    {% for p in price_creep %}
+    <div class="insight-price-creep-row">
+      <span class="insight-price-creep-name">{{ p.series }} <span class="muted">({{ p.issue_count }} issues tracked)</span></span>
+      <span class="mono">
+        <span class="muted">{{ currency() }}{{ "%.2f"|format(p.first_price) }}</span>
+        &rarr;
+        <span style="color: var(--neon-pink);">{{ currency() }}{{ "%.2f"|format(p.latest_price) }}</span>
+        <span class="muted">(+{{ p.increase_pct }}%)</span>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {% if twelve_month_svg %}
   <div class="block-head insight-shop-head">
     <h2>12-month spend trend</h2>
