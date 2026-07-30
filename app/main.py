@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.7"
+APP_VERSION = "2026.07.30.9"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -2262,6 +2262,10 @@ def settings_form(
     sync_api_key = notifications.get_setting(cur, "sync_api_key", None)
     cur.execute("SELECT client_id, client_label, last_synced_at FROM sync_state ORDER BY last_synced_at DESC")
     synced_devices = cur.fetchall()
+    cur.execute("SELECT source, COUNT(*) AS n FROM items GROUP BY source ORDER BY source")
+    all_shops = cur.fetchall()
+    cur.execute("SELECT * FROM notification_log ORDER BY id DESC LIMIT 20")
+    notification_log = cur.fetchall()
     conn.close()
 
     try:
@@ -2283,6 +2287,8 @@ def settings_form(
         "db_size_label": db_size_label,
         "sync_api_key": sync_api_key,
         "synced_devices": synced_devices,
+        "all_shops": all_shops,
+        "notification_log": notification_log,
     })
 
 
@@ -2297,6 +2303,28 @@ def generate_sync_key():
     notifications.set_setting(cur, "sync_api_key", secrets.token_urlsafe(24))
     conn.commit()
     conn.close()
+    return RedirectResponse(url="/settings", status_code=303)
+
+
+@app.post("/settings/shops/rename")
+def rename_shop(old_name: str = Form(...), new_name: str = Form(...)):
+    """Renames a shop across every item, or merges it into an existing
+    shop of that name if one already exists - same operation either way,
+    just a plain rename of the source column. Also renames it in
+    shipment_postage so real shipping estimates already captured for
+    this shop don't silently stop matching after the rename."""
+    old_clean = old_name.strip()
+    new_clean = new_name.strip()
+    if not old_clean or not new_clean or old_clean == new_clean:
+        return RedirectResponse(url="/settings", status_code=303)
+
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE items SET source = ?, updated_at = ? WHERE source = ?", (new_clean, db.utc_now(), old_clean))
+    cur.execute("UPDATE shipment_postage SET source = ? WHERE source = ?", (new_clean, old_clean))
+    conn.commit()
+    conn.close()
+    logger.info("SHOP RENAME: %r -> %r", old_clean, new_clean)
     return RedirectResponse(url="/settings", status_code=303)
 
 

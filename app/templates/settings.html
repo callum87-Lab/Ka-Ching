@@ -165,6 +165,25 @@
     only this.
   </p>
 
+  {% if notification_log %}
+  <div class="notification-log-block">
+    <p class="muted item-form-hint" style="margin-bottom: 8px;">Recent notifications sent (last 20):</p>
+    <ul class="notification-log-list">
+      {% for n in notification_log %}
+      <li class="{{ 'notification-log-fail' if not n.success else '' }}">
+        <span class="notification-log-date muted">{{ n.sent_at[:16] }}</span>
+        <span class="notification-log-title">{{ n.title }}</span>
+        {% if n.success %}
+        <span class="notification-log-status notification-log-ok">Sent</span>
+        {% else %}
+        <span class="notification-log-status notification-log-bad" title="{{ n.error }}">Failed</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <button type="submit" form="settings-form">Save settings</button>
 </section>
 
@@ -304,6 +323,32 @@
   <ul class="item-form-hint">
     {% for dev in synced_devices %}
     <li>{{ dev.client_label or "Unnamed device" }} &mdash; last synced {{ dev.last_synced_at }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<section class="block">
+  <div class="block-head">
+    <h2>Shops</h2>
+  </div>
+  <p class="muted item-form-hint">
+    Rename a shop across every item that has it - useful for fixing a typo,
+    or merging two names that are really the same shop (renaming to a name
+    that already exists just folds them together).
+  </p>
+  {% if all_shops %}
+  <ul class="shops-list">
+    {% for shop in all_shops %}
+    <li class="shops-list-row">
+      <form method="post" action="/settings/shops/rename" class="shops-rename-form">
+        <input type="hidden" name="old_name" value="{{ shop.source }}">
+        <span class="shops-current-name">{{ shop.source }}</span>
+        <span class="muted shops-item-count">{{ shop.n }} item{{ "s" if shop.n != 1 else "" }}</span>
+        <input type="text" name="new_name" value="{{ shop.source }}" class="shops-rename-input">
+        <button type="submit" class="btn-tiny">Rename</button>
+      </form>
+    </li>
     {% endfor %}
   </ul>
   {% endif %}

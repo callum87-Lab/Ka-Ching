@@ -136,6 +136,7 @@ def send_webhook(url: str, template: str, title: str, message: str):
 def send_via_configured_provider(cur, title: str, message: str):
     """Returns (ok: bool, error: str | None)."""
     provider = get_setting(cur, "notify_provider", "none")
+    ok, error = True, None
     try:
         if provider == "ntfy":
             send_ntfy(get_setting(cur, "ntfy_url"), get_setting(cur, "ntfy_topic"), title, message)
@@ -146,11 +147,17 @@ def send_via_configured_provider(cur, title: str, message: str):
         elif provider == "webhook":
             send_webhook(get_setting(cur, "webhook_url"), get_setting(cur, "webhook_json_template"), title, message)
         else:
-            return False, "No notification provider is set up yet."
-        return True, None
+            ok, error = False, "No notification provider is set up yet."
     except Exception as exc:
         logger.warning("NOTIFICATION SEND FAILED: provider=%s error=%s", provider, exc)
-        return False, str(exc)
+        ok, error = False, str(exc)
+
+    cur.execute(
+        "INSERT INTO notification_log (sent_at, title, message, provider, success, error) VALUES (?, ?, ?, ?, ?, ?)",
+        (db.utc_now(), title, message, provider, int(ok), error),
+    )
+    cur.connection.commit()
+    return ok, error
 
 
 # --- The actual daily check ----------------------------------------------------

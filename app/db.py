@@ -80,6 +80,19 @@ CREATE TABLE IF NOT EXISTS item_history (
     old_value TEXT,
     new_value TEXT
 );
+
+-- A record of every notification actually sent (or attempted), so the
+-- person can confirm the system is really firing rather than just
+-- trusting it silently in the background.
+CREATE TABLE IF NOT EXISTS notification_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sent_at TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    provider TEXT,
+    success INTEGER NOT NULL,
+    error TEXT
+);
 """
 
 # Columns added after each table's initial release. Listed here so an
