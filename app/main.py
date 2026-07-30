@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.1"
+APP_VERSION = "2026.07.30.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -487,8 +487,9 @@ def render_two_segment_ring_svg(pct1: float, color1: str, pct2: float, color2: s
 
 
 def render_sparkline_svg(values: list, width: int = 140, height: int = 52, color: str = "var(--neon-blue)") -> str | None:
-    """A minimal trend line for the empty space in a stat row - not a
-    full chart, just enough shape to show direction at a glance."""
+    """A compact 6-month trend for the empty space in a stat row - same
+    filled-area visual language as the big 12-month chart, just smaller,
+    so it doesn't look like an afterthought next to it."""
     if not values or len(values) < 2:
         return None
     vmin, vmax = min(values), max(values)
@@ -501,7 +502,13 @@ def render_sparkline_svg(values: list, width: int = 140, height: int = 52, color
         pts.append((x, y))
     points_str = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
     last_x, last_y = pts[-1]
+    fill_points = f"0,{height} {points_str} {width},{height}"
     return f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+  <defs><linearGradient id="sparklineFill" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="{color}" stop-opacity="0.35"/>
+    <stop offset="100%" stop-color="{color}" stop-opacity="0"/>
+  </linearGradient></defs>
+  <polygon points="{fill_points}" fill="url(#sparklineFill)"/>
   <polyline points="{points_str}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="3" fill="{color}"/>
 </svg>'''
@@ -1504,6 +1511,7 @@ def insights_page(request: Request):
     # Sparkline: the same 12-month rolling data already built for the big
     # trend chart above, just the last 6 points of it - no new aggregation.
     spend_sparkline_svg = render_sparkline_svg([m["total"] for m in twelve_month_data[-6:]])
+    sparkline_labels = [m["label"] for m in twelve_month_data[-6:]]
 
     avg_issue_bar_pct = (
         round((avg_per_issue / priciest_item["price"]) * 100, 1)
@@ -1649,6 +1657,7 @@ def insights_page(request: Request):
         "recent_releases": recent_releases,
         "month_trend": month_trend,
         "spend_sparkline_svg": spend_sparkline_svg,
+        "sparkline_labels": sparkline_labels,
         "avg_issue_bar_pct": avg_issue_bar_pct,
         "comics_share_pct": comics_share_pct,
         "shipping_share_pct": shipping_share_pct,

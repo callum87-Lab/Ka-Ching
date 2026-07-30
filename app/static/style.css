@@ -1516,6 +1516,8 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .trend-down { background: rgba(60, 242, 166, 0.14); color: var(--neon-green); }
 .insight-spark-wrap { margin-left: auto; flex-shrink: 0; text-align: right; }
 .insight-spark-caption { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.insight-spark-months { display: flex; justify-content: space-between; gap: 4px; margin-top: 2px; }
+.insight-spark-months span { font-size: 10px; color: var(--text-muted); }
 .insight-full-bar-row { margin-top: 14px; }
 .insight-full-bar-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
 .insight-full-bar-track { height: 10px; border-radius: 5px; background: var(--surface); overflow: hidden; }
@@ -1534,4 +1536,4 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .recent-release-row:last-child { border-bottom: none; }
 .recent-release-date { color: var(--text-muted); font-size: 12px; width: 60px; flex-shrink: 0; }
 .recent-release-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 10px; }
-.recent-release-price { flex-shrink: 0; }
+.recent-release-price { flex-shrink: 0; color: var(--neon-blue); font-weight: 700; }

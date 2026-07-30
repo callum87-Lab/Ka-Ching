@@ -77,6 +77,9 @@
       {% if spend_sparkline_svg %}
       <div class="insight-spark-wrap">
         {{ spend_sparkline_svg|safe }}
+        <div class="insight-spark-months">
+          {% for label in sparkline_labels %}<span>{{ label }}</span>{% endfor %}
+        </div>
         <div class="insight-spark-caption">6-month trend</div>
       </div>
       {% endif %}
