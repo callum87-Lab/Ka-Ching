@@ -763,6 +763,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   cursor: pointer;
 }
 .date-preset-btn:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
+.date-preset-btn-clear { color: var(--neon-blue); border-color: var(--neon-blue); }
 .date-preset-btn.active {
   color: #04121a;
   background: var(--neon-blue);

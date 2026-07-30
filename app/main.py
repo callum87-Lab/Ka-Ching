@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.3"
+APP_VERSION = "2026.07.30.4"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -940,8 +940,15 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     cur.execute("SELECT COUNT(*) AS n FROM items")
     total_items_tracked = cur.fetchone()["n"]
 
+    # Recently cancelled: last 15, but also dropped after 30 days so a
+    # single cancellation from ages ago doesn't just sit here forever if
+    # nothing newer has cancelled since. updated_at is set at the moment
+    # the cancel action happens, so it doubles as "when cancelled" here.
+    recently_cancelled_cutoff = (today - timedelta(days=30)).isoformat()
     cur.execute(
-        "SELECT * FROM items WHERE status = 'cancelled' AND manual_override = 1 ORDER BY id DESC LIMIT 15"
+        "SELECT * FROM items WHERE status = 'cancelled' AND manual_override = 1 "
+        "AND date(updated_at) >= date(?) ORDER BY id DESC LIMIT 15",
+        (recently_cancelled_cutoff,),
     )
     recently_cancelled = [dict(r) for r in cur.fetchall()]
 

@@ -72,6 +72,7 @@
       <button type="submit" class="search-submit-btn">Search</button>
     </div>
     <div class="search-date-presets">
+      <button type="button" class="date-preset-btn date-preset-btn-clear" id="search-clear-btn">Clear</button>
       <button type="button" class="date-preset-btn {{ 'active' if active_date_preset == 'month' else '' }}" data-preset="month">This Month</button>
       <button type="button" class="date-preset-btn {{ 'active' if active_date_preset == 'year' else '' }}" data-preset="year">This Year</button>
       <button type="button" class="date-preset-btn" id="sort-most-expensive-btn">Most expensive</button>
@@ -80,6 +81,9 @@
   </form>
 
   <script>
+  document.getElementById('search-clear-btn').addEventListener('click', function () {
+    window.location.href = '/search';
+  });
   document.querySelectorAll('.date-preset-btn[data-preset]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var now = new Date();
