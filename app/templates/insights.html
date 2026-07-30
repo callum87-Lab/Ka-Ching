@@ -81,6 +81,15 @@
       </div>
       {% endif %}
     </div>
+    {% if monthly_budget %}
+    <div class="insight-full-bar-row">
+      <div class="insight-full-bar-label">
+        <span>This month vs budget</span>
+        <span>{{ currency() }}{{ "%.2f"|format(current_month_spend) }} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }} &middot; {{ budget_vs_month_pct }}%</span>
+      </div>
+      <div class="insight-full-bar-track"><div class="insight-full-bar-fill" style="width: {{ budget_vs_month_bar_pct }}%; background: {{ 'var(--neon-pink)' if budget_vs_month_pct > 100 else 'var(--neon-blue)' }};"></div></div>
+    </div>
+    {% endif %}
     <p class="insight-card-note">
       {% if top_month %}{{ top_month.label }} was your priciest month so far.{% else %}Nothing dated yet - add a few items to see spend patterns.{% endif %}
     </p>
@@ -102,12 +111,27 @@
       <div class="insight-stat">
         <span class="insight-stat-label">Priciest issue</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(priciest_item.price) if priciest_item else "0.00" }}</span>
-        <div class="insight-mini-bar-track"><div class="insight-mini-bar-fill" style="width: {{ priciest_issue_bar_pct }}%; background: var(--neon-violet);"></div></div>
       </div>
       <div class="insight-stat">
         <span class="insight-stat-label">Average issue</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(avg_per_issue) }}</span>
-        <div class="insight-mini-bar-track"><div class="insight-mini-bar-fill" style="width: {{ avg_issue_bar_pct }}%; background: var(--neon-blue);"></div></div>
+      </div>
+    </div>
+    <div class="insight-full-bar-row">
+      <div class="insight-full-bar-label">
+        <span>Average issue vs priciest issue</span>
+        <span>{{ avg_issue_bar_pct }}% of your priciest so far</span>
+      </div>
+      <div class="insight-full-bar-track"><div class="insight-full-bar-fill" style="width: {{ avg_issue_bar_pct }}%; background: var(--neon-violet);"></div></div>
+    </div>
+    <div class="insight-full-bar-row">
+      <div class="insight-full-bar-label">
+        <span>Comics vs shipping, all time</span>
+        <span>{{ currency() }}{{ "%.2f"|format(total_all_comics) }} comics &middot; {{ currency() }}{{ "%.2f"|format(total_all_shipping) }} shipping</span>
+      </div>
+      <div class="insight-split-bar-track">
+        <div style="width: {{ comics_share_pct }}%; background: var(--neon-blue);"></div>
+        <div style="width: {{ shipping_share_pct }}%; background: var(--neon-pink);"></div>
       </div>
     </div>
     {% if priciest_item %}
@@ -129,12 +153,25 @@
         <span class="insight-stat-label">Busiest release day</span>
         <span class="insight-stat-value mono">{% if busiest_weekday %}{{ busiest_weekday }} ({{ busiest_weekday_count }}){% else %}-{% endif %}</span>
       </div>
-      <div class="insight-stat insight-stat-right">
+      <div class="insight-stat">
         <span class="insight-stat-label">Saved by cancelling</span>
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(cancelled_saved) }}</span>
       </div>
-      <div class="insight-ring-wrap">{{ shipping_ring_svg|safe }}</div>
+      <div class="insight-stat insight-stat-right">
+        <span class="insight-stat-label">Shipping vs cover price</span>
+        <span class="insight-stat-value mono">{{ shipping_ratio_pct }}%</span>
+      </div>
     </div>
+    {% if weekday_chart %}
+    <div class="insight-weekday-chart">
+      {% for day in weekday_chart %}
+      <div class="insight-weekday-bar-wrap">
+        <div class="insight-weekday-bar" style="height: {{ day.bar_pct }}%; background: {{ 'var(--neon-pink)' if day.is_busiest else 'var(--neon-blue)' }};"></div>
+        <span class="insight-weekday-label">{{ day.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
     <p class="insight-card-note">
       {% if biggest_shipping %}Biggest shipping charge was {{ currency() }}{{ "%.2f"|format(biggest_shipping.amount) }} ({{ biggest_shipping.source }}) &middot; averaging {{ currency() }}{{ "%.2f"|format(avg_shipping_per_month) }}/month.{% else %}Biggest shipping charge and avg shipping/month need a few real postage figures logged first.{% endif %}
     </p>

@@ -1516,9 +1516,15 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .trend-down { background: rgba(60, 242, 166, 0.14); color: var(--neon-green); }
 .insight-spark-wrap { margin-left: auto; flex-shrink: 0; text-align: right; }
 .insight-spark-caption { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-.insight-mini-bar-track { height: 10px; border-radius: 5px; background: var(--surface); overflow: hidden; margin-top: 6px; width: 110px; }
-.insight-mini-bar-fill { height: 100%; border-radius: 5px; }
-.insight-ring-wrap { flex-shrink: 0; margin-left: auto; }
+.insight-full-bar-row { margin-top: 14px; }
+.insight-full-bar-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+.insight-full-bar-track { height: 10px; border-radius: 5px; background: var(--surface); overflow: hidden; }
+.insight-full-bar-fill { height: 100%; border-radius: 5px; }
+.insight-split-bar-track { height: 10px; border-radius: 5px; overflow: hidden; display: flex; }
+.insight-weekday-chart { display: flex; align-items: flex-end; gap: 8px; height: 70px; margin-top: 16px; }
+.insight-weekday-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+.insight-weekday-bar { width: 100%; min-height: 2px; border-radius: 3px 3px 0 0; }
+.insight-weekday-label { font-size: 11px; color: var(--text-muted); }
 
 /* --- Insights: recent releases list beside the pre-order/released ring --- */
 .ring-row-divider { width: 1px; align-self: stretch; background: var(--border); flex-shrink: 0; }

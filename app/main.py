@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.29.6"
+APP_VERSION = "2026.07.30.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1483,8 +1483,6 @@ def insights_page(request: Request):
     for r in recent_releases:
         r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
 
-    shipping_bar_pct = min(shipping_ratio_pct, 100)
-    shipping_ring_svg = render_progress_ring_svg(shipping_bar_pct, is_over=False, size=68, stroke=8, font_size=15)
 
     # Trend badge: how the last fully-completed month compares to the
     # all-time monthly average. The current month is deliberately excluded
@@ -1507,11 +1505,33 @@ def insights_page(request: Request):
     # trend chart above, just the last 6 points of it - no new aggregation.
     spend_sparkline_svg = render_sparkline_svg([m["total"] for m in twelve_month_data[-6:]])
 
-    priciest_issue_bar_pct = 100.0
     avg_issue_bar_pct = (
         round((avg_per_issue / priciest_item["price"]) * 100, 1)
         if priciest_item and priciest_item["price"] else 0.0
     )
+
+    # Comics vs shipping split of all-time spend - reuses totals already
+    # computed above, no new aggregation.
+    comics_share_pct = round((total_all_comics / total_all_spend) * 100, 1) if total_all_spend else 0.0
+    shipping_share_pct = round(100 - comics_share_pct, 1) if total_all_spend else 0.0
+
+    # This month vs budget - a simpler, month-only comparison than the
+    # Dashboard's own budget ring (which also handles rollover/cycles);
+    # this just answers "how does the current month look against the
+    # plain monthly figure", reusing the current month's total from the
+    # 12-month data built above rather than re-querying.
+    monthly_budget_raw = notifications.get_setting(cur, "monthly_budget", "")
+    monthly_budget = None
+    if monthly_budget_raw:
+        try:
+            monthly_budget = float(monthly_budget_raw)
+        except ValueError:
+            monthly_budget = None
+    current_month_spend = twelve_month_data[-1]["total"] if twelve_month_data else 0.0
+    budget_vs_month_pct = (
+        round((current_month_spend / monthly_budget) * 100) if monthly_budget else None
+    )
+    budget_vs_month_bar_pct = min(budget_vs_month_pct, 100) if budget_vs_month_pct is not None else None
 
     cur.execute("SELECT price FROM items WHERE status = 'cancelled'")
     cancelled_saved = round(sum(r["price"] for r in cur.fetchall()), 2)
@@ -1538,6 +1558,21 @@ def insights_page(request: Request):
         weekday_counts[wd] = weekday_counts.get(wd, 0) + 1
     busiest_weekday = max(weekday_counts, key=weekday_counts.get) if weekday_counts else None
     busiest_weekday_count = weekday_counts.get(busiest_weekday, 0) if busiest_weekday else 0
+
+    # Same weekday_counts, reshaped into a Mon-Sun chart: each day's count
+    # normalized against whichever day is busiest, so the chart always has
+    # one full-height bar rather than being scaled to some arbitrary max.
+    weekday_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    max_weekday_count = max(weekday_counts.values()) if weekday_counts else 0
+    weekday_chart = [
+        {
+            "label": day[:3],
+            "count": weekday_counts.get(day, 0),
+            "bar_pct": round((weekday_counts.get(day, 0) / max_weekday_count) * 100) if max_weekday_count else 0,
+            "is_busiest": day == busiest_weekday,
+        }
+        for day in weekday_order
+    ]
 
     # Biggest and cheapest single shipping charge ever actually captured -
     # real per-shipment amounts, not an estimate.
@@ -1611,16 +1646,22 @@ def insights_page(request: Request):
         "preorder_pct": preorder_pct,
         "released_pct": released_pct,
         "preorder_ring_svg": preorder_ring_svg,
-        "shipping_bar_pct": shipping_bar_pct,
-        "shipping_ring_svg": shipping_ring_svg,
         "recent_releases": recent_releases,
         "month_trend": month_trend,
         "spend_sparkline_svg": spend_sparkline_svg,
-        "priciest_issue_bar_pct": priciest_issue_bar_pct,
         "avg_issue_bar_pct": avg_issue_bar_pct,
+        "comics_share_pct": comics_share_pct,
+        "shipping_share_pct": shipping_share_pct,
+        "monthly_budget": monthly_budget,
+        "current_month_spend": current_month_spend,
+        "budget_vs_month_pct": budget_vs_month_pct,
+        "budget_vs_month_bar_pct": budget_vs_month_bar_pct,
+        "weekday_chart": weekday_chart,
         "cancelled_saved": cancelled_saved,
         "shipping_ratio_pct": shipping_ratio_pct,
         "total_all_spend": total_all_spend,
+        "total_all_comics": total_all_comics,
+        "total_all_shipping": total_all_shipping,
         "next_month_forecast": next_month_forecast,
         "next_month_forecast_label": next_month_forecast_label,
         "avg_shipping_per_month": avg_shipping_per_month,
