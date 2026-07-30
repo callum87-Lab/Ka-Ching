@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.2"
+APP_VERSION = "2026.07.30.3"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -483,34 +483,6 @@ def render_two_segment_ring_svg(pct1: float, color1: str, pct2: float, color2: s
     transform="rotate(-90 {size / 2} {size / 2})"/>
   <text x="{size / 2}" y="{size / 2 - 4}" text-anchor="middle" font-size="20" font-weight="700" fill="var(--text)">{center_value}</text>
   <text x="{size / 2}" y="{size / 2 + 12}" text-anchor="middle" font-size="8" fill="var(--text-muted)">{center_label}</text>
-</svg>'''
-
-
-def render_sparkline_svg(values: list, width: int = 140, height: int = 52, color: str = "var(--neon-blue)") -> str | None:
-    """A compact 6-month trend for the empty space in a stat row - same
-    filled-area visual language as the big 12-month chart, just smaller,
-    so it doesn't look like an afterthought next to it."""
-    if not values or len(values) < 2:
-        return None
-    vmin, vmax = min(values), max(values)
-    span = (vmax - vmin) or 1
-    n = len(values)
-    pts = []
-    for i, v in enumerate(values):
-        x = (i / (n - 1)) * width
-        y = height - 4 - ((v - vmin) / span) * (height - 8)
-        pts.append((x, y))
-    points_str = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
-    last_x, last_y = pts[-1]
-    fill_points = f"0,{height} {points_str} {width},{height}"
-    return f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
-  <defs><linearGradient id="sparklineFill" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="{color}" stop-opacity="0.35"/>
-    <stop offset="100%" stop-color="{color}" stop-opacity="0"/>
-  </linearGradient></defs>
-  <polygon points="{fill_points}" fill="url(#sparklineFill)"/>
-  <polyline points="{points_str}" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="3" fill="{color}"/>
 </svg>'''
 
 
@@ -1508,10 +1480,22 @@ def insights_page(request: Request):
                     "label": last_complete["label"],
                 }
 
-    # Sparkline: the same 12-month rolling data already built for the big
-    # trend chart above, just the last 6 points of it - no new aggregation.
-    spend_sparkline_svg = render_sparkline_svg([m["total"] for m in twelve_month_data[-6:]])
-    sparkline_labels = [m["label"] for m in twelve_month_data[-6:]]
+    # Next 2 upcoming releases - a genuinely different kind of info than
+    # anything else on this page (what's coming up, not another spend
+    # figure), capped at 2 so it doesn't turn into a duplicate of the
+    # Dashboard's own "This Week" list.
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) >= date(?)
+        ORDER BY release_date ASC LIMIT 2
+        """,
+        (date.today().isoformat(),),
+    )
+    upcoming_releases = [dict(r) for r in cur.fetchall()]
+    for r in upcoming_releases:
+        days_until = (date.fromisoformat(r["release_date"]) - date.today()).days
+        r["days_until_label"] = "Today" if days_until == 0 else ("Tomorrow" if days_until == 1 else f"{days_until} days")
 
     avg_issue_bar_pct = (
         round((avg_per_issue / priciest_item["price"]) * 100, 1)
@@ -1656,8 +1640,7 @@ def insights_page(request: Request):
         "preorder_ring_svg": preorder_ring_svg,
         "recent_releases": recent_releases,
         "month_trend": month_trend,
-        "spend_sparkline_svg": spend_sparkline_svg,
-        "sparkline_labels": sparkline_labels,
+        "upcoming_releases": upcoming_releases,
         "avg_issue_bar_pct": avg_issue_bar_pct,
         "comics_share_pct": comics_share_pct,
         "shipping_share_pct": shipping_share_pct,

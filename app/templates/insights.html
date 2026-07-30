@@ -74,13 +74,16 @@
         <span class="insight-stat-value mono">{{ currency() }}{{ "%.2f"|format(next_month_forecast) }}</span>
         <span class="insight-stat-sub">forecast so far</span>
       </div>
-      {% if spend_sparkline_svg %}
-      <div class="insight-spark-wrap">
-        {{ spend_sparkline_svg|safe }}
-        <div class="insight-spark-months">
-          {% for label in sparkline_labels %}<span>{{ label }}</span>{% endfor %}
+      {% if upcoming_releases %}
+      <div class="insight-next-list">
+        <span class="insight-next-list-title">Coming up</span>
+        {% for r in upcoming_releases %}
+        <div class="insight-next-list-row">
+          <span class="insight-next-list-when mono">{{ r.days_until_label }}</span>
+          <span class="insight-next-list-name">{{ r.name }}</span>
+          <span class="insight-next-list-price mono">{{ currency() }}{{ "%.2f"|format(r.price) }}</span>
         </div>
-        <div class="insight-spark-caption">6-month spend trend</div>
+        {% endfor %}
       </div>
       {% endif %}
     </div>

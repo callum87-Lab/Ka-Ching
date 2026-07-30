@@ -1514,10 +1514,12 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .trend-up { background: rgba(255, 77, 141, 0.14); color: var(--neon-pink); }
 .trend-down { background: rgba(60, 242, 166, 0.14); color: var(--neon-green); }
-.insight-spark-wrap { margin-left: auto; flex-shrink: 0; text-align: right; }
-.insight-spark-caption { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-.insight-spark-months { display: flex; justify-content: space-between; gap: 4px; margin-top: 2px; }
-.insight-spark-months span { font-size: 10px; color: var(--text-muted); }
+.insight-next-list { display: flex; flex-direction: column; gap: 6px; margin-left: auto; min-width: 0; max-width: 260px; flex-shrink: 1; }
+.insight-next-list-title { font-size: 12px; color: var(--text-muted); text-align: right; margin-bottom: 2px; }
+.insight-next-list-row { display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
+.insight-next-list-when { color: var(--neon-blue); font-weight: 700; flex-shrink: 0; }
+.insight-next-list-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.insight-next-list-price { flex-shrink: 0; }
 .insight-full-bar-row { margin-top: 14px; }
 .insight-full-bar-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
 .insight-full-bar-track { height: 10px; border-radius: 5px; background: var(--surface); overflow: hidden; }
