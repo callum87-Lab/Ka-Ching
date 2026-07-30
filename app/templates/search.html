@@ -130,7 +130,7 @@
     {% endif %}
     {% if results %}
     <div class="search-totals">
-      <span><span class="mono">{{ match_count }}</span> match{{ "es" if match_count != 1 else "" }}{% if truncated %} (showing first 500){% endif %}</span>
+      <span><span class="mono">{{ match_count }}</span> match{{ "es" if match_count != 1 else "" }}{% if total_pages > 1 %} &middot; page <span class="mono">{{ current_page }}</span> of <span class="mono">{{ total_pages }}</span>{% endif %}</span>
       <span class="search-totals-spent">Spent: <span class="mono">{{ currency() }}{{ "%.2f"|format(spent) }}</span></span>
       <span class="search-totals-remaining">Still due: <span class="mono">{{ currency() }}{{ "%.2f"|format(remaining) }}</span></span>
       {% if cancelled_count %}
@@ -165,10 +165,10 @@
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             <span class="item-price-group">{% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number and open PostTrack">&#128230; {{ item.tracking_number }}</a>{% endif %}<span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span></span>
             <div class="item-actions-group">
-            <a href="/items/{{ item.id }}/edit" class="btn-tiny item-edit-btn">Edit</a>
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
             <div class="actions-drawer">
+            <a href="/items/{{ item.id }}/edit" class="btn-tiny item-edit-btn">Edit</a>
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="cancel">
@@ -198,6 +198,17 @@
         </ul>
       </div>
     </div>
+    {% if total_pages > 1 %}
+    <div class="search-pagination">
+      {% if current_page > 1 %}
+      <a class="btn-tiny" href="/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page - 1 }}">&larr; Prev</a>
+      {% endif %}
+      <span class="muted search-pagination-label">Page {{ current_page }} of {{ total_pages }}</span>
+      {% if current_page < total_pages %}
+      <a class="btn-tiny" href="/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page + 1 }}">Next &rarr;</a>
+      {% endif %}
+    </div>
+    {% endif %}
     {% else %}
     <p class="muted">No matches for these filters.</p>
     {% endif %}

@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.6"
+APP_VERSION = "2026.07.30.7"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1369,6 +1369,7 @@ SEARCH_SORT_OPTIONS = {
     "name_asc": ("name ASC", "Name (A-Z)"),
     "added_desc": ("imported_at DESC", "Recently added"),
 }
+SEARCH_PER_PAGE = 50
 
 
 def build_search_query(q, source, status, start_date, end_date, min_price=None, max_price=None, has_tracking=None):
@@ -1725,6 +1726,7 @@ def search_items(
     min_price: str | None = None,
     max_price: str | None = None,
     has_tracking: str | None = None,
+    page: int = 1,
 ):
     conn = db.get_db()
     cur = conn.cursor()
@@ -1768,7 +1770,8 @@ def search_items(
     spent = remaining = cancelled_total = 0.0
     cancelled_count = 0
     match_count = 0
-    truncated = False
+    total_pages = 1
+    current_page = 1
 
     if has_filter:
         where_clause, params = build_search_query(
@@ -1785,8 +1788,10 @@ def search_items(
         cancelled_total = round(sum(r["price"] for r in all_matches if r["status"] == "cancelled"), 2)
         cancelled_count = sum(1 for r in all_matches if r["status"] == "cancelled")
 
-        truncated = len(all_matches) > 500
-        results = all_matches[:500]
+        total_pages = max(1, math.ceil(match_count / SEARCH_PER_PAGE))
+        current_page = max(1, min(page or 1, total_pages))
+        start_idx = (current_page - 1) * SEARCH_PER_PAGE
+        results = all_matches[start_idx:start_idx + SEARCH_PER_PAGE]
         for r in results:
             r["release_date_label"] = (
                 date.fromisoformat(r["release_date"]).strftime("%d %b %Y") if r["release_date"] else "no date set"
@@ -1816,7 +1821,9 @@ def search_items(
         "remaining": remaining,
         "cancelled_total": cancelled_total,
         "cancelled_count": cancelled_count,
-        "truncated": truncated,
+        "total_pages": total_pages,
+        "current_page": current_page,
+        "per_page": SEARCH_PER_PAGE,
     })
 
 
