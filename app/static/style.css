@@ -633,8 +633,15 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   border-color: var(--neon-blue);
   box-shadow: 0 0 16px rgba(47, 216, 255, 0.7);
 }
+.shop-filter-tab[style*="--shop-color"].active {
+  background: none;
+  color: var(--shop-color);
+  border-color: var(--shop-color);
+  box-shadow: 0 0 10px var(--shop-color);
+}
 .range-tab.active:hover,
 .shop-filter-tab.active:hover { color: #04121a; }
+.shop-filter-tab[style*="--shop-color"].active:hover { color: var(--shop-color); }
 
 .chart { padding: 8px 0 0; }
 .trend-svg {
@@ -1540,3 +1547,20 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .recent-release-date { color: var(--text-muted); font-size: 12px; width: 60px; flex-shrink: 0; }
 .recent-release-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 10px; }
 .recent-release-price { flex-shrink: 0; color: var(--neon-blue); font-weight: 700; }
+
+/* --- Edit history --- */
+.edit-history-block { margin-top: 24px; }
+.edit-history-list { list-style: none; margin: 0; padding: 0; }
+.edit-history-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.edit-history-list li:last-child { border-bottom: none; }
+.edit-history-date { display: inline-block; width: 90px; font-family: var(--font-mono); }
+.edit-history-field { color: var(--text-muted); text-transform: capitalize; margin-right: 4px; }
+.edit-history-old { color: var(--neon-pink); text-decoration: line-through; opacity: 0.75; }
+.edit-history-new { color: var(--neon-green); }
+
+/* --- Note shown inline in item lists (Search) --- */
+.item-note-line { font-size: 12px; color: var(--neon-violet); margin-top: 2px; }

@@ -142,7 +142,7 @@
     </div>
     {% if priciest_item %}
     <a href="/items/{{ priciest_item.id }}/edit" class="insight-card-note insight-card-note-link">
-      Priciest so far: {{ priciest_item.name }}, {{ currency() }}{{ "%.2f"|format(priciest_item.price) }}.
+      Edit priciest item &rarr;
     </a>
     {% endif %}
   </div>

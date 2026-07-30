@@ -68,6 +68,18 @@ CREATE TABLE IF NOT EXISTS sync_state (
     last_synced_at TEXT,
     created_at TEXT NOT NULL
 );
+
+-- A lightweight audit trail for manual edits only (not routine
+-- parser/import refreshes, which are expected to update things and
+-- would just add noise) - so an overwritten value isn't just gone.
+CREATE TABLE IF NOT EXISTS item_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id INTEGER NOT NULL,
+    changed_at TEXT NOT NULL,
+    field_name TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT
+);
 """
 
 # Columns added after each table's initial release. Listed here so an

@@ -50,6 +50,15 @@
           {% endfor %}
         </select>
       </label>
+
+      <label>
+        <span>Tracking</span>
+        <select name="has_tracking">
+          <option value="" {{ 'selected' if not active_has_tracking else '' }}>Any</option>
+          <option value="yes" {{ 'selected' if active_has_tracking == 'yes' else '' }}>Has tracking</option>
+          <option value="no" {{ 'selected' if active_has_tracking == 'no' else '' }}>No tracking yet</option>
+        </select>
+      </label>
     </div>
 
     <div class="search-filter-row">
@@ -128,7 +137,7 @@
       <span class="muted">+ {{ cancelled_count }} cancelled ({{ currency() }}{{ "%.2f"|format(cancelled_total) }}, not counted above)</span>
       {% endif %}
       <a class="btn-tiny btn-test search-csv-btn"
-         href="/search/export.csv?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}">Download CSV</a>
+         href="/search/export.csv?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}">Download CSV</a>
     </div>
     <div class="groups">
       <div class="group">
@@ -180,6 +189,9 @@
               &middot; <a href="/search?q={{ item.order_number }}" class="search-order-link">order #{{ item.order_number }}</a>
               {% endif %}
             </span>
+            {% if item.note %}
+            <div class="item-note-line">{{ item.note }}</div>
+            {% endif %}
           </li>
           {% endfor %}
         </ul>

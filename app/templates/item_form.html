@@ -40,6 +40,11 @@
       <input type="text" name="tracking_number" value="{{ item.tracking_number if item and item.tracking_number else '' }}" placeholder="e.g. NP678811691GB">
     </label>
 
+    <label>
+      <span>Note <span class="muted">(optional)</span></span>
+      <textarea name="note" rows="2" placeholder="e.g. release date not yet confirmed">{{ item.note if item and item.note else '' }}</textarea>
+    </label>
+
     <label class="checkbox-row">
       <input type="checkbox" name="already_paid" value="yes" {{ 'checked' if item and item.charge_status == 'charged' else '' }}>
       <span>Already paid</span>
@@ -56,6 +61,25 @@
     one-off purchase, or just something you want to track by hand.
     {% endif %}
   </p>
+
+  {% if edit_history %}
+  <div class="edit-history-block">
+    <div class="block-head">
+      <h2>Edit history</h2>
+    </div>
+    <ul class="edit-history-list">
+      {% for h in edit_history %}
+      <li>
+        <span class="edit-history-date muted">{{ h.changed_at[:10] }}</span>
+        <span class="edit-history-field">{{ h.field_name.replace('_', ' ') }}:</span>
+        <span class="edit-history-old">{{ h.old_value if h.old_value else '(blank)' }}</span>
+        &rarr;
+        <span class="edit-history-new">{{ h.new_value if h.new_value else '(blank)' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 </section>
 
 {% endblock %}

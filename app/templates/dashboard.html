@@ -237,7 +237,7 @@
      class="shop-filter-tab {{ 'active' if not active_source else '' }}">All shops</a>
   {% for s in filter_tab_sources %}
   <a href="/?month={{ viewed_month_param }}&chart_range={{ active_chart_range }}&source={{ s }}"
-     class="shop-filter-tab {{ 'active' if active_source == s else '' }}">{{ s }}</a>
+     class="shop-filter-tab {{ 'active' if active_source == s else '' }}" style="--shop-color: {{ source_colors[s] }};">{{ s }}</a>
   {% endfor %}
 </div>
 {% endif %}

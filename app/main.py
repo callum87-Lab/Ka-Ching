@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.4"
+APP_VERSION = "2026.07.30.5"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1272,6 +1272,11 @@ def edit_item_form(request: Request, item_id: int):
     cur.execute("SELECT * FROM items WHERE id = ?", (item_id,))
     item = cur.fetchone()
     all_sources = get_all_sources(cur)
+    cur.execute(
+        "SELECT * FROM item_history WHERE item_id = ? ORDER BY id DESC LIMIT 20",
+        (item_id,),
+    )
+    edit_history = [dict(r) for r in cur.fetchall()]
     conn.close()
     if not item:
         return RedirectResponse(url="/", status_code=303)
@@ -1282,6 +1287,7 @@ def edit_item_form(request: Request, item_id: int):
         "all_sources": all_sources,
         "heading": "Edit item",
         "submit_label": "Save changes",
+        "edit_history": edit_history,
     })
 
 
@@ -1294,23 +1300,44 @@ def update_item(
     source: str = Form(...),
     already_paid: str | None = Form(None),
     tracking_number: str = Form(""),
+    note: str = Form(""),
 ):
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
     charge_status = "charged" if already_paid else "not_charged"
     source_clean = source.strip() or DEFAULT_SOURCE
     tracking_clean = tracking_number.strip() or None
+    note_clean = note.strip() or None
 
     conn = db.get_db()
     cur = conn.cursor()
+
+    cur.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    existing = cur.fetchone()
+    now = db.utc_now()
+
+    new_values = {
+        "name": name.strip(), "price": price, "release_date": release_iso,
+        "source": source_clean, "charge_status": charge_status,
+        "tracking_number": tracking_clean, "note": note_clean,
+    }
+    if existing is not None:
+        for field, new_val in new_values.items():
+            old_val = existing[field]
+            if str(old_val or "") != str(new_val or ""):
+                cur.execute(
+                    "INSERT INTO item_history (item_id, changed_at, field_name, old_value, new_value) VALUES (?, ?, ?, ?, ?)",
+                    (item_id, now, field, old_val, new_val),
+                )
+
     cur.execute(
         """
         UPDATE items
         SET name = ?, price = ?, release_date = ?, source = ?, charge_status = ?, manual_override = 1,
-            tracking_number = ?, updated_at = ?
+            tracking_number = ?, note = ?, updated_at = ?
         WHERE id = ?
         """,
-        (name.strip(), price, release_iso, source_clean, charge_status, tracking_clean, db.utc_now(), item_id),
+        (name.strip(), price, release_iso, source_clean, charge_status, tracking_clean, note_clean, now, item_id),
     )
     conn.commit()
     conn.close()
@@ -1333,15 +1360,15 @@ SEARCH_SORT_OPTIONS = {
 }
 
 
-def build_search_query(q, source, status, start_date, end_date, min_price=None, max_price=None):
+def build_search_query(q, source, status, start_date, end_date, min_price=None, max_price=None, has_tracking=None):
     """Returns (where_clause, params) shared by the search page and CSV
     export, so both stay in sync with exactly the same filtering logic."""
     conditions = []
     params = []
     if q and q.strip():
         term = f"%{q.strip()}%"
-        conditions.append("(name LIKE ? OR order_number LIKE ? OR source LIKE ?)")
-        params.extend([term, term, term])
+        conditions.append("(name LIKE ? OR order_number LIKE ? OR source LIKE ? OR tracking_number LIKE ?)")
+        params.extend([term, term, term, term])
     if source:
         clause, extra_params = source_filter_sql(source)
         conditions.append(clause)
@@ -1352,6 +1379,10 @@ def build_search_query(q, source, status, start_date, end_date, min_price=None, 
         conditions.append("charge_status != 'charged' AND status != 'cancelled'")
     elif status == "cancelled":
         conditions.append("status = 'cancelled'")
+    if has_tracking == "yes":
+        conditions.append("tracking_number IS NOT NULL AND tracking_number != ''")
+    elif has_tracking == "no":
+        conditions.append("(tracking_number IS NULL OR tracking_number = '')")
     if start_date:
         conditions.append("release_date >= ?")
         params.append(start_date)
@@ -1682,6 +1713,7 @@ def search_items(
     sort: str | None = None,
     min_price: str | None = None,
     max_price: str | None = None,
+    has_tracking: str | None = None,
 ):
     conn = db.get_db()
     cur = conn.cursor()
@@ -1718,7 +1750,7 @@ def search_items(
 
     has_filter = bool(
         (q and q.strip()) or source or (status and status != "all") or start_date or end_date
-        or min_price_val is not None or max_price_val is not None
+        or min_price_val is not None or max_price_val is not None or has_tracking
     )
 
     results = []
@@ -1729,7 +1761,7 @@ def search_items(
 
     if has_filter:
         where_clause, params = build_search_query(
-            q, source, active_status, start_date, end_date, min_price_val, max_price_val
+            q, source, active_status, start_date, end_date, min_price_val, max_price_val, has_tracking
         )
         order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
 
@@ -1759,6 +1791,7 @@ def search_items(
         "all_sources": all_sources,
         "active_source": source or "",
         "active_status": active_status,
+        "active_has_tracking": has_tracking or "",
         "start_date": start_date or "",
         "end_date": end_date or "",
         "min_price": min_price or "",
@@ -1786,6 +1819,7 @@ def export_search_csv(
     sort: str | None = None,
     min_price: str | None = None,
     max_price: str | None = None,
+    has_tracking: str | None = None,
 ):
     """Downloads whatever's currently filtered on the search page as a CSV
     file - reuses the exact same query-building logic, so the export always
@@ -1809,7 +1843,7 @@ def export_search_csv(
     conn = db.get_db()
     cur = conn.cursor()
     where_clause, params = build_search_query(
-        q, source, active_status, start_date, end_date, min_price_val, max_price_val
+        q, source, active_status, start_date, end_date, min_price_val, max_price_val, has_tracking
     )
     order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
     cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
