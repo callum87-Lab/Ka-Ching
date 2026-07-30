@@ -30,7 +30,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2026.07.30.5"
+APP_VERSION = "2026.07.30.6"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -805,6 +805,16 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
 
     active_source = source if source else None
 
+    cur.execute("SELECT client_label, last_synced_at FROM sync_state ORDER BY last_synced_at DESC LIMIT 1")
+    most_recent_sync_row = cur.fetchone()
+    most_recent_sync = None
+    if most_recent_sync_row:
+        synced_at = datetime.fromisoformat(most_recent_sync_row["last_synced_at"])
+        most_recent_sync = {
+            "client_label": most_recent_sync_row["client_label"] or "A device",
+            "label": synced_at.strftime("%d %b, %H:%M"),
+        }
+
     date_changes_flash = None
     cur.execute("SELECT value FROM settings WHERE key = '_flash_date_changes'")
     flash_row = cur.fetchone()
@@ -974,6 +984,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "budget_cycle_label": budget_cycle_label,
         "cycle_spend": cycle_spend,
         "date_changes_flash": date_changes_flash,
+        "most_recent_sync": most_recent_sync,
         "hero_spent_count": hero_spent_count,
         "next_month_total": next_month_total,
         "viewed_month_label": viewed_month.strftime("%B %Y"),

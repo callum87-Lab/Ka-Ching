@@ -165,6 +165,7 @@
             <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
             <span class="item-price-group">{% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number and open PostTrack">&#128230; {{ item.tracking_number }}</a>{% endif %}<span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span></span>
             <div class="item-actions-group">
+            <a href="/items/{{ item.id }}/edit" class="btn-tiny item-edit-btn">Edit</a>
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
             <div class="actions-drawer">
