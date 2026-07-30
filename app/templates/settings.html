@@ -331,27 +331,30 @@
 <section class="block">
   <div class="block-head">
     <h2>Shops</h2>
+    <button type="button" class="section-collapse-toggle" data-target="shops-body" aria-label="Expand section">&#9656;</button>
   </div>
-  <p class="muted item-form-hint">
-    Rename a shop across every item that has it - useful for fixing a typo,
-    or merging two names that are really the same shop (renaming to a name
-    that already exists just folds them together).
-  </p>
-  {% if all_shops %}
-  <ul class="shops-list">
-    {% for shop in all_shops %}
-    <li class="shops-list-row">
-      <form method="post" action="/settings/shops/rename" class="shops-rename-form">
-        <input type="hidden" name="old_name" value="{{ shop.source }}">
-        <span class="shops-current-name">{{ shop.source }}</span>
-        <span class="muted shops-item-count">{{ shop.n }} item{{ "s" if shop.n != 1 else "" }}</span>
-        <input type="text" name="new_name" value="{{ shop.source }}" class="shops-rename-input">
-        <button type="submit" class="btn-tiny">Rename</button>
-      </form>
-    </li>
-    {% endfor %}
-  </ul>
-  {% endif %}
+  <div class="section-body collapsed" id="shops-body">
+    <p class="muted item-form-hint">
+      Rename a shop across every item that has it - useful for fixing a typo,
+      or merging two names that are really the same shop (renaming to a name
+      that already exists just folds them together).
+    </p>
+    {% if all_shops %}
+    <ul class="shops-list">
+      {% for shop in all_shops %}
+      <li class="shops-list-row">
+        <form method="post" action="/settings/shops/rename" class="shops-rename-form">
+          <input type="hidden" name="old_name" value="{{ shop.source }}">
+          <span class="shops-current-name">{{ shop.source }}</span>
+          <span class="muted shops-item-count">{{ shop.n }} item{{ "s" if shop.n != 1 else "" }}</span>
+          <input type="text" name="new_name" value="{{ shop.source }}" class="shops-rename-input">
+          <button type="submit" class="btn-tiny">Rename</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
 </section>
 
 <section class="block">
@@ -451,6 +454,16 @@
   select.addEventListener('change', updateVisibility);
   updateVisibility();
 })();
+
+document.querySelectorAll('.section-collapse-toggle').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var body = document.getElementById(btn.getAttribute('data-target'));
+    if (!body) return;
+    var collapsed = body.classList.toggle('collapsed');
+    btn.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+    btn.setAttribute('aria-label', collapsed ? 'Expand section' : 'Collapse section');
+  });
+});
 </script>
 
 {% endblock %}
