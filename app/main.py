@@ -2695,11 +2695,20 @@ class SyncPushItem(BaseModel):
     deleted: bool = False
 
 
+class SyncPushShipping(BaseModel):
+    order_number: str
+    shipment_index: int = 0
+    amount: float
+    captured_at: str
+    source: str | None = None
+
+
 class SyncRequest(BaseModel):
     client_id: str
     client_label: str | None = None
     since: str | None = None
     push: list[SyncPushItem] = []
+    push_shipping: list[SyncPushShipping] = []
 
 
 def _item_row_to_sync_dict(row: sqlite3.Row) -> dict:
@@ -2842,6 +2851,24 @@ async def api_sync(request: Request, payload: SyncRequest):
             )
             reconciled.append({"local_uuid": item.uuid, "server_uuid": match["uuid"]})
 
+    # Shipping is simpler than items: no uuid/conflict machinery needed,
+    # just "the real figure for this order/shipment", so whichever side's
+    # capture is more recent wins outright rather than surfacing a
+    # conflict to resolve.
+    shipping_applied = []
+    for rec in payload.push_shipping:
+        cur.execute(
+            """
+            INSERT INTO shipment_postage (order_number, shipment_index, amount, captured_at, source)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(order_number, shipment_index) DO UPDATE SET
+                amount = excluded.amount, captured_at = excluded.captured_at, source = excluded.source
+            WHERE excluded.captured_at > shipment_postage.captured_at
+            """,
+            (rec.order_number, rec.shipment_index, rec.amount, rec.captured_at, rec.source),
+        )
+        shipping_applied.append(f"{rec.order_number}:{rec.shipment_index}")
+
     # Pull: anything that changed here - via this push just above, the
     # webui, or another device - since this client's last checkpoint.
     if payload.since:
@@ -2849,6 +2876,12 @@ async def api_sync(request: Request, payload: SyncRequest):
     else:
         cur.execute("SELECT * FROM items")
     changes = [_item_row_to_sync_dict(row) for row in cur.fetchall()]
+
+    if payload.since:
+        cur.execute("SELECT * FROM shipment_postage WHERE captured_at > ?", (payload.since,))
+    else:
+        cur.execute("SELECT * FROM shipment_postage")
+    shipping_changes = [dict(row) for row in cur.fetchall()]
 
     cur.execute(
         """
@@ -2864,9 +2897,10 @@ async def api_sync(request: Request, payload: SyncRequest):
     conn.close()
 
     logger.info(
-        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d reconciled=%d skipped_duplicates=%d pulled=%d",
+        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d reconciled=%d skipped_duplicates=%d pulled=%d shipping_pushed=%d shipping_pulled=%d",
         payload.client_id, payload.client_label, len(payload.push), len(applied), len(conflicts),
         len(reconciled), len(skipped_duplicates), len(changes),
+        len(shipping_applied), len(shipping_changes),
     )
 
     return {
@@ -2876,4 +2910,6 @@ async def api_sync(request: Request, payload: SyncRequest):
         "reconciled": reconciled,
         "skipped_duplicates": skipped_duplicates,
         "changes": changes,
+        "shipping_applied": shipping_applied,
+        "shipping_changes": shipping_changes,
     }
