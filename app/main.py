@@ -2703,12 +2703,19 @@ class SyncPushShipping(BaseModel):
     source: str | None = None
 
 
+class SyncPushOrder(BaseModel):
+    order_number: str
+    declared_total: float
+    last_seen_at: str
+
+
 class SyncRequest(BaseModel):
     client_id: str
     client_label: str | None = None
     since: str | None = None
     push: list[SyncPushItem] = []
     push_shipping: list[SyncPushShipping] = []
+    push_orders: list[SyncPushOrder] = []
 
 
 def _item_row_to_sync_dict(row: sqlite3.Row) -> dict:
@@ -2869,6 +2876,20 @@ async def api_sync(request: Request, payload: SyncRequest):
         )
         shipping_applied.append(f"{rec.order_number}:{rec.shipment_index}")
 
+    orders_applied = []
+    for rec in payload.push_orders:
+        cur.execute(
+            """
+            INSERT INTO orders (order_number, declared_total, last_seen_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(order_number) DO UPDATE SET
+                declared_total = excluded.declared_total, last_seen_at = excluded.last_seen_at
+            WHERE excluded.last_seen_at > orders.last_seen_at
+            """,
+            (rec.order_number, rec.declared_total, rec.last_seen_at),
+        )
+        orders_applied.append(rec.order_number)
+
     # Pull: anything that changed here - via this push just above, the
     # webui, or another device - since this client's last checkpoint.
     if payload.since:
@@ -2882,6 +2903,12 @@ async def api_sync(request: Request, payload: SyncRequest):
     else:
         cur.execute("SELECT * FROM shipment_postage")
     shipping_changes = [dict(row) for row in cur.fetchall()]
+
+    if payload.since:
+        cur.execute("SELECT * FROM orders WHERE declared_total IS NOT NULL AND last_seen_at > ?", (payload.since,))
+    else:
+        cur.execute("SELECT * FROM orders WHERE declared_total IS NOT NULL")
+    order_changes = [dict(row) for row in cur.fetchall()]
 
     cur.execute(
         """
@@ -2897,10 +2924,10 @@ async def api_sync(request: Request, payload: SyncRequest):
     conn.close()
 
     logger.info(
-        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d reconciled=%d skipped_duplicates=%d pulled=%d shipping_pushed=%d shipping_pulled=%d",
+        "SYNC: client=%s label=%r pushed=%d applied=%d conflicts=%d reconciled=%d skipped_duplicates=%d pulled=%d shipping_pushed=%d shipping_pulled=%d orders_pushed=%d orders_pulled=%d",
         payload.client_id, payload.client_label, len(payload.push), len(applied), len(conflicts),
         len(reconciled), len(skipped_duplicates), len(changes),
-        len(shipping_applied), len(shipping_changes),
+        len(shipping_applied), len(shipping_changes), len(orders_applied), len(order_changes),
     )
 
     return {
@@ -2912,4 +2939,6 @@ async def api_sync(request: Request, payload: SyncRequest):
         "changes": changes,
         "shipping_applied": shipping_applied,
         "shipping_changes": shipping_changes,
+        "orders_applied": orders_applied,
+        "order_changes": order_changes,
     }
