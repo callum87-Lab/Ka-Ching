@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from urllib.parse import quote
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -1419,6 +1419,65 @@ def _svg_escape(text: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
+
+
+@app.get("/debug/shipping-groups")
+def debug_shipping_groups(source: str = DEFAULT_SOURCE):
+    """Ad-hoc diagnostic mirroring compute_shipping_for_groups exactly,
+    but exposing the per-group detail (date, orders, real-vs-estimated,
+    rate) instead of just the aggregate total - added specifically to
+    compare directly against the app's own equivalent debug view when
+    the two totals didn't match and aggregate figures alone weren't
+    enough to find out why."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM items WHERE status != 'cancelled' AND source = ?", (source,))
+    items = [dict(r) for r in cur.fetchall()]
+    dated_items = [i for i in items if i["release_date"]]
+
+    cur.execute("SELECT order_number, amount FROM shipment_postage")
+    exact_by_order = {r["order_number"]: r["amount"] for r in cur.fetchall()}
+
+    by_date = {}
+    for it in dated_items:
+        by_date.setdefault(it["release_date"], []).append(it)
+
+    rate_cache = {}
+    def estimate_for(src):
+        if src not in rate_cache:
+            rate_cache[src] = get_shipping_estimate(cur, src)
+        return rate_cache[src]
+
+    rows = []
+    for release_date in sorted(by_date.keys()):
+        group_items = by_date[release_date]
+        order_numbers = {i["order_number"] for i in group_items if i["order_number"]}
+        known = [exact_by_order[o] for o in order_numbers if o in exact_by_order]
+        if order_numbers and len(known) == len(order_numbers):
+            rate = round(sum(known), 2)
+            src_label = "real"
+        else:
+            rate, _, _, _ = estimate_for(source)
+            src_label = "estimated"
+        rows.append({
+            "date": release_date,
+            "orders": ",".join(sorted(order_numbers)) or "none",
+            "item_count": len(group_items),
+            "source": src_label,
+            "rate": rate,
+        })
+
+    total_real = round(sum(r["rate"] for r in rows if r["source"] == "real"), 2)
+    total_estimated = round(sum(r["rate"] for r in rows if r["source"] == "estimated"), 2)
+    real_count = sum(1 for r in rows if r["source"] == "real")
+    estimated_count = sum(1 for r in rows if r["source"] == "estimated")
+
+    lines = [f"{len(rows)} shipment groups \u00b7 {real_count} real (£{total_real}) \u00b7 {estimated_count} estimated (£{total_estimated})", ""]
+    for r in rows:
+        lines.append(f"{r['date']}  [{r['source'].upper():<9}]  £{r['rate']:.2f}  ({r['item_count']} items, order {r['orders']})")
+
+    conn.close()
+    return PlainTextResponse("\n".join(lines))
 
 
 @app.get("/insights")
