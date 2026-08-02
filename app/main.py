@@ -363,7 +363,12 @@ def compute_shipping_for_groups(cur, groups):
 
     Returns (total, spent, remaining, shipment_count, primary_rate,
     primary_source, primary_tier, primary_samples, primary_checked)."""
-    cur.execute("SELECT order_number, amount FROM shipment_postage")
+    cur.execute("SELECT order_number, SUM(amount) AS amount FROM shipment_postage GROUP BY order_number")
+    # SUMs every shipment_index for a given order - a split delivery (the
+    # same order captured across more than one real postage figure) must
+    # count all of them, not just whichever row a plain dict comprehension
+    # happened to keep last. This was a real, confirmed bug: an order with
+    # two real shipments was silently having one of them dropped here.
     exact_by_order = {r["order_number"]: r["amount"] for r in cur.fetchall()}
 
     rate_cache = {}
@@ -407,7 +412,12 @@ def annotate_group_shipping(cur, groups):
     an estimate only when it genuinely isn't. Mirrors the same logic
     compute_shipping_for_groups uses for the totals, so what's shown next
     to each shipment always matches what's counted in the numbers above it."""
-    cur.execute("SELECT order_number, amount FROM shipment_postage")
+    cur.execute("SELECT order_number, SUM(amount) AS amount FROM shipment_postage GROUP BY order_number")
+    # SUMs every shipment_index for a given order - a split delivery (the
+    # same order captured across more than one real postage figure) must
+    # count all of them, not just whichever row a plain dict comprehension
+    # happened to keep last. This was a real, confirmed bug: an order with
+    # two real shipments was silently having one of them dropped here.
     exact_by_order = {r["order_number"]: r["amount"] for r in cur.fetchall()}
     rate_cache = {}
 
@@ -1435,7 +1445,12 @@ def debug_shipping_groups(source: str = DEFAULT_SOURCE):
     items = [dict(r) for r in cur.fetchall()]
     dated_items = [i for i in items if i["release_date"]]
 
-    cur.execute("SELECT order_number, amount FROM shipment_postage")
+    cur.execute("SELECT order_number, SUM(amount) AS amount FROM shipment_postage GROUP BY order_number")
+    # SUMs every shipment_index for a given order - a split delivery (the
+    # same order captured across more than one real postage figure) must
+    # count all of them, not just whichever row a plain dict comprehension
+    # happened to keep last. This was a real, confirmed bug: an order with
+    # two real shipments was silently having one of them dropped here.
     exact_by_order = {r["order_number"]: r["amount"] for r in cur.fetchall()}
 
     by_date = {}
