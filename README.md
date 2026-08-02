@@ -269,11 +269,17 @@ docker compose up -d --build
 
 ### Configuration
 
-One environment variable, set in `docker-compose.yml`:
+Environment variables, set in `docker-compose.yml`:
 
 - `SHIPPING_ESTIMATE` — flat cost added per distinct release date within a
   month (default `4.00`). Change this to match what your retailer actually
   charges you per parcel.
+- `DEBUG_TOOLS_ENABLED` — off by default. Set to `true` to turn on a
+  developer diagnostic view at `/debug/shipping-groups?source=<shop
+  name>&key=<your sync key>`, listing every shipment for a given shop with
+  its real-vs-estimated status - built for tracking down a shipping-total
+  mismatch, not something most people will need. Requires the same key
+  shown in Settings → Sync even when enabled.
 
 ## Importing your order history
 

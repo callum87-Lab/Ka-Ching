@@ -81,6 +81,10 @@ RANGE_TABS = [("week", "Week"), ("month", "Month"), ("6month", "6M")]
 DEFAULT_CHART_RANGE = "month"
 
 DEFAULT_SOURCE = "Forbidden Planet"
+# Off by default - the shipping-groups debug view is a developer
+# diagnostic, not something most self-hosters need day to day. Set
+# DEBUG_TOOLS_ENABLED=true in your environment to turn it on.
+DEBUG_TOOLS_ENABLED = os.environ.get("DEBUG_TOOLS_ENABLED", "false").lower() == "true"
 # Forbidden Planet always gets the app's primary accent colour, since it's
 # the default/most common source; anything else hashes into the rest of the
 # palette so it's still a stable colour across restarts (not Python's
@@ -1432,15 +1436,26 @@ def _svg_escape(text: str) -> str:
 
 
 @app.get("/debug/shipping-groups")
-def debug_shipping_groups(source: str = DEFAULT_SOURCE):
+def debug_shipping_groups(request: Request, source: str = DEFAULT_SOURCE, key: str | None = None):
     """Ad-hoc diagnostic mirroring compute_shipping_for_groups exactly,
     but exposing the per-group detail (date, orders, real-vs-estimated,
     rate) instead of just the aggregate total - added specifically to
     compare directly against the app's own equivalent debug view when
     the two totals didn't match and aggregate figures alone weren't
-    enough to find out why."""
+    enough to find out why.
+
+    Off by default (DEBUG_TOOLS_ENABLED) and requires the same sync key
+    used for /api/sync as a ?key= query param, since this is a developer
+    diagnostic rather than something most self-hosters need day to day."""
+    if not DEBUG_TOOLS_ENABLED:
+        raise HTTPException(status_code=404)
     conn = db.get_db()
     cur = conn.cursor()
+    stored_key = notifications.get_setting(cur, "sync_api_key", None)
+    if not stored_key or not key or not secrets.compare_digest(key, stored_key):
+        conn.close()
+        raise HTTPException(status_code=401, detail="Missing or invalid ?key= - use the same key shown in Settings \u2192 Sync.")
+
     cur.execute("SELECT * FROM items WHERE status != 'cancelled' AND source = ?", (source,))
     items = [dict(r) for r in cur.fetchall()]
     dated_items = [i for i in items if i["release_date"]]

@@ -10,3 +10,6 @@ services:
     environment:
       # Flat estimate added per distinct release date (i.e. per likely shipment)
       - SHIPPING_ESTIMATE=4.00
+      # Off by default. Uncomment to turn on the /debug/shipping-groups
+      # developer diagnostic (still requires your sync key even when on).
+      # - DEBUG_TOOLS_ENABLED=true
