@@ -629,14 +629,10 @@ open an issue.
 
 ## Licence
 
-All rights reserved, for now. This code is public on GitHub so you can read
-it, learn from it, and see exactly what it does with your data - but there's
-no open-source licence attached at the moment, so reusing, modifying, or
-redistributing it isn't permitted without asking first. This is a deliberate
-choice while it's actively maintained, not an oversight.
-
-If time to maintain it actively becomes harder to find down the line, the
-plan is to open it up properly under AGPL-3.0 - a licence that still allows
-forks and contributions, but requires anyone who modifies and runs their own
-version (including as a hosted service) to keep it open source too, rather
-than it quietly becoming someone else's closed, rebranded product.
+Licensed under [AGPL-3.0](LICENSE). You're free to read it, learn from it,
+fork it, and contribute back - but if you modify it and run your own version
+(including as a hosted service), you're required to keep your version open
+source too, under the same licence. That's the deliberate point: it stops
+this quietly becoming someone else's closed, rebranded product, while still
+keeping the project genuinely open for anyone who wants to build on it
+honestly.
