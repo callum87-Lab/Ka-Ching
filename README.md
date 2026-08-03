@@ -62,6 +62,12 @@ Click any screenshot to view it full-size.
 <td><a href="screenshots/insights.png"><img src="screenshots/insights.png" width="400"></a></td>
 <td><a href="screenshots/settings.png"><img src="screenshots/settings.png" width="400"></a></td>
 </tr>
+<tr>
+<th>Insights (continued)</th>
+</tr>
+<tr>
+<td><a href="screenshots/insights-2.png"><img src="screenshots/insights-2.png" width="400"></a></td>
+</tr>
 </table>
 
 ### Running in Dockge
