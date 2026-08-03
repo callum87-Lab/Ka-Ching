@@ -10,6 +10,10 @@ questions and nothing else:
 - **What's due this week, and what will it cost?**
 - **What's my forecast for this month (and next)?**
 
+There's also an [Android companion app](https://github.com/callum87-Lab/Ka-Ching-App)
+— a genuinely separate, local-first project that optionally syncs with this
+one.
+
 > **Currency**: choose £/$/€ on the Settings page - this changes what's
 > shown everywhere in the app, and the paste-in importer and manual add
 > form both recognise prices in whichever one you pick, so this genuinely
