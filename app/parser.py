@@ -567,16 +567,16 @@ def store_shipment_postage(samples):
 # its own "Postage" line - genuinely exact per-shipment postage, same as
 # the order-detail page, just worded differently.
 
-_EMAIL_REF_RE = re.compile(r"Order Ref:\s*\n?\s*#?(\d+)", re.IGNORECASE)
-_EMAIL_DATE_RE = re.compile(r"Order Date:\s*\n?\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
+_EMAIL_REF_RE = re.compile(r"Order Ref:\s*#?(\d+)", re.IGNORECASE)
+_EMAIL_DATE_RE = re.compile(r"Order Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 _EMAIL_ITEM_RE = re.compile(
-    r"^\d+\s*x\s+(.+?)\s*\n"
-    r"(Dispatched|Pre-?order|Backordered|Processing|Charged)\b[^\n]*\n"
-    r"(?:Due for release on\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\.\s*\n)?"
+    r"^\d+\s*x\s+(.+?)\s+"
+    r"(Dispatched|Pre-?order|Backordered|Processing|Charged)\b.*?"
+    r"(?:Due for release on\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\.)?\s*"
     r"£\s*([\d,]+\.\d{2})",
-    re.MULTILINE | re.IGNORECASE,
+    re.MULTILINE | re.IGNORECASE | re.DOTALL,
 )
-_EMAIL_POSTAGE_RE = re.compile(r"Postage\s*\n\s*£\s*([\d,]+\.\d{2})", re.IGNORECASE)
+_EMAIL_POSTAGE_RE = re.compile(r"Postage\s+£\s*([\d,]+\.\d{2})", re.IGNORECASE)
 
 
 def parse_email_order(text: str):
