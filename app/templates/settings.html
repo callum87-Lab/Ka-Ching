@@ -23,6 +23,7 @@
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
     <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
+    <input type="hidden" name="budget_alert_enabled" value="{{ values.budget_alert_enabled }}">
     <input type="hidden" name="currency_symbol" value="{{ values.currency_symbol }}">
     <input type="hidden" name="default_landing_page" value="{{ values.default_landing_page }}">
     <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
@@ -230,8 +231,17 @@
       <input type="checkbox" name="budget_rollover" value="yes" {{ 'checked' if values.budget_rollover == 'yes' else '' }}>
       <span>Roll over unused budget into the next cycle (monthly only)</span>
     </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="budget_alert_enabled" value="yes" {{ 'checked' if values.budget_alert_enabled == 'yes' else '' }}>
+      <span>Also notify when I cross 80% of this month's budget</span>
+    </label>
     <button type="submit">Save settings</button>
   </form>
+  <div class="settings-test-actions">
+    <form method="post" action="/settings/test-budget-alert" class="inline-form">
+      <button type="submit" class="btn-tiny btn-test">Test budget alert now</button>
+    </form>
+  </div>
 </section>
 
 <section class="block">
@@ -255,6 +265,7 @@
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
     <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
+    <input type="hidden" name="budget_alert_enabled" value="{{ values.budget_alert_enabled }}">
     <div class="form-row">
       <label>
         <span>Currency</span>

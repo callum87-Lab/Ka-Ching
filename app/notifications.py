@@ -24,6 +24,7 @@ SETTINGS_KEYS = [
     "weekly_digest_day",    # "0".."6" (Monday=0 .. Sunday=6)
     "budget_cycle",         # "monthly" | "weekly" | "28day"
     "budget_rollover",      # "yes" | "no"
+    "budget_alert_enabled", # "yes" | "no" - notify once when this month's spend crosses 80% of budget
     "currency_symbol",      # "gbp" | "usd" | "eur"
     "default_landing_page", # "dashboard" | "calendar" | "search" | "add"
     "auto_backup",          # "yes" | "no"
@@ -39,6 +40,7 @@ DEFAULTS = {
     "weekly_digest_day": "0",
     "budget_cycle": "monthly",
     "budget_rollover": "no",
+    "budget_alert_enabled": "no",
     "currency_symbol": "gbp",
     "default_landing_page": "dashboard",
     "auto_backup": "no",
