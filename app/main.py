@@ -122,6 +122,10 @@ async def _daily_notification_loop():
 
             result = await asyncio.to_thread(notifications.check_and_notify_tomorrow)
             logger.info("NOTIFY SCHEDULER: daily check ran, result=%s", result)
+
+            budget_result = await asyncio.to_thread(check_budget_threshold)
+            if budget_result is not None:
+                logger.info("NOTIFY SCHEDULER: budget alert check ran, result=%s", budget_result)
         except Exception:
             logger.exception("NOTIFY SCHEDULER: daily check failed, will retry tomorrow")
             await asyncio.sleep(3600)
@@ -408,6 +412,82 @@ def compute_shipping_for_groups(cur, groups):
         round(total, 2), round(spent, 2), round(remaining, 2), shipment_count,
         primary_rate, DEFAULT_SOURCE, primary_tier, primary_samples, primary_checked,
     )
+
+
+BUDGET_ALERT_THRESHOLD_PCT = 80
+
+
+def check_budget_threshold(force: bool = False):
+    """Fires once when this month's forecast total (comics + shipping)
+    crosses BUDGET_ALERT_THRESHOLD_PCT of the monthly budget - deliberately
+    a single fixed threshold rather than a configurable one, and reuses the
+    existing notification provider/settings rather than adding a separate
+    setup. Sends at most once per calendar month, tracked via a hidden
+    settings key, so it doesn't repeat every day for the rest of the month
+    once crossed. force=True (the manual test button) bypasses both the
+    enabled check and the once-per-month gate, and always sends visible
+    feedback either way - same convention as the other test buttons."""
+    conn = db.get_db()
+    cur = conn.cursor()
+
+    enabled = notifications.get_setting(cur, "budget_alert_enabled", "no") == "yes"
+    if not enabled and not force:
+        conn.close()
+        return None
+
+    monthly_budget_raw = notifications.get_setting(cur, "monthly_budget", "")
+    monthly_budget = None
+    if monthly_budget_raw:
+        try:
+            monthly_budget = float(monthly_budget_raw)
+        except (TypeError, ValueError):
+            monthly_budget = None
+
+    if not monthly_budget or monthly_budget <= 0:
+        conn.close()
+        if force:
+            return (False, "No monthly budget is set in Settings.")
+        return None
+
+    today = date.today()
+    start, end = month_bounds(today)
+    items = fetch_items_between(cur, start, end)
+    groups = group_by_date(items)
+    comics_total = round(sum(i["price"] for i in items), 2)
+    shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
+    spend = round(comics_total + shipping_total, 2)
+    pct = round((spend / monthly_budget) * 100, 1)
+
+    period_key = today.strftime("%Y-%m")
+    last_sent = notifications.get_setting(cur, "_budget_alert_last_period", "")
+    already_sent_this_period = last_sent == period_key
+
+    currency_symbol = {"gbp": "\u00a3", "usd": "$", "eur": "\u20ac"}.get(
+        notifications.get_setting(cur, "currency_symbol", "gbp"), "\u00a3"
+    )
+
+    if pct < BUDGET_ALERT_THRESHOLD_PCT and not force:
+        conn.close()
+        return None
+
+    if already_sent_this_period and not force:
+        conn.close()
+        return None
+
+    title = f"Budget alert: {pct:.0f}% of this month's budget"
+    message = f"{currency_symbol}{spend:.2f} of {currency_symbol}{monthly_budget:.2f} spent so far this month."
+    if force and pct < BUDGET_ALERT_THRESHOLD_PCT:
+        message += f" (Not yet at the {BUDGET_ALERT_THRESHOLD_PCT}% threshold - this is a test send.)"
+
+    result = notifications.send_via_configured_provider(cur, title, message)
+    ok, _ = result
+    if ok and pct >= BUDGET_ALERT_THRESHOLD_PCT:
+        notifications.set_setting(cur, "_budget_alert_last_period", period_key)
+        conn.commit()
+    conn.close()
+    logger.info("BUDGET ALERT: period=%s pct=%.1f spend=%.2f budget=%.2f result=%s",
+                period_key, pct, spend, monthly_budget, result)
+    return result
 
 
 def annotate_group_shipping(cur, groups):
@@ -2489,6 +2569,7 @@ def save_settings(
     weekly_digest_day: str = Form("0"),
     budget_cycle: str = Form("monthly"),
     budget_rollover: str = Form("no"),
+    budget_alert_enabled: str = Form("no"),
     currency_symbol: str = Form("gbp"),
     default_landing_page: str = Form("dashboard"),
     auto_backup: str = Form("no"),
@@ -2510,6 +2591,7 @@ def save_settings(
         "weekly_digest_day": weekly_digest_day,
         "budget_cycle": budget_cycle,
         "budget_rollover": budget_rollover,
+        "budget_alert_enabled": budget_alert_enabled,
         "currency_symbol": currency_symbol,
         "default_landing_page": default_landing_page,
         "auto_backup": auto_backup,
@@ -2545,6 +2627,17 @@ def test_digest():
 @app.post("/settings/test-weekly-digest")
 def test_weekly_digest():
     result = notifications.check_and_notify_week(force=True)
+    if result is None:
+        return RedirectResponse(url="/settings?test_error=No+provider+configured", status_code=303)
+    ok, err = result
+    if ok:
+        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+
+
+@app.post("/settings/test-budget-alert")
+def test_budget_alert():
+    result = check_budget_threshold(force=True)
     if result is None:
         return RedirectResponse(url="/settings?test_error=No+provider+configured", status_code=303)
     ok, err = result

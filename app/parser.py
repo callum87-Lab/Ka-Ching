@@ -412,9 +412,8 @@ _ORDER_DETAIL_CONFIRMED_RE = re.compile(
     r"(?:Confirmed on:|Placed)\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
 )
 _ORDER_DETAIL_ITEM_RE = re.compile(
-    r"^[ \t]*\*?\s*(?:\[Awaiting product image\]\([^)]*\)\s*\n[ \t]*)?"
-    r"\[(?!Cancel item\])([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
-    r"(?:[^\n]*\n)??"
+    r"^[ \t]*\*?\s*\[(?!Cancel item\])([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
+    r"(?:([^\n]+)\n)??"
     r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled|Charged)\b[^\n]*\n"
     r"(?:[^\n]*\n)*?"
     r"£\s*([\d,]+\.\d{2})",
@@ -445,11 +444,11 @@ def parse_order_detail_items(text: str):
         return None
     items = []
     for m in _ORDER_DETAIL_ITEM_RE.finditer(text):
-        page_status = m.group(2).lower()
+        page_status = m.group(3).lower()
         if page_status == "cancelled":
             continue
         try:
-            price = float(m.group(3).replace(",", ""))
+            price = float(m.group(4).replace(",", ""))
         except ValueError:
             continue
         # "Dispatched" means it's already happened - shipped and paid.
@@ -458,7 +457,16 @@ def parse_order_detail_items(text: str):
         # late", so charged and dispatched are genuinely different things
         # here, not the same status under two names).
         status = "dispatched" if page_status == "dispatched" else "preorder"
-        name = _ORDER_DETAIL_IMAGE_SUFFIX_RE.sub("", m.group(1).strip()).strip()
+        # Every item on this page actually has two lines: the product image's
+        # alt text first (either the real title + "(Product Image)" when
+        # there's real cover art, or the generic "Awaiting product image"
+        # placeholder when there isn't), then the genuine title as a second,
+        # plain (unbracketed) line right after it. The second line is always
+        # the real title in both cases, so it's the one to trust - the first
+        # line is just incidental image metadata, not reliably the title.
+        bracket_name = _ORDER_DETAIL_IMAGE_SUFFIX_RE.sub("", m.group(1).strip()).strip()
+        second_line = (m.group(2) or "").strip()
+        name = second_line if second_line else bracket_name
         # Genuine pre-orders on this page do show their own real release
         # date ("Release date: 12 Aug 2026") - only items already
         # dispatched/charged lack one, so grab it here when it's there
