@@ -549,6 +549,110 @@ def store_shipment_postage(samples):
     return len(samples)
 
 
+# --- Order confirmation EMAILS (plain text, not a copied webpage) ----------
+#
+# Forbidden Planet's confirmation email has a completely different shape to
+# every page-based format above: no markdown link brackets at all, items are
+# "1 x <title>" lines, and each one carries its own real release date inline
+# ("Due for release on 2 Sep 2026.") rather than needing one inferred from
+# elsewhere. Shipments are separated by "Shipment NN" headings, each with
+# its own "Postage" line - genuinely exact per-shipment postage, same as
+# the order-detail page, just worded differently.
+
+_EMAIL_REF_RE = re.compile(r"Order Ref:\s*\n?\s*#?(\d+)", re.IGNORECASE)
+_EMAIL_DATE_RE = re.compile(r"Order Date:\s*\n?\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
+_EMAIL_ITEM_RE = re.compile(
+    r"^\d+\s*x\s+(.+?)\s*\n"
+    r"(Dispatched|Pre-?order|Backordered|Processing|Charged)\b[^\n]*\n"
+    r"(?:Due for release on\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\.\s*\n)?"
+    r"£\s*([\d,]+\.\d{2})",
+    re.MULTILINE | re.IGNORECASE,
+)
+_EMAIL_POSTAGE_RE = re.compile(r"Postage\s*\n\s*£\s*([\d,]+\.\d{2})", re.IGNORECASE)
+
+
+def parse_email_order(text: str):
+    """Returns {order_number, placed_date, items, postage_samples} for a
+    Forbidden Planet confirmation email, or None if this text doesn't look
+    like one (no order ref, or no items found this way)."""
+    ref_match = _EMAIL_REF_RE.search(text)
+    if not ref_match:
+        return None
+    order_number = ref_match.group(1)
+
+    items = []
+    for m in _EMAIL_ITEM_RE.finditer(text):
+        page_status = m.group(2).lower()
+        if page_status == "cancelled":
+            continue
+        try:
+            price = float(m.group(4).replace(",", ""))
+        except ValueError:
+            continue
+        release_date = _parse_day_month_year(*m.group(3).split(" ", 2)) if m.group(3) else None
+        status = "dispatched" if page_status == "dispatched" else "preorder"
+        items.append({
+            "name": m.group(1).strip(),
+            "price": price,
+            "status": status,
+            "page_status": page_status,
+            "release_date": release_date,
+        })
+    if not items:
+        return None
+
+    placed_date = None
+    date_match = _EMAIL_DATE_RE.search(text)
+    if date_match:
+        parts = date_match.group(1).split(" ", 2)
+        if len(parts) == 3:
+            placed_date = _parse_day_month_year(*parts)
+
+    postage_samples = [
+        {"order_number": order_number, "shipment_index": i, "amount": float(a.replace(",", ""))}
+        for i, a in enumerate(_EMAIL_POSTAGE_RE.findall(text))
+    ]
+
+    return {
+        "order_number": order_number,
+        "placed_date": placed_date,
+        "items": items,
+        "postage_samples": postage_samples,
+    }
+
+
+def _build_email_order_preview(email_order: dict) -> dict:
+    """Turns a parsed confirmation email into the same unified preview
+    shape every other parser returns."""
+    preview_items = [
+        {
+            "name": it["name"],
+            "price": it["price"],
+            "release_date": it["release_date"] or "",
+            "order_number": email_order["order_number"],
+            "placed_date": email_order["placed_date"] or "",
+            "status": it["status"],
+            "charge_status": "charged" if it["page_status"] == "dispatched" else "not_charged",
+            "note": None if it["release_date"] else "No release date found for this item - fill one in if you know it.",
+            "tracking_number": "",
+        }
+        for it in email_order["items"]
+    ]
+    return {
+        "parser": "forbidden_planet",
+        "source_guess": "Forbidden Planet",
+        "rows": preview_items,
+        "order_totals": {},
+        "skipped_no_order": 0,
+        "declared_total": None,
+        "shipping": None,
+        "order_number": email_order["order_number"],
+        "multi_order": False,
+        "order_shipping_map": {},
+        "postage_samples": email_order["postage_samples"],
+    }
+
+
 def _build_order_detail_preview(text: str, order_detail: dict) -> dict:
     """Turns a parsed order-detail page into the same unified preview shape
     every other parser returns. Split out so the early gate in detect_import
@@ -621,6 +725,10 @@ def detect_import(text: str, shop_hint: str | None = None):
     order_detail_early = parse_order_detail_items(text)
     if order_detail_early:
         return _build_order_detail_preview(text, order_detail_early)
+
+    email_order = parse_email_order(text)
+    if email_order:
+        return _build_email_order_preview(email_order)
 
     fp_items, fp_order_totals, fp_skipped = parse_order_history(text)
     if fp_items:
