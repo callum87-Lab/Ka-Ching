@@ -2277,6 +2277,8 @@ def import_form_redirect():
 def import_preview(request: Request, order_text: str = Form(...), shop_hint: str = Form("")):
     """Parses the pasted text and shows an editable review screen - nothing
     is written to the database until the person confirms it looks right."""
+    with open("/data/last_paste_debug.txt", "w", encoding="utf-8") as f:
+        f.write(order_text)
     preview = parser.detect_import(order_text, shop_hint=shop_hint or None)
 
     conn = db.get_db()
