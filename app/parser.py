@@ -412,7 +412,8 @@ _ORDER_DETAIL_CONFIRMED_RE = re.compile(
     r"(?:Confirmed on:|Placed)\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
 )
 _ORDER_DETAIL_ITEM_RE = re.compile(
-    r"^[ \t]*\*?\s*\[(?!Cancel item\])([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
+    r"^[ \t]*\*?\s*(?:\[Awaiting product image\]\([^)]*\)\s*\n[ \t]*)?"
+    r"\[(?!Cancel item\])([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
     r"(?:[^\n]*\n)??"
     r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled|Charged)\b[^\n]*\n"
     r"(?:[^\n]*\n)*?"
