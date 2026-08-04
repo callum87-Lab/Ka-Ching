@@ -491,9 +491,11 @@ def parse_order_detail_items(text: str):
     }
 
 
-_ORDER_DETAIL_HEADING_RE = re.compile(r"Order\s*#\[?(\d+)\]?")
+_ORDER_DETAIL_HEADING_RE = re.compile(r"Order(?:\s+Number)?\s*#\[?(\d+)\]?")
 _SHIPMENT_POSTAGE_RE = re.compile(
-    r"package with \d+ items?[^\d£\n]*?£?\s*([\d,]+\.\d{2})", re.IGNORECASE
+    r"package with \d+ items?[^\d£\n]*?£?\s*([\d,]+\.\d{2})"
+    r"|Postage\s*£\s*([\d,]+\.\d{2})",
+    re.IGNORECASE,
 )
 
 
@@ -508,8 +510,9 @@ def parse_shipment_postage(text: str):
         end = headings[idx + 1].start() if idx + 1 < len(headings) else len(text)
         block = text[start:end]
         for shipment_index, m in enumerate(_SHIPMENT_POSTAGE_RE.finditer(block)):
+            raw_amount = m.group(1) or m.group(2)
             try:
-                amount = float(m.group(1).replace(",", ""))
+                amount = float(raw_amount.replace(",", ""))
             except ValueError:
                 continue
             samples.append({
