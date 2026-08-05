@@ -67,11 +67,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 
 .topbar {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  padding: 12px 4px 10px;
+  gap: 14px;
+  padding: 12px 4px 18px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 32px;
 }
@@ -89,34 +88,32 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   filter: drop-shadow(0 0 10px rgba(47, 216, 255, 0.35));
 }
 
-.topnav { display: flex; gap: 8px; flex-wrap: wrap; }
+.topnav { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
 .topnav a {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-stretch: condensed;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12.5px;
   color: var(--text-muted);
-  background: var(--surface-raised);
-  border: 1.5px solid var(--border-strong);
-  padding: 9px 16px;
-  clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
-  box-shadow: 0 0 6px rgba(47, 216, 255, 0.12);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  padding: 7px 14px;
+  border-radius: 999px;
   transition: box-shadow 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 .topnav a:hover {
   color: var(--text);
   text-decoration: none;
   border-color: var(--neon-blue);
-  box-shadow: 0 0 10px rgba(47, 216, 255, 0.35);
 }
 .topnav a.active {
-  background: var(--neon-blue);
-  color: #04121a;
+  background: rgba(47, 216, 255, 0.12);
+  color: var(--neon-blue);
   border-color: var(--neon-blue);
-  box-shadow: 0 0 16px rgba(47, 216, 255, 0.7);
 }
+.topnav a svg { width: 14px; height: 14px; flex: 0 0 auto; }
 
 /* ---- Hero / price stamp ---- */
 
