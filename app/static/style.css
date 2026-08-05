@@ -1551,7 +1551,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .recent-release-price { flex-shrink: 0; color: var(--neon-blue); font-weight: 700; }
 
 /* --- Edit history --- */
-.edit-history-block { margin-top: 24px; }
+.edit-history-block { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); }
 .edit-history-list { list-style: none; margin: 0; padding: 0; }
 .edit-history-list li {
   padding: 8px 0;
