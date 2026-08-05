@@ -385,9 +385,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--neon-green);
-  border: 1px solid var(--neon-green);
-  border-radius: 3px;
-  padding: 1px 5px;
+  background: rgba(60, 242, 166, 0.12);
+  border: none;
+  border-radius: 999px;
+  padding: 2px 7px;
   margin-left: 4px;
 }
 
@@ -1270,7 +1271,12 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   color: var(--neon-blue);
   border-color: var(--border-strong);
   background: transparent;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
+.btn-export svg { width: 13px; height: 13px; }
 .btn-export:hover {
   color: var(--text);
   border-color: var(--neon-blue);
@@ -1298,7 +1304,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   min-height: 76px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 8px;
   display: flex;
   flex-direction: column;
