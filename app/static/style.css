@@ -124,8 +124,10 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 28px;
-  padding: 8px 4px 40px;
-  border-bottom: 1px solid var(--border);
+  padding: 20px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   margin-bottom: 36px;
   flex-wrap: wrap;
 }
@@ -605,18 +607,15 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .range-tab,
 .shop-filter-tab {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-stretch: condensed;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
-  background: var(--surface-raised);
-  border: 1.5px solid var(--border-strong);
-  padding: 8px 16px;
-  clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
-  box-shadow: 0 0 6px rgba(47, 216, 255, 0.12);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  padding: 6px 14px;
+  border-radius: 999px;
   transition: box-shadow 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 .range-tab:hover,
@@ -628,19 +627,19 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .range-tab.active,
 .shop-filter-tab.active {
-  background: var(--neon-blue);
-  color: #04121a;
+  background: rgba(47, 216, 255, 0.12);
+  color: var(--neon-blue);
   border-color: var(--neon-blue);
-  box-shadow: 0 0 16px rgba(47, 216, 255, 0.7);
+  box-shadow: none;
 }
 .shop-filter-tab[style*="--shop-color"].active {
   background: none;
   color: var(--shop-color);
   border-color: var(--shop-color);
-  box-shadow: 0 0 10px var(--shop-color);
+  box-shadow: none;
 }
 .range-tab.active:hover,
-.shop-filter-tab.active:hover { color: #04121a; }
+.shop-filter-tab.active:hover { color: var(--neon-blue); }
 .shop-filter-tab[style*="--shop-color"].active:hover { color: var(--shop-color); }
 
 .chart { padding: 8px 0 0; }
@@ -807,9 +806,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 2px 6px;
+  background: rgba(255, 77, 141, 0.15);
+  color: var(--neon-pink);
+  border: none;
+  border-radius: 999px;
+  padding: 3px 8px;
   margin-right: 4px;
 }
 .search-row-cancelled { grid-template-columns: 1fr auto auto !important; }
