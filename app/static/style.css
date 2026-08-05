@@ -762,18 +762,18 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 .search-date-presets { display: flex; gap: 8px; margin-top: 8px; }
 .date-preset-btn {
   font-size: 12px;
-  background: var(--surface);
+  background: transparent;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  padding: 5px 10px;
+  border-radius: 999px;
+  padding: 5px 12px;
   color: var(--text-muted);
   cursor: pointer;
 }
 .date-preset-btn:hover { color: var(--neon-blue); border-color: var(--neon-blue); }
 .date-preset-btn-clear { color: var(--neon-blue); border-color: var(--neon-blue); }
 .date-preset-btn.active {
-  color: #04121a;
-  background: var(--neon-blue);
+  color: var(--neon-blue);
+  background: rgba(47, 216, 255, 0.12);
   border-color: var(--neon-blue);
 }
 .search-view-label {
