@@ -9,7 +9,7 @@
 
 <section class="block logorders-panel" id="tab-manual" style="display: none;">
   <div class="block-head">
-    <h2>Add items</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>Add items</h2>
   </div>
 
   <form method="post" action="/items/new" class="item-edit-form">
@@ -54,7 +54,10 @@
     <button type="button" id="add-row-btn" class="btn-add-row">+ Add another comic</button>
 
     <label class="checkbox-row">
-      <input type="checkbox" name="already_paid" value="yes">
+      <span class="toggle">
+        <input type="checkbox" name="already_paid" value="yes">
+        <span class="toggle-track"></span>
+      </span>
       <span>Already paid (applies to all rows above)</span>
     </label>
 
@@ -71,7 +74,7 @@
 
 <section class="block logorders-panel" id="tab-paste">
   <div class="block-head">
-    <h2>Import order history</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg></span>Import order history</h2>
   </div>
   <p class="muted import-hint">
     Copy your order history page (Forbidden Planet, eBay, or similar) and paste the whole thing

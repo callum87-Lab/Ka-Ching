@@ -1098,21 +1098,19 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   margin-bottom: 20px;
 }
 .logorders-tab {
-  font-family: var(--font-display);
-  font-weight: 700;
+  font-family: var(--font-body);
+  font-weight: 600;
   font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--text-muted);
-  background: var(--surface-raised);
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 9px 18px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 8px 18px;
   cursor: pointer;
 }
 .logorders-tab.active {
-  color: #04121a;
-  background: var(--neon-blue);
+  color: var(--neon-blue);
+  background: rgba(47, 216, 255, 0.12);
   border-color: var(--neon-blue);
 }
 .parser-hint-row {
@@ -1124,15 +1122,16 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .parser-hint-btn {
   font-size: 12px;
-  background: var(--surface);
+  background: transparent;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  padding: 5px 10px;
+  border-radius: 999px;
+  padding: 5px 12px;
   color: var(--text-muted);
   cursor: pointer;
 }
 .parser-hint-btn.active {
   color: var(--neon-blue);
+  background: rgba(47, 216, 255, 0.12);
   border-color: var(--neon-blue);
 }
 
@@ -1183,13 +1182,14 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--neon-green);
-  border: 1px solid rgba(60, 242, 166, 0.4);
-  border-radius: 4px;
-  padding: 4px 9px;
+  background: rgba(60, 242, 166, 0.12);
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
 }
 .preview-meta-tag-generic {
   color: var(--neon-pink);
-  border-color: rgba(255, 77, 141, 0.4);
+  background: rgba(255, 77, 141, 0.12);
 }
 .preview-shop-row { margin-bottom: 10px; }
 
@@ -1201,12 +1201,12 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .preview-row {
   display: grid;
-  grid-template-columns: 24px 1fr 90px 150px;
+  grid-template-columns: 38px 1fr 90px 150px;
   gap: 10px;
   align-items: center;
 }
 .preview-row-generic {
-  grid-template-columns: 24px 1fr 90px 150px 160px;
+  grid-template-columns: 38px 1fr 90px 150px 160px;
 }
 .preview-source-input {
   background: var(--surface);
@@ -1225,11 +1225,6 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .preview-keep {
   display: flex;
   justify-content: center;
-}
-.preview-keep input[type="checkbox"] {
-  width: 17px;
-  height: 17px;
-  accent-color: var(--neon-blue);
 }
 .preview-name-input,
 .preview-price-input,

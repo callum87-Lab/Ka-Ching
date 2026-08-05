@@ -4,7 +4,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>Review before adding</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg></span>Review before adding</h2>
   </div>
   <p class="muted item-form-hint">
     Nothing has been saved yet. Check each row below, fix anything that's wrong,
@@ -114,7 +114,10 @@
       {% for item in preview.rows %}
       <div class="preview-row {{ 'preview-row-generic' if preview.parser != 'forbidden_planet' else '' }}">
         <label class="preview-keep">
-          <input type="checkbox" name="keep_{{ loop.index0 }}" checked>
+          <span class="toggle">
+            <input type="checkbox" name="keep_{{ loop.index0 }}" checked>
+            <span class="toggle-track"></span>
+          </span>
         </label>
         <input type="text" name="name_{{ loop.index0 }}" value="{{ item.name }}" class="preview-name-input">
         <input type="number" step="0.01" min="0" name="price_{{ loop.index0 }}" value="{{ item.price }}" class="preview-price-input">
@@ -161,7 +164,7 @@
     const row = document.createElement('div');
     row.className = 'preview-row' + (isForbiddenPlanet ? '' : ' preview-row-generic');
     row.innerHTML =
-      '<label class="preview-keep"><input type="checkbox" name="keep_' + nextIndex + '" checked></label>' +
+      '<label class="preview-keep"><span class="toggle"><input type="checkbox" name="keep_' + nextIndex + '" checked><span class="toggle-track"></span></span></label>' +
       '<input type="text" name="name_' + nextIndex + '" placeholder="Comic name" class="preview-name-input">' +
       '<input type="number" step="0.01" min="0" name="price_' + nextIndex + '" placeholder="Price" class="preview-price-input">' +
       '<input type="date" name="release_date_' + nextIndex + '" class="preview-date-input">' +
