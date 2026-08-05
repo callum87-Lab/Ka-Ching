@@ -4,7 +4,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>Notifications</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>Notifications</h2>
   </div>
   <p class="muted item-form-hint">
     Ka-Ching! checks once a day for anything releasing tomorrow and sends a single
@@ -105,12 +105,18 @@
     </label>
 
     <label class="checkbox-row">
-      <input type="checkbox" name="notify_on_quiet_days" value="yes" {{ 'checked' if values.notify_on_quiet_days == 'yes' else '' }}>
+      <span class="toggle">
+        <input type="checkbox" name="notify_on_quiet_days" value="yes" {{ 'checked' if values.notify_on_quiet_days == 'yes' else '' }}>
+        <span class="toggle-track"></span>
+      </span>
       <span>Also send a "nothing due tomorrow" ping on quiet days, to confirm notifications are still working</span>
     </label>
 
     <label class="checkbox-row">
-      <input type="checkbox" name="weekly_digest_enabled" value="yes" {{ 'checked' if values.weekly_digest_enabled == 'yes' else '' }}>
+      <span class="toggle">
+        <input type="checkbox" name="weekly_digest_enabled" value="yes" {{ 'checked' if values.weekly_digest_enabled == 'yes' else '' }}>
+        <span class="toggle-track"></span>
+      </span>
       <span>Also send a weekly overview, alongside the daily one</span>
     </label>
     <label>
@@ -190,7 +196,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>Budget</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg></span>Budget</h2>
   </div>
   <p class="muted item-form-hint">
     Set a monthly target and the dashboard shows how close this month's
@@ -228,11 +234,17 @@
       </label>
     </div>
     <label class="checkbox-row">
-      <input type="checkbox" name="budget_rollover" value="yes" {{ 'checked' if values.budget_rollover == 'yes' else '' }}>
+      <span class="toggle">
+        <input type="checkbox" name="budget_rollover" value="yes" {{ 'checked' if values.budget_rollover == 'yes' else '' }}>
+        <span class="toggle-track"></span>
+      </span>
       <span>Roll over unused budget into the next cycle (monthly only)</span>
     </label>
     <label class="checkbox-row">
-      <input type="checkbox" name="budget_alert_enabled" value="yes" {{ 'checked' if values.budget_alert_enabled == 'yes' else '' }}>
+      <span class="toggle">
+        <input type="checkbox" name="budget_alert_enabled" value="yes" {{ 'checked' if values.budget_alert_enabled == 'yes' else '' }}>
+        <span class="toggle-track"></span>
+      </span>
       <span>Also notify when I cross 80% of this month's budget</span>
     </label>
     <button type="submit">Save settings</button>
@@ -246,7 +258,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>General preferences</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>General preferences</h2>
   </div>
   <form method="post" action="/settings" class="item-edit-form">
     <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
@@ -292,7 +304,10 @@
       built around their UK pages specifically, whatever this is set to.
     </p>
     <label class="checkbox-row">
-      <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }}>
+      <span class="toggle">
+        <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }}>
+        <span class="toggle-track"></span>
+      </span>
       <span>Automatic daily backup (kept alongside the database, last 7 days retained)</span>
     </label>
     <button type="submit">Save settings</button>
@@ -301,7 +316,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>Sync</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></span>Sync</h2>
   </div>
   <p class="muted item-form-hint">
     Lets the Android app connect straight to this server so both stay in
@@ -341,7 +356,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>Shops</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.61 3H4a1 1 0 0 0-1 1v5.61a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.82 0l4.6-4.6a2 2 0 0 0 0-2.82Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>Shops</h2>
     <button type="button" class="section-collapse-toggle" data-target="shops-body" aria-label="Expand section">&#9656;</button>
   </div>
   <div class="section-body collapsed" id="shops-body">
@@ -370,7 +385,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>Danger zone</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Danger zone</h2>
   </div>
   {% if reset_result == 'done' %}
   <div class="result-banner">Factory reset complete &mdash; all tracked items and order data cleared. Settings above were kept.</div>
@@ -392,7 +407,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>Data backup</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Data backup</h2>
   </div>
   <p class="muted item-form-hint">
     Downloads the whole tracked database as a single file &mdash; every
@@ -453,7 +468,7 @@
 
 <section class="block">
   <div class="block-head">
-    <h2>About</h2>
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>About</h2>
   </div>
   <p class="muted item-form-hint">
     Ka-Ching! answers exactly two questions - what's due this week and what

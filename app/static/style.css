@@ -1640,3 +1640,93 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 .past-backups-list li:last-child { border-bottom: none; }
 .past-backups-list li > span:first-child { width: 150px; flex-shrink: 0; }
 .past-backups-list li > span:nth-child(2) { flex: 1; }
+
+/* ---- Settings page redesign: grouped cards, icons, real toggle switches ---- */
+
+.block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.block-head {
+  border-bottom: 1px solid var(--border);
+}
+
+.block-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.block-icon {
+  flex: 0 0 auto;
+  color: var(--neon-blue);
+  opacity: 0.85;
+}
+.block-icon svg { display: block; width: 16px; height: 16px; }
+
+/* Visually nests the provider-specific fields (ntfy/Gotify/Telegram/webhook)
+   inside the Notifications card, instead of them sitting flush with the
+   rest of the form. */
+.provider-fields {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 10px 0;
+}
+
+/* A real sliding toggle switch, built from the same checkbox that already
+   submits name/value/checked exactly as before - purely a visual wrapper
+   around it, nothing about how the form posts has changed. */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 21px;
+  flex: 0 0 auto;
+}
+.toggle input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.toggle-track::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.toggle input:checked ~ .toggle-track {
+  background: rgba(47, 216, 255, 0.15);
+  border-color: var(--neon-blue);
+}
+.toggle input:checked ~ .toggle-track::before {
+  transform: translateX(17px);
+  background: var(--neon-blue);
+}
+.toggle input:focus-visible ~ .toggle-track {
+  box-shadow: 0 0 0 2px var(--bg-1), 0 0 0 4px var(--neon-blue);
+}
+
+.checkbox-row { gap: 10px !important; }
