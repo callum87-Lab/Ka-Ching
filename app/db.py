@@ -118,9 +118,17 @@ MIGRATIONS = {
 
 def get_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    # WAL lets readers (e.g. the dashboard loading) and a writer (e.g. a
+    # large first-time sync inserting hundreds of items) proceed without
+    # blocking each other - the default rollback journal locks the whole
+    # file for the duration of a write, which is what caused "database
+    # is locked" errors during a big sync. busy_timeout is a second,
+    # SQLite-level backstop alongside the connection's own Python timeout.
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA busy_timeout = 15000")
     return conn
 
 
