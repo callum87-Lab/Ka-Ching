@@ -976,6 +976,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
 }
 .sync-key-wrap.copied .sync-key-copy-icon { opacity: 0; }
 .sync-key-wrap.copied .sync-key-copied-label { opacity: 1; }
+input[type="file"] {
   color: var(--text-muted);
   font-size: 12.5px;
   padding: 4px 0;
