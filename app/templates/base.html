@@ -147,6 +147,11 @@ document.querySelectorAll('.sync-key-copy-btn').forEach(function (field) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(field.getAttribute('data-key'));
     }
+    var wrap = field.closest('.sync-key-wrap');
+    if (wrap) {
+      wrap.classList.add('copied');
+      setTimeout(function () { wrap.classList.remove('copied'); }, 1500);
+    }
   });
 });
 </script>

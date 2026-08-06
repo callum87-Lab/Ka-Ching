@@ -940,10 +940,62 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   border-top: 1px dashed var(--border);
 }
 .restore-warning { color: var(--neon-pink); opacity: 0.9; }
-.item-edit-form input[type="file"] {
+.sync-key-wrap { position: relative; }
+.sync-key-copy-btn {
+  cursor: pointer;
+  padding-right: 36px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sync-key-copy-btn:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 8px rgba(47, 216, 255, 0.25);
+}
+.sync-key-copy-icon {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
   color: var(--text-muted);
-  font-size: 13px;
-  padding: 6px 0;
+  pointer-events: none;
+}
+.sync-key-copied-label {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--neon-green);
+  background: var(--surface);
+  padding-left: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.sync-key-wrap.copied .sync-key-copy-icon { opacity: 0; }
+.sync-key-wrap.copied .sync-key-copied-label { opacity: 1; }
+  color: var(--text-muted);
+  font-size: 12.5px;
+  padding: 4px 0;
+}
+input[type="file"]::file-selector-button {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--neon-blue);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 7px 14px;
+  margin-right: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="file"]::file-selector-button:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 8px rgba(47, 216, 255, 0.3);
 }
 .form-row {
   display: flex;
