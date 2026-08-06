@@ -218,7 +218,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 
 .block-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px 14px;
@@ -243,7 +243,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 
 .month-nav {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -288,12 +288,12 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 .group-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 8px;
 }
 .group-head-right {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   margin-left: auto;
 }
@@ -1621,7 +1621,7 @@ input[type="file"]::file-selector-button:hover {
 .trend-down { background: rgba(60, 242, 166, 0.14); color: var(--neon-green); }
 .insight-next-list { display: flex; flex-direction: column; gap: 6px; margin-left: auto; min-width: 0; max-width: 260px; flex-shrink: 1; }
 .insight-next-list-title { font-size: 12px; color: var(--text-muted); text-align: right; margin-bottom: 2px; }
-.insight-next-list-row { display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
+.insight-next-list-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
 .insight-next-list-when { color: var(--neon-blue); font-weight: 700; flex-shrink: 0; }
 .insight-next-list-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
 .insight-next-list-price { flex-shrink: 0; }
@@ -1639,7 +1639,7 @@ input[type="file"]::file-selector-button:hover {
 .ring-row-divider { width: 1px; align-self: stretch; background: var(--border); flex-shrink: 0; }
 .recent-releases { flex: 1; min-width: 0; max-width: 100%; overflow: hidden; }
 .recent-releases-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
-.recent-release-row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; font-size: 14px; border-bottom: 1px solid var(--border); width: 100%; }
+.recent-release-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; font-size: 14px; border-bottom: 1px solid var(--border); width: 100%; }
 .recent-release-row:last-child { border-bottom: none; }
 .recent-release-date { color: var(--text-muted); font-size: 12px; width: 60px; flex-shrink: 0; }
 .recent-release-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 10px; }
