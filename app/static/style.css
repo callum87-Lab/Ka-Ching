@@ -395,30 +395,74 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  position: relative;
 }
 .item-actions-group .bulk-select,
 .item-actions-group .actions-drawer-toggle {
   flex-shrink: 0;
 }
 .actions-drawer-toggle {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   background: none;
   border: none;
+  border-radius: 50%;
   color: var(--text-muted);
   font-size: 16px;
-  padding: 4px 6px;
+  padding: 0;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.actions-drawer-toggle:hover,
+.item-actions-group.drawer-open .actions-drawer-toggle {
+  background: rgba(47, 216, 255, 0.12);
+  color: var(--neon-blue);
 }
 .item-actions-group .actions-drawer {
   display: none;
-  align-items: center;
-  gap: 6px;
-  flex-basis: 100%;
-  justify-content: flex-end;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  min-width: 150px;
+  z-index: 20;
+  padding: 4px;
 }
 .item-actions-group.drawer-open .actions-drawer { display: flex; }
+.actions-drawer .item-edit-btn,
+.actions-drawer .btn-x,
+.actions-drawer .btn-remove {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text);
+  cursor: pointer;
+  height: auto;
+  box-shadow: none;
+}
+.actions-drawer .item-edit-btn:hover { background: rgba(47, 216, 255, 0.1); color: var(--neon-blue); }
+.actions-drawer .btn-x { color: var(--text-muted); }
+.actions-drawer .btn-x:hover { background: rgba(94, 156, 255, 0.1); color: var(--text); }
+.actions-drawer .btn-remove { color: var(--neon-pink); }
+.actions-drawer .btn-remove:hover { background: rgba(255, 77, 141, 0.1); color: var(--neon-pink); box-shadow: none; }
 
 .section-collapse-toggle {
   background: none;

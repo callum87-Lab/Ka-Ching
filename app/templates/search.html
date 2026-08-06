@@ -172,7 +172,7 @@
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="cancel">
-              <button type="submit" class="btn-x" title="Cancel this item" aria-label="Cancel this item">&times;</button>
+              <button type="submit" class="btn-x" title="Cancel this item" aria-label="Cancel this item">Cancel</button>
             </form>
             <form method="post" action="/items/{{ item.id }}/mark" class="remove-form" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
