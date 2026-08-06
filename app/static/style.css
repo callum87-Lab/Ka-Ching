@@ -694,6 +694,46 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 }
 .trend-hit { cursor: crosshair; }
 
+/* Series visibility is pure CSS - a class on the wrapper (set by the
+   toggle switches below the chart) hides the matching <g> in whichever
+   range's SVG happens to be visible right now. All three ranges share
+   the same wrapper, so a toggle stays applied across Week/Month/6M. */
+.chart-multi.hide-total .trend-series-total,
+.chart-multi.hide-comics .trend-series-comics,
+.chart-multi.hide-shipping .trend-series-shipping { display: none; }
+
+.trend-toggles {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 14px 0 4px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.trend-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.trend-toggle-row .toggle { width: 34px; height: 19px; }
+.trend-toggle-row .toggle-track::before { width: 13px; height: 13px; }
+.trend-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+.trend-toggle-row.trend-toggle-checked .trend-toggle-label { color: var(--text); }
+.trend-toggle-total .toggle input:checked ~ .toggle-track { background: rgba(47, 216, 255, 0.15); border-color: var(--neon-blue); }
+.trend-toggle-total .toggle input:checked ~ .toggle-track::before { background: linear-gradient(135deg, var(--neon-blue), var(--neon-violet)); }
+.trend-toggle-comics .toggle input:checked ~ .toggle-track { background: rgba(47, 216, 255, 0.15); border-color: var(--neon-blue); }
+.trend-toggle-comics .toggle input:checked ~ .toggle-track::before { background: var(--neon-blue); }
+.trend-toggle-shipping .toggle input:checked ~ .toggle-track { background: rgba(255, 77, 141, 0.15); border-color: var(--neon-pink); }
+.trend-toggle-shipping .toggle input:checked ~ .toggle-track::before { background: var(--neon-pink); }
+
 .trend-tooltip {
   position: absolute;
   z-index: 30;

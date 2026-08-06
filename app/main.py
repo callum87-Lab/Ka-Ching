@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -583,11 +583,17 @@ def render_two_segment_ring_svg(pct1: float, color1: str, pct2: float, color2: s
 
 def render_trend_svg(chart_data, range_key):
     """Self-contained SVG spend-trend chart - no external chart library, so
-    the dashboard never needs to reach the internet to render it. A smooth
-    gradient area for total spend (comics + shipping, matching the hero's
-    own figures), with a thin bar strip beneath for item count per period -
-    a second real metric, not decoration. Hover reveals the exact
-    breakdown; handled by a small shared script in base.html."""
+    the dashboard never needs to reach the internet to render it. Three
+    toggleable series sharing one Y-axis (comics + shipping are genuine
+    parts of total, not separate scales): a gradient area + glowing line
+    for the combined total, plus two glowing lines (no area fill, to
+    avoid clutter when overlaid) for comics and shipping alone. A thin
+    bar strip beneath shows item count per period - a second real
+    metric, not decoration. Hover reveals the exact breakdown regardless
+    of which lines are toggled on; handled by a small shared script in
+    base.html. Line visibility itself is pure CSS, toggled by the
+    checkboxes below the chart - the underlying data for all three is
+    always present in the markup."""
     if len(chart_data) < 2:
         return ""
 
@@ -603,26 +609,42 @@ def render_trend_svg(chart_data, range_key):
     def x_at(i):
         return round(pad_l + i * step, 1)
 
-    def y_at(total):
-        return round(pad_top + area_h - (total / max_total) * area_h, 1)
+    def y_at(value):
+        return round(pad_top + area_h - (value / max_total) * area_h, 1)
 
-    points = [(x_at(i), y_at(c["total"])) for i, c in enumerate(chart_data)]
-    line_path = _smooth_svg_path(points)
     baseline_y = pad_top + area_h
-    area_path = f"{line_path} L{points[-1][0]},{baseline_y} L{points[0][0]},{baseline_y} Z"
-
     grad_id = f"trendgrad-{range_key}"
+    glow_id = f"trendglow-{range_key}"
     bars_top = pad_top + area_h + gap
     label_y = bars_top + bars_h + 16
     bar_w = min(18.0, step * 0.5)
 
+    total_points = [(x_at(i), y_at(c["total"])) for i, c in enumerate(chart_data)]
+    comics_points = [(x_at(i), y_at(c["comics_total"])) for i, c in enumerate(chart_data)]
+    shipping_points = [(x_at(i), y_at(c["shipping_total"])) for i, c in enumerate(chart_data)]
+
+    total_line = _smooth_svg_path(total_points)
+    comics_line = _smooth_svg_path(comics_points)
+    shipping_line = _smooth_svg_path(shipping_points)
+    total_area = f"{total_line} L{total_points[-1][0]},{baseline_y} L{total_points[0][0]},{baseline_y} Z"
+
     parts = [
         f'<svg viewBox="0 0 {W} {H}" class="trend-svg" preserveAspectRatio="none" '
         f'role="img" aria-label="Spend trend over time, with item counts below">',
-        f'<defs><linearGradient id="{grad_id}" x1="0" y1="0" x2="0" y2="1">'
-        f'<stop offset="0%" stop-color="var(--neon-blue)" stop-opacity="0.45"/>'
-        f'<stop offset="100%" stop-color="var(--neon-blue)" stop-opacity="0.02"/>'
-        f'</linearGradient></defs>',
+        '<defs>',
+        f'<linearGradient id="{grad_id}" x1="0" y1="0" x2="0" y2="1">'
+        f'<stop offset="0%" stop-color="var(--neon-blue)" stop-opacity="0.4"/>'
+        f'<stop offset="55%" stop-color="#6f8fff" stop-opacity="0.14"/>'
+        f'<stop offset="100%" stop-color="var(--neon-violet)" stop-opacity="0.02"/>'
+        f'</linearGradient>',
+        f'<linearGradient id="{grad_id}-line" x1="0" y1="0" x2="1" y2="0">'
+        f'<stop offset="0%" stop-color="var(--neon-blue)"/><stop offset="100%" stop-color="var(--neon-violet)"/>'
+        f'</linearGradient>',
+        f'<filter id="{glow_id}" x="-30%" y="-30%" width="160%" height="160%">'
+        f'<feGaussianBlur stdDeviation="3.2" result="blur"/>'
+        f'<feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>'
+        f'</filter>',
+        '</defs>',
     ]
 
     for frac in (0, 0.5, 1):
@@ -630,9 +652,31 @@ def render_trend_svg(chart_data, range_key):
         parts.append(f'<line x1="{pad_l}" y1="{gy}" x2="{W - pad_r}" y2="{gy}" '
                       f'stroke="var(--border)" stroke-width="1"/>')
 
-    parts.append(f'<path d="{area_path}" fill="url(#{grad_id})" stroke="none"/>')
-    parts.append(f'<path d="{line_path}" fill="none" stroke="var(--neon-blue)" '
-                  f'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>')
+    # Total: area fill + gradient glowing line + dot per point
+    parts.append(f'<g class="trend-series trend-series-total">')
+    parts.append(f'<path d="{total_area}" fill="url(#{grad_id})" stroke="none"/>')
+    parts.append(f'<path d="{total_line}" fill="none" stroke="url(#{grad_id}-line)" '
+                  f'stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#{glow_id})"/>')
+    for i, (px, py) in enumerate(total_points):
+        r = "6" if i == len(total_points) - 1 else "4"
+        parts.append(f'<circle cx="{px}" cy="{py}" r="{r}" fill="var(--bg-1)" stroke="var(--neon-blue)" stroke-width="2.5"/>')
+    parts.append('</g>')
+
+    # Comics alone: glowing line + dots, no area (kept clean when overlaid with the others)
+    parts.append(f'<g class="trend-series trend-series-comics">')
+    parts.append(f'<path d="{comics_line}" fill="none" stroke="var(--neon-blue)" '
+                  f'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" filter="url(#{glow_id})"/>')
+    for px, py in comics_points:
+        parts.append(f'<circle cx="{px}" cy="{py}" r="3.5" fill="var(--bg-1)" stroke="var(--neon-blue)" stroke-width="2"/>')
+    parts.append('</g>')
+
+    # Shipping alone: same treatment, in pink to match its color elsewhere in the app
+    parts.append(f'<g class="trend-series trend-series-shipping">')
+    parts.append(f'<path d="{shipping_line}" fill="none" stroke="var(--neon-pink)" '
+                  f'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" filter="url(#{glow_id})"/>')
+    for px, py in shipping_points:
+        parts.append(f'<circle cx="{px}" cy="{py}" r="3.5" fill="var(--bg-1)" stroke="var(--neon-pink)" stroke-width="2"/>')
+    parts.append('</g>')
 
     for i, c in enumerate(chart_data):
         bx = x_at(i)
@@ -650,7 +694,7 @@ def render_trend_svg(chart_data, range_key):
 
     hit_w = round(step, 1)
     for i, c in enumerate(chart_data):
-        cx, cy = points[i]
+        cx, cy = total_points[i]
         zx = round(cx - hit_w / 2, 1)
         parts.append(
             f'<rect class="trend-hit" x="{zx}" y="0" width="{hit_w}" height="{bars_top + bars_h}" '
@@ -661,8 +705,8 @@ def render_trend_svg(chart_data, range_key):
 
     parts.append('<line class="trend-guide" y1="14" x2="0" stroke="var(--neon-blue)" '
                  f'stroke-width="1" stroke-dasharray="3,3" opacity="0.4" style="display:none;" y2="{bars_top + bars_h}"/>')
-    parts.append('<circle class="trend-dot" r="4.5" fill="var(--neon-blue)" '
-                 'stroke="var(--bg-1)" stroke-width="2" style="display:none;"/>')
+    parts.append('<circle class="trend-dot" r="6" fill="var(--neon-blue)" '
+                 'stroke="var(--bg-1)" stroke-width="2.5" style="display:none;"/>')
     parts.append('</svg>')
     return "".join(parts)
 

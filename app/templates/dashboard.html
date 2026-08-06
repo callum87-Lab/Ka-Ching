@@ -438,11 +438,36 @@
       {% endfor %}
     </div>
   </div>
+  <div class="chart-multi hide-comics hide-shipping" id="chart-multi">
   {% for key, svg in chart_svg_all.items() %}
   <div class="chart" data-chart-range="{{ key }}" {{ '' if key == active_chart_range else 'style="display:none;"' }}>
     {{ svg|safe }}
   </div>
   {% endfor %}
+  <div class="trend-toggles">
+    <label class="trend-toggle-row trend-toggle-total trend-toggle-checked">
+      <span class="toggle">
+        <input type="checkbox" data-series="total" checked>
+        <span class="toggle-track"></span>
+      </span>
+      <span class="trend-toggle-label">Total</span>
+    </label>
+    <label class="trend-toggle-row trend-toggle-comics">
+      <span class="toggle">
+        <input type="checkbox" data-series="comics">
+        <span class="toggle-track"></span>
+      </span>
+      <span class="trend-toggle-label">Comics</span>
+    </label>
+    <label class="trend-toggle-row trend-toggle-shipping">
+      <span class="toggle">
+        <input type="checkbox" data-series="shipping">
+        <span class="toggle-track"></span>
+      </span>
+      <span class="trend-toggle-label">Shipping</span>
+    </label>
+  </div>
+  </div>
   <div class="trend-tooltip" id="trend-tooltip" style="display:none;">
     <div class="trend-tooltip-label"></div>
     <div class="trend-tooltip-row"><span>Comics</span><span class="trend-tooltip-comics mono"></span></div>
@@ -541,6 +566,35 @@
     var y = cursorY - 10;
     tooltip.style.left = x + 'px';
     tooltip.style.top = y + 'px';
+  }
+  var chartMulti = document.getElementById('chart-multi');
+  var TOGGLE_KEY = 'kaching-chart-series';
+  if (chartMulti) {
+    var savedSeries = null;
+    try { savedSeries = JSON.parse(localStorage.getItem(TOGGLE_KEY) || 'null'); } catch (e) {}
+
+    chartMulti.querySelectorAll('.trend-toggle-row input[data-series]').forEach(function (input) {
+      var series = input.dataset.series;
+      if (savedSeries && Object.prototype.hasOwnProperty.call(savedSeries, series)) {
+        input.checked = savedSeries[series];
+      }
+      applySeriesState(input);
+      input.addEventListener('change', function () {
+        applySeriesState(input);
+        var state = {};
+        chartMulti.querySelectorAll('.trend-toggle-row input[data-series]').forEach(function (i) {
+          state[i.dataset.series] = i.checked;
+        });
+        try { localStorage.setItem(TOGGLE_KEY, JSON.stringify(state)); } catch (e) {}
+      });
+    });
+  }
+
+  function applySeriesState(input) {
+    var series = input.dataset.series;
+    var row = input.closest('.trend-toggle-row');
+    chartMulti.classList.toggle('hide-' + series, !input.checked);
+    if (row) row.classList.toggle('trend-toggle-checked', input.checked);
   }
 })();
 
