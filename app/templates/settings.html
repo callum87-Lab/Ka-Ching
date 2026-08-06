@@ -418,8 +418,10 @@
     <span class="mono">{{ item_count }}</span> item{{ 's' if item_count != 1 else '' }} tracked
     &middot; database file is <span class="mono">{{ db_size_label }}</span>
   </p>
-  <a href="/settings/backup" class="btn-tiny btn-test">Download backup</a>
-  <a href="/settings/export-all.csv" class="btn-tiny btn-test">Download full spend history (CSV)</a>
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px;">
+    <a href="/settings/backup" class="btn-tiny btn-test">Download backup</a>
+    <a href="/settings/export-all.csv" class="btn-tiny btn-test">Download full spend history (CSV)</a>
+  </div>
   <p class="muted item-form-hint">
     The database backup above is for restoring everything into Ka-Ching!
     itself. This CSV is a plain spreadsheet of every tracked item, for

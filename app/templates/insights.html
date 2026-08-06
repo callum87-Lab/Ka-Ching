@@ -191,7 +191,7 @@
     {% for t in top_titles %}
     <div class="insight-top-title-row">
       <span class="insight-top-title-rank">{{ loop.index }}</span>
-      <a href="/items/{{ t.id }}/edit" class="insight-top-title-name">{{ t.name }}</a>
+      <span class="insight-top-title-name">{{ t.name }}</span>
       <span class="mono">{{ currency() }}{{ "%.2f"|format(t.price) }}</span>
     </div>
     {% endfor %}

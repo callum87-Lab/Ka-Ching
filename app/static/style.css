@@ -220,6 +220,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   margin-bottom: 14px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
@@ -585,8 +587,7 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   margin: -8px 0 28px;
 }
 
-.item-name-link { text-decoration: none; min-width: 0; overflow: hidden; }
-.item-name-link:hover .item-name { color: var(--neon-blue); text-decoration: underline; }
+.item-name-link { min-width: 0; overflow: hidden; }
 
 .cal-source-divider {
   grid-template-columns: 1fr auto !important;
@@ -959,7 +960,7 @@ button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
   height: 16px;
   accent-color: var(--neon-blue);
 }
-.item-form-hint { margin-top: 4px; max-width: 60ch; }
+.item-form-hint { margin: 14px 0 4px; max-width: 60ch; }
 .db-stats-line { margin-top: -6px; margin-bottom: 14px; }
 
 /* ---- Insights page ---- */

@@ -145,9 +145,9 @@
           {% for item in results %}
           <li class="{{ 'is-paid' if item.charge_status == 'charged' else '' }} {{ 'search-row-cancelled' if item.status == 'cancelled' else '' }}">
             {% if item.status == 'cancelled' %}
-            <a href="/items/{{ item.id }}/edit" class="item-name-link">
+            <span class="item-name-link">
               <span class="item-name muted"><span class="search-status-tag">Cancelled</span> {{ item.name }}</span>
-            </a>
+            </span>
             <span class="item-price mono muted">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
             <form method="post" action="/items/{{ item.id }}/mark" class="inline-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
@@ -162,7 +162,7 @@
                       title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
-            <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            <span class="item-name-link"><span class="item-name">{{ item.name }}</span></span>
             <span class="item-price-group">{% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number and open PostTrack">&#128230; {{ item.tracking_number }}</a>{% endif %}<span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span></span>
             <div class="item-actions-group">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">

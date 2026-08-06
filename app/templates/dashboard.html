@@ -143,9 +143,9 @@
             <input type="hidden" name="action" value="paid">
             <button type="submit" class="paid-circle" title="Mark as paid" aria-label="Mark as paid"></button>
           </form>
-          <a href="/items/{{ item.id }}/edit" class="item-name-link">
+          <span class="item-name-link">
             <span class="item-name">{{ item.name }} <span class="search-status-tag">{{ item.days_late }}d late</span></span>
-          </a>
+          </span>
           <span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
           <div class="item-actions-group">
           <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
@@ -286,7 +286,7 @@
                       title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
-            <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            <span class="item-name-link"><span class="item-name">{{ item.name }}</span></span>
             <span class="item-price-group">{% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number and open PostTrack">&#128230; {{ item.tracking_number }}</a>{% endif %}<span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span></span>
             <div class="item-actions-group">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
@@ -366,7 +366,7 @@
                       title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"
                       aria-label="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
             </form>
-            <a href="/items/{{ item.id }}/edit" class="item-name-link"><span class="item-name">{{ item.name }}</span></a>
+            <span class="item-name-link"><span class="item-name">{{ item.name }}</span></span>
             <span class="item-price-group">{% if item.tracking_number %}<a href="https://posttrack.com/en/parcel-tracking" target="_blank" rel="noopener" class="track-link-btn" data-tracking="{{ item.tracking_number }}" title="Copy tracking number and open PostTrack">&#128230; {{ item.tracking_number }}</a>{% endif %}<span class="item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span></span>
             <div class="item-actions-group">
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
