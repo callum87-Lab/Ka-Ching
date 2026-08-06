@@ -729,8 +729,8 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
 .trend-toggle-row.trend-toggle-checked .trend-toggle-label { color: var(--text); }
 .trend-toggle-total .toggle input:checked ~ .toggle-track { background: rgba(47, 216, 255, 0.15); border-color: var(--neon-blue); }
 .trend-toggle-total .toggle input:checked ~ .toggle-track::before { background: linear-gradient(135deg, var(--neon-blue), var(--neon-violet)); }
-.trend-toggle-comics .toggle input:checked ~ .toggle-track { background: rgba(47, 216, 255, 0.15); border-color: var(--neon-blue); }
-.trend-toggle-comics .toggle input:checked ~ .toggle-track::before { background: var(--neon-blue); }
+.trend-toggle-comics .toggle input:checked ~ .toggle-track { background: rgba(60, 242, 166, 0.15); border-color: var(--neon-green); }
+.trend-toggle-comics .toggle input:checked ~ .toggle-track::before { background: var(--neon-green); }
 .trend-toggle-shipping .toggle input:checked ~ .toggle-track { background: rgba(255, 77, 141, 0.15); border-color: var(--neon-pink); }
 .trend-toggle-shipping .toggle input:checked ~ .toggle-track::before { background: var(--neon-pink); }
 

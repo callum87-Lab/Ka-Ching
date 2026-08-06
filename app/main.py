@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -664,10 +664,10 @@ def render_trend_svg(chart_data, range_key):
 
     # Comics alone: glowing line + dots, no area (kept clean when overlaid with the others)
     parts.append(f'<g class="trend-series trend-series-comics">')
-    parts.append(f'<path d="{comics_line}" fill="none" stroke="var(--neon-blue)" '
+    parts.append(f'<path d="{comics_line}" fill="none" stroke="var(--neon-green)" '
                   f'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" filter="url(#{glow_id})"/>')
     for px, py in comics_points:
-        parts.append(f'<circle cx="{px}" cy="{py}" r="3.5" fill="var(--bg-1)" stroke="var(--neon-blue)" stroke-width="2"/>')
+        parts.append(f'<circle cx="{px}" cy="{py}" r="3.5" fill="var(--bg-1)" stroke="var(--neon-green)" stroke-width="2"/>')
     parts.append('</g>')
 
     # Shipping alone: same treatment, in pink to match its color elsewhere in the app
