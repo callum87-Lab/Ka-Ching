@@ -217,12 +217,8 @@
   </div>
   {% endif %}
 
-  {% endif %}
-</section>
-
-{% if price_distribution and max_bucket_count > 0 %}
-<section class="block">
-  <div class="block-head">
+  {% if price_distribution and max_bucket_count > 0 %}
+  <div class="block-head insight-shop-head">
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>Price distribution</h2>
   </div>
   <div class="insight-weekday-chart">
@@ -234,15 +230,13 @@
     </div>
     {% endfor %}
   </div>
-  <p class="muted item-form-hint">
+  <p class="insight-card-note">
     How many tracked items fall into each price bracket - a tall bar on the right is a real signal you're drifting toward pricier variants without necessarily noticing month to month.
   </p>
-</section>
-{% endif %}
+  {% endif %}
 
-{% if cumulative_svg %}
-<section class="block">
-  <div class="block-head">
+  {% if cumulative_svg %}
+  <div class="block-head insight-shop-head">
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/></svg></span>Cumulative spend, {{ cumulative_month_label }}</h2>
   </div>
   <div class="chart insight-chart-wrap">
@@ -255,16 +249,13 @@
       <div class="trend-tooltip-count"></div>
     </div>
   </div>
-  <p class="muted item-form-hint">
+  <p class="insight-card-note">
     Running total of {{ cumulative_month_label }}'s comics + shipping, day by day - shows where the month's spending actually clusters rather than one flat monthly figure. Flat sections are quiet days; steep jumps are where several items land on the same day. Hover any point for that day's exact breakdown.
   </p>
-</section>
-{% endif %}
+  {% endif %}
 
-{% if twelve_month_svg or shop_stats %}
-<section class="block">
   {% if twelve_month_svg %}
-  <div class="block-head">
+  <div class="block-head insight-shop-head">
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>12-month spend trend</h2>
   </div>
   <div class="chart insight-chart-wrap">
@@ -316,8 +307,9 @@
     {% endif %}
     {% endfor %}
   </div>
+
+  {% endif %}
 </section>
-{% endif %}
 
 <script>
 (function () {
