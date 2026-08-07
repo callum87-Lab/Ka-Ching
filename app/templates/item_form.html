@@ -56,6 +56,34 @@
     <button type="submit">{{ submit_label }}</button>
   </form>
 
+  {% if item and item.release_date %}
+  <div class="delay-item-block">
+    <div class="block-head insight-shop-head">
+      <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4l2 2"/></svg></span>Delay this item</h2>
+    </div>
+    <p class="muted item-form-hint">
+      Manufacturer pushed this back? Currently due <strong>{{ item.release_date }}</strong> - pick how long it's been delayed by, rather than opening a date picker for the common case.
+    </p>
+    <div class="btn-row">
+      <form method="post" action="/items/{{ item.id }}/delay">
+        <input type="hidden" name="days" value="30">
+        <input type="hidden" name="next" value="/items/{{ item.id }}/edit">
+        <button type="submit" class="btn-tiny">+30 days</button>
+      </form>
+      <form method="post" action="/items/{{ item.id }}/delay">
+        <input type="hidden" name="days" value="60">
+        <input type="hidden" name="next" value="/items/{{ item.id }}/edit">
+        <button type="submit" class="btn-tiny">+60 days</button>
+      </form>
+      <form method="post" action="/items/{{ item.id }}/delay">
+        <input type="hidden" name="days" value="90">
+        <input type="hidden" name="next" value="/items/{{ item.id }}/edit">
+        <button type="submit" class="btn-tiny">+90 days</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
   <p class="muted item-form-hint">
     {% if item %}
     Manually-edited items are protected from being overwritten by a later re-import.

@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.5.2"
+APP_VERSION = "1.6.0"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1537,7 +1537,39 @@ def update_item(
     return RedirectResponse(url="/", status_code=303)
 
 
-# --- Search --------------------------------------------------------------------
+@app.post("/items/{item_id}/delay")
+def delay_item(item_id: int, days: int = Form(...), next: str | None = Form(None)):
+    """One-tap manufacturer-delay handling: push a release date back by a
+    fixed number of days (+30/+60/+90) without opening the full edit
+    form. Only +30/+60/+90 are accepted - anything else is a genuinely
+    custom date change, which the full edit form already handles."""
+    if days not in (30, 60, 90):
+        return RedirectResponse(url=next or "/", status_code=303)
+
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT release_date FROM items WHERE id = ?", (item_id,))
+    existing = cur.fetchone()
+    if existing is None or not existing["release_date"]:
+        conn.close()
+        return RedirectResponse(url=next or "/", status_code=303)
+
+    old_date = date.fromisoformat(existing["release_date"])
+    new_date = (old_date + timedelta(days=days)).isoformat()
+    now = db.utc_now()
+
+    cur.execute(
+        "INSERT INTO item_history (item_id, changed_at, field_name, old_value, new_value) VALUES (?, ?, ?, ?, ?)",
+        (item_id, now, "release_date", existing["release_date"], new_date),
+    )
+    cur.execute(
+        "UPDATE items SET release_date = ?, manual_override = 1, updated_at = ? WHERE id = ?",
+        (new_date, now, item_id),
+    )
+    conn.commit()
+    conn.close()
+    logger.info("DELAY: id=%s old_date=%s new_date=%s (+%s days)", item_id, existing["release_date"], new_date, days)
+    return RedirectResponse(url=next or f"/items/{item_id}/edit", status_code=303)
 
 SEARCH_SORT_OPTIONS = {
     "date_desc": ("release_date DESC, name", "Release date (newest)"),
