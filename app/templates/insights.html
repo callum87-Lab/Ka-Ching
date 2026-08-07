@@ -218,54 +218,69 @@
   {% endif %}
 
   {% if price_distribution and max_bucket_count > 0 %}
-  <div class="block-head insight-shop-head">
-    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>Price distribution</h2>
-  </div>
-  <div class="insight-weekday-chart">
-    {% for b in price_distribution %}
-    <div class="insight-weekday-bar-wrap">
-      <span class="mono" style="font-size:11px; color:var(--text-muted);">{{ b.count }}</span>
-      <div class="insight-weekday-bar" style="height: {{ (b.count / max_bucket_count * 100)|round }}%; background: var(--neon-blue);"></div>
-      <span class="insight-weekday-label">{{ b.label }}</span>
+  <div class="insight-card">
+    <div class="insight-card-title-row">
+      <div class="insight-card-icon" style="background: rgba(47,216,255,0.14);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2fd8ff" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg>
+      </div>
+      <span class="insight-card-title">Price distribution</span>
     </div>
-    {% endfor %}
+    <div class="insight-weekday-chart">
+      {% for b in price_distribution %}
+      <div class="insight-weekday-bar-wrap">
+        <span class="mono" style="font-size:11px; color:var(--text-muted);">{{ b.count }}</span>
+        <div class="insight-weekday-bar" style="height: {{ (b.count / max_bucket_count * 100)|round }}%; background: var(--neon-blue);"></div>
+        <span class="insight-weekday-label">{{ b.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="insight-card-note">
+      How many tracked items fall into each price bracket - a tall bar on the right is a real signal you're drifting toward pricier variants without necessarily noticing month to month.
+    </p>
   </div>
-  <p class="insight-card-note">
-    How many tracked items fall into each price bracket - a tall bar on the right is a real signal you're drifting toward pricier variants without necessarily noticing month to month.
-  </p>
   {% endif %}
 
   {% if cumulative_svg %}
-  <div class="block-head insight-shop-head">
-    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/></svg></span>Cumulative spend, {{ cumulative_month_label }}</h2>
-  </div>
-  <div class="chart insight-chart-wrap">
-    {{ cumulative_svg|safe }}
-    <div class="trend-tooltip" style="display: none;">
-      <div class="trend-tooltip-label"></div>
-      <div class="trend-tooltip-row"><span>Comics</span><span class="mono trend-tooltip-comics"></span></div>
-      <div class="trend-tooltip-row"><span>Shipping</span><span class="mono trend-tooltip-shipping"></span></div>
-      <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
-      <div class="trend-tooltip-count"></div>
+  <div class="insight-card">
+    <div class="insight-card-title-row">
+      <div class="insight-card-icon" style="background: rgba(155,123,255,0.14);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9b7bff" stroke-width="2.2" stroke-linecap="round"><path d="M3 17l5-5 4 4 8-9"/></svg>
+      </div>
+      <span class="insight-card-title">Cumulative spend, {{ cumulative_month_label }}</span>
     </div>
+    <div class="chart insight-chart-wrap">
+      {{ cumulative_svg|safe }}
+      <div class="trend-tooltip" style="display: none;">
+        <div class="trend-tooltip-label"></div>
+        <div class="trend-tooltip-row"><span>Comics</span><span class="mono trend-tooltip-comics"></span></div>
+        <div class="trend-tooltip-row"><span>Shipping</span><span class="mono trend-tooltip-shipping"></span></div>
+        <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
+        <div class="trend-tooltip-count"></div>
+      </div>
+    </div>
+    <p class="insight-card-note">
+      Running total of {{ cumulative_month_label }}'s comics + shipping, day by day - shows where the month's spending actually clusters rather than one flat monthly figure. Flat sections are quiet days; steep jumps are where several items land on the same day. Hover any point for that day's exact breakdown.
+    </p>
   </div>
-  <p class="insight-card-note">
-    Running total of {{ cumulative_month_label }}'s comics + shipping, day by day - shows where the month's spending actually clusters rather than one flat monthly figure. Flat sections are quiet days; steep jumps are where several items land on the same day. Hover any point for that day's exact breakdown.
-  </p>
   {% endif %}
 
   {% if twelve_month_svg %}
-  <div class="block-head insight-shop-head">
-    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>12-month spend trend</h2>
-  </div>
-  <div class="chart insight-chart-wrap">
-    {{ twelve_month_svg|safe }}
-    <div class="trend-tooltip" style="display: none;">
-      <div class="trend-tooltip-label"></div>
-      <div class="trend-tooltip-row"><span>Comics</span><span class="mono trend-tooltip-comics"></span></div>
-      <div class="trend-tooltip-row"><span>Shipping</span><span class="mono trend-tooltip-shipping"></span></div>
-      <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
-      <div class="trend-tooltip-count"></div>
+  <div class="insight-card">
+    <div class="insight-card-title-row">
+      <div class="insight-card-icon" style="background: rgba(255,77,141,0.14);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff4d8d" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg>
+      </div>
+      <span class="insight-card-title">12-month spend trend</span>
+    </div>
+    <div class="chart insight-chart-wrap">
+      {{ twelve_month_svg|safe }}
+      <div class="trend-tooltip" style="display: none;">
+        <div class="trend-tooltip-label"></div>
+        <div class="trend-tooltip-row"><span>Comics</span><span class="mono trend-tooltip-comics"></span></div>
+        <div class="trend-tooltip-row"><span>Shipping</span><span class="mono trend-tooltip-shipping"></span></div>
+        <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
+        <div class="trend-tooltip-count"></div>
+      </div>
     </div>
   </div>
   {% endif %}
