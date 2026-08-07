@@ -818,6 +818,41 @@ def detect_import(text: str, shop_hint: str | None = None):
             "order_count": len(chunks),
         }
 
+    if looks_like_whatnot(text):
+        whatnot = parse_whatnot_order(text)
+        preview_items = []
+        order_shipping_map = {}
+        default_charge = "charged" if whatnot["already_paid"] else "not_charged"
+        if whatnot["order_number"] and whatnot["shipping"]:
+            order_shipping_map[whatnot["order_number"]] = whatnot["shipping"]
+
+        for it in whatnot["items"]:
+            preview_items.append({
+                "name": it["name"],
+                "price": it["price"],
+                "release_date": "",
+                "order_number": whatnot["order_number"] or "",
+                "placed_date": "",
+                "status": "preorder",
+                "charge_status": default_charge,
+                "note": it["note"] or "",
+                "source": whatnot["source_guess"],
+                "tracking_number": "",
+            })
+
+        return {
+            "parser": "generic",
+            "source_guess": whatnot["source_guess"],
+            "rows": preview_items,
+            "order_totals": {},
+            "skipped_no_order": 0,
+            "declared_total": whatnot["declared_total"],
+            "shipping": whatnot["shipping"],
+            "order_shipping_map": order_shipping_map,
+            "order_number": whatnot["order_number"],
+            "multi_order": False,
+        }
+
     # Forbidden Planet also sends a completely different kind of paste - a
     # "release date changed" email (no items, no prices, just a date update
     # for something already tracked) - and a person might paste in an
@@ -1106,6 +1141,74 @@ def parse_ebay_order(text: str):
         "already_paid": already_paid,
         "tracking_number": tracking_number,
         "shipping": implied_shipping,
+        "items": items,
+    }
+
+
+_WHATNOT_SELLER_RE = re.compile(r"purchase from\s+(\S+)\s+on Whatnot", re.IGNORECASE)
+_WHATNOT_ORDER_NUM_RE = re.compile(r"Order\s*#\s*(\d+)")
+_WHATNOT_TOTAL_RE = re.compile(r"Order Total:\s*£\s*(\d+\.\d{2})")
+_WHATNOT_SUBTOTAL_RE = re.compile(r"Subtotal\s*\n?\s*£\s*(\d+\.\d{2})")
+_WHATNOT_SHIPPING_RE = re.compile(r"Shipping\s*\n\s*£\s*(\d+\.\d{2})")
+_WHATNOT_PAID_RE = re.compile(r"Payment Method", re.IGNORECASE)
+
+
+def looks_like_whatnot(text: str) -> bool:
+    return _WHATNOT_SELLER_RE.search(text) is not None and _WHATNOT_ORDER_NUM_RE.search(text) is not None
+
+
+def parse_whatnot_order(text: str):
+    """Returns {order_number, declared_total, source_guess, items: [{name,
+    price, note}]}, matching the eBay parser's shape. Pure parsing, never
+    touches the database.
+
+    Only verified against a single real confirmation email so far (one
+    item per order) - Whatnot may send multi-item orders too, but without
+    a sample to go on this doesn't guess at that shape. If a second item
+    block ever turns up under "### Order Details" it'll just be missed
+    rather than misparsed, same caution the rest of this file takes
+    elsewhere. Whatnot charges at checkout (unlike Forbidden Planet's
+    pre-orders, charged later at release), so items default to already
+    paid; there's no release-date concept here, just "not yet shipped"."""
+    order_match = _WHATNOT_ORDER_NUM_RE.search(text)
+    order_number = order_match.group(1) if order_match else None
+
+    seller_match = _WHATNOT_SELLER_RE.search(text)
+    seller = seller_match.group(1) if seller_match else None
+    source_guess = f"Whatnot - {seller}" if seller else "Whatnot"
+
+    total_match = _WHATNOT_TOTAL_RE.search(text)
+    declared_total = float(total_match.group(1)) if total_match else None
+
+    subtotal_match = _WHATNOT_SUBTOTAL_RE.search(text)
+    item_price = float(subtotal_match.group(1)) if subtotal_match else None
+
+    shipping_match = _WHATNOT_SHIPPING_RE.search(text)
+    shipping = float(shipping_match.group(1)) if shipping_match else None
+
+    already_paid = _WHATNOT_PAID_RE.search(text) is not None
+
+    # The item name is the line right after "### Order Details" - the
+    # only line of real prose in that section, everything else below it
+    # is a labelled field (Order #, Order Total, View Order).
+    items = []
+    idx = text.find("Order Details")
+    if idx != -1 and order_number and item_price is not None:
+        for line in text[idx:].splitlines():
+            line = line.strip().lstrip("#").strip()
+            if not line or line == "Order Details":
+                continue
+            if line.startswith("Order #") or line.startswith("Order Total"):
+                break
+            items.append({"name": line, "price": item_price, "note": None})
+            break
+
+    return {
+        "order_number": order_number,
+        "declared_total": declared_total,
+        "source_guess": source_guess,
+        "already_paid": already_paid,
+        "shipping": shipping,
         "items": items,
     }
 
