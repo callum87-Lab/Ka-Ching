@@ -504,6 +504,18 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   padding: 4px 6px;
   margin-left: auto;
 }
+.block-head-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin-left: auto;
+  text-decoration: none;
+}
+.block-head-close:hover { color: var(--text); text-decoration: none; }
 .section-body.collapsed { display: none; }
 
 .track-link-btn {
