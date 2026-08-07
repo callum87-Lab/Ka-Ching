@@ -239,6 +239,14 @@
   {% endif %}
 </section>
 
+{% if next_up %}
+<section class="block next-up-card">
+  <div class="next-up-meta">{{ next_up.source }} &middot; <span class="next-up-countdown">{{ next_up.days_until_label }}</span></div>
+  <div class="next-up-name">{{ next_up.name }}</div>
+  <div class="next-up-price mono">{{ currency() }}{{ "%.2f"|format(next_up.price) }}</div>
+</section>
+{% endif %}
+
 {% if filter_tab_sources|length > 1 %}
 <div class="source-filter-row">
   <a href="/?month={{ viewed_month_param }}&chart_range={{ active_chart_range }}"

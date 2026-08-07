@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.5.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1101,6 +1101,25 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     )
     recently_cancelled = [dict(r) for r in cur.fetchall()]
 
+    # Next Up: the single nearest upcoming item, same filter convention
+    # as Insights' own "Coming up" list (not cancelled, has a release
+    # date, not already past) - just showing #1 alone here rather than
+    # a list, for a genuinely zero-friction "what's coming next" glance
+    # that doesn't need scrolling past This Week to find.
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) >= date(?)
+        ORDER BY release_date ASC LIMIT 1
+        """,
+        (today.isoformat(),),
+    )
+    next_up_row = cur.fetchone()
+    next_up = dict(next_up_row) if next_up_row else None
+    if next_up:
+        days_until = (date.fromisoformat(next_up["release_date"]) - today).days
+        next_up["days_until_label"] = "Today" if days_until == 0 else ("Tomorrow" if days_until == 1 else f"In {days_until} days")
+
     conn.close()
 
     return templates.TemplateResponse("dashboard.html", {
@@ -1157,6 +1176,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "total_items_tracked": total_items_tracked,
         "has_any_data": total_items_tracked > 0,
         "recently_cancelled": recently_cancelled,
+        "next_up": next_up,
     })
 
 
