@@ -278,8 +278,9 @@
 <section class="block">
   <div class="block-head">
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/></svg></span>Cumulative spend, {{ cumulative_month_label }}</h2>
+    <span class="block-total mono">{{ currency() }}{{ "%.2f"|format(cumulative_curve[-1].total) }} so far</span>
   </div>
-  <svg viewBox="0 0 700 90" preserveAspectRatio="none" style="width:100%; display:block;" role="img" aria-label="Running total of this month's spend, day by day">
+  <svg viewBox="0 0 700 110" preserveAspectRatio="none" style="width:100%; display:block;" role="img" aria-label="Running total of this month's spend, day by day">
     {% set max_running = cumulative_curve[-1].total or 1 %}
     {% set pts = [] %}
     {% for pt in cumulative_curve %}
@@ -287,12 +288,16 @@
       {% set y = (80 - (pt.total / max_running) * 70)|round(1) %}
       {% if pts.append((x, y)) %}{% endif %}
     {% endfor %}
+    <line x1="20" y1="10" x2="680" y2="10" stroke="var(--border)" stroke-width="1"/>
+    <line x1="20" y1="80" x2="680" y2="80" stroke="var(--border)" stroke-width="1"/>
     <polyline points="{% for x, y in pts %}{{ x }},{{ y }} {% endfor %}" fill="none" stroke="var(--neon-blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     {% set last_x, last_y = pts[-1] %}
     <circle cx="{{ last_x }}" cy="{{ last_y }}" r="5" fill="var(--bg-1)" stroke="var(--neon-blue)" stroke-width="2.5"/>
+    <text x="20" y="102" font-size="12" fill="var(--text-muted)">{{ cumulative_curve[0].day }} {{ cumulative_month_label }}</text>
+    <text x="680" y="102" text-anchor="end" font-size="12" font-weight="700" fill="var(--neon-blue)">Today ({{ cumulative_curve[-1].day }} {{ cumulative_month_label }})</text>
   </svg>
   <p class="muted item-form-hint">
-    Running total of {{ cumulative_month_label }}'s comics + shipping so far, day by day - shows where the month's spending actually clusters rather than one flat monthly figure.
+    Running total of {{ cumulative_month_label }}'s comics + shipping so far, day by day - shows where the month's spending actually clusters rather than one flat monthly figure. Flat sections are quiet days; steep jumps are where several items land on the same day.
   </p>
 </section>
 {% endif %}
@@ -314,14 +319,18 @@
     <div style="flex:1; text-align:center; font-size:11px; color:var(--text-muted);">{{ b.label }}</div>
     {% endfor %}
   </div>
+  <p class="muted item-form-hint">
+    How many tracked items fall into each price bracket - a tall bar on the right is a real signal you're drifting toward pricier variants without necessarily noticing month to month.
+  </p>
 </section>
 {% endif %}
 
-{% if charging_pattern %}
+{% if charging_pattern is defined %}
 <section class="block">
   <div class="block-head">
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>Per-shop charging pattern</h2>
   </div>
+  {% if charging_pattern %}
   <p class="muted item-form-hint">
     Based only on orders where the paid status was actually toggled by hand after import - a real pattern, but not the full picture, since orders that arrive already marked paid don't leave a trace of when that happened.
   </p>
@@ -332,6 +341,11 @@
     <span class="muted" style="font-size:12.5px;">{{ c.label }}</span>
   </div>
   {% endfor %}
+  {% else %}
+  <p class="muted item-form-hint">
+    Not enough data yet. This only tracks orders where you've manually marked something as paid after it was already imported - most orders arrive already marked paid or unpaid, which doesn't leave a timestamp to measure from. Needs at least 3 manual paid-toggles for the same shop before a pattern shows here.
+  </p>
+  {% endif %}
 </section>
 {% endif %}
 
