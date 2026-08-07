@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.4.2"
+APP_VERSION = "1.4.3"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1995,44 +1995,6 @@ def insights_page(request: Request):
     price_distribution.append({"label": "£50+", "count": bucket_counts[-1]})
     max_bucket_count = max((b["count"] for b in price_distribution), default=0) or 1
 
-    # Per-shop charging pattern: only items whose charge_status was
-    # actually toggled after import leave a trace here (item_history
-    # only logs changes, not the state something arrived in) - genuine
-    # data, but a real subset, not every charged item. Needs at least 3
-    # real samples before showing a shop's pattern, same minimum bar
-    # used for shipping-estimate calibration elsewhere in this app.
-    cur.execute("""
-        SELECT items.release_date, items.source, item_history.changed_at
-        FROM item_history
-        JOIN items ON items.id = item_history.item_id
-        WHERE item_history.field_name = 'charge_status'
-          AND item_history.new_value = 'charged'
-          AND items.release_date IS NOT NULL
-    """)
-    charging_samples = {}
-    for row in cur.fetchall():
-        try:
-            release = datetime.strptime(row["release_date"], "%Y-%m-%d").date()
-            changed = datetime.fromisoformat(row["changed_at"]).date()
-        except (ValueError, TypeError):
-            continue
-        days_diff = (changed - release).days
-        charging_samples.setdefault(row["source"], []).append(days_diff)
-
-    charging_pattern = []
-    for shop, samples in charging_samples.items():
-        if len(samples) < 3:
-            continue
-        avg_days = round(sum(samples) / len(samples))
-        if avg_days <= 0:
-            label = "charges at or before release"
-        elif avg_days == 1:
-            label = "charges ~1 day after release"
-        else:
-            label = f"charges ~{avg_days} days after release"
-        charging_pattern.append({"shop": shop, "color": source_color(shop), "label": label, "sample_count": len(samples)})
-    charging_pattern.sort(key=lambda c: c["shop"])
-
     conn.close()
     return templates.TemplateResponse("insights.html", {
         "request": request,
@@ -2043,7 +2005,6 @@ def insights_page(request: Request):
         "cumulative_month_label": cumulative_month_label,
         "price_distribution": price_distribution,
         "max_bucket_count": max_bucket_count,
-        "charging_pattern": charging_pattern,
         "has_data": bool(all_items),
         "total_issues": total_issues,
         "twelve_month_svg": twelve_month_svg,

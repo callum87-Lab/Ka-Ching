@@ -217,13 +217,59 @@
   </div>
   {% endif %}
 
+  {% endif %}
+</section>
+
+{% if price_distribution and max_bucket_count > 0 %}
+<section class="block">
+  <div class="block-head">
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>Price distribution</h2>
+  </div>
+  <div class="insight-weekday-chart">
+    {% for b in price_distribution %}
+    <div class="insight-weekday-bar-wrap">
+      <span class="mono" style="font-size:11px; color:var(--text-muted);">{{ b.count }}</span>
+      <div class="insight-weekday-bar" style="height: {{ (b.count / max_bucket_count * 100)|round }}%; background: var(--neon-blue);"></div>
+      <span class="insight-weekday-label">{{ b.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="muted item-form-hint">
+    How many tracked items fall into each price bracket - a tall bar on the right is a real signal you're drifting toward pricier variants without necessarily noticing month to month.
+  </p>
+</section>
+{% endif %}
+
+{% if cumulative_svg %}
+<section class="block">
+  <div class="block-head">
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/></svg></span>Cumulative spend, {{ cumulative_month_label }}</h2>
+  </div>
+  <div class="chart insight-chart-wrap">
+    {{ cumulative_svg|safe }}
+    <div class="trend-tooltip" style="display: none;">
+      <div class="trend-tooltip-label"></div>
+      <div class="trend-tooltip-row"><span>Comics</span><span class="mono trend-tooltip-comics"></span></div>
+      <div class="trend-tooltip-row"><span>Shipping</span><span class="mono trend-tooltip-shipping"></span></div>
+      <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
+      <div class="trend-tooltip-count"></div>
+    </div>
+  </div>
+  <p class="muted item-form-hint">
+    Running total of {{ cumulative_month_label }}'s comics + shipping, day by day - shows where the month's spending actually clusters rather than one flat monthly figure. Flat sections are quiet days; steep jumps are where several items land on the same day. Hover any point for that day's exact breakdown.
+  </p>
+</section>
+{% endif %}
+
+{% if twelve_month_svg or shop_stats %}
+<section class="block">
   {% if twelve_month_svg %}
-  <div class="block-head insight-shop-head">
+  <div class="block-head">
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>12-month spend trend</h2>
   </div>
   <div class="chart insight-chart-wrap">
     {{ twelve_month_svg|safe }}
-    <div class="trend-tooltip" id="trend-tooltip" style="display: none;">
+    <div class="trend-tooltip" style="display: none;">
       <div class="trend-tooltip-label"></div>
       <div class="trend-tooltip-row"><span>Comics</span><span class="mono trend-tooltip-comics"></span></div>
       <div class="trend-tooltip-row"><span>Shipping</span><span class="mono trend-tooltip-shipping"></span></div>
@@ -270,65 +316,6 @@
     {% endif %}
     {% endfor %}
   </div>
-
-  {% endif %}
-</section>
-
-{% if cumulative_svg %}
-<section class="block">
-  <div class="block-head">
-    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/></svg></span>Cumulative spend, {{ cumulative_month_label }}</h2>
-  </div>
-  <div class="chart insight-chart-wrap">
-    {{ cumulative_svg|safe }}
-  </div>
-  <p class="muted item-form-hint">
-    Running total of {{ cumulative_month_label }}'s comics + shipping, day by day - shows where the month's spending actually clusters rather than one flat monthly figure. Flat sections are quiet days; steep jumps are where several items land on the same day. Hover any point for that day's exact breakdown.
-  </p>
-</section>
-{% endif %}
-
-{% if price_distribution and max_bucket_count > 0 %}
-<section class="block">
-  <div class="block-head">
-    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>Price distribution</h2>
-  </div>
-  <div class="insight-weekday-chart">
-    {% for b in price_distribution %}
-    <div class="insight-weekday-bar-wrap">
-      <span class="mono" style="font-size:11px; color:var(--text-muted);">{{ b.count }}</span>
-      <div class="insight-weekday-bar" style="height: {{ (b.count / max_bucket_count * 100)|round }}%; background: var(--neon-blue);"></div>
-      <span class="insight-weekday-label">{{ b.label }}</span>
-    </div>
-    {% endfor %}
-  </div>
-  <p class="muted item-form-hint">
-    How many tracked items fall into each price bracket - a tall bar on the right is a real signal you're drifting toward pricier variants without necessarily noticing month to month.
-  </p>
-</section>
-{% endif %}
-
-{% if charging_pattern is defined %}
-<section class="block">
-  <div class="block-head">
-    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>Per-shop charging pattern</h2>
-  </div>
-  {% if charging_pattern %}
-  <p class="muted item-form-hint">
-    Based only on orders where the paid status was actually toggled by hand after import - a real pattern, but not the full picture, since orders that arrive already marked paid don't leave a trace of when that happened.
-  </p>
-  {% for c in charging_pattern %}
-  <div style="display:flex; align-items:center; gap:10px; padding:8px 0;">
-    <span style="width:9px; height:9px; border-radius:50%; background:{{ c.color }}; flex:0 0 auto;"></span>
-    <span style="flex:1; font-size:13px;">{{ c.shop }}</span>
-    <span class="muted" style="font-size:12.5px;">{{ c.label }}</span>
-  </div>
-  {% endfor %}
-  {% else %}
-  <p class="muted item-form-hint">
-    Not enough data yet. This only tracks orders where you've manually marked something as paid after it was already imported - most orders arrive already marked paid or unpaid, which doesn't leave a timestamp to measure from. Needs at least 3 manual paid-toggles for the same shop before a pattern shows here.
-  </p>
-  {% endif %}
 </section>
 {% endif %}
 
@@ -344,52 +331,51 @@
       if (arrow) arrow.innerHTML = isOpen ? '&#9656;' : '&#9662;';
     });
   });
-  var trendTooltip = document.getElementById('trend-tooltip');
-  if (trendTooltip) {
-    document.querySelectorAll('.trend-svg').forEach(function (svg) {
-      var dot = svg.querySelector('.trend-dot');
-      var guide = svg.querySelector('.trend-guide');
-      svg.querySelectorAll('.trend-hit').forEach(function (hit) {
-        function show() {
-          var d = hit.dataset;
-          trendTooltip.querySelector('.trend-tooltip-label').textContent = d.label;
-          trendTooltip.querySelector('.trend-tooltip-comics').textContent = '{{ currency() }}' + d.comics;
-          trendTooltip.querySelector('.trend-tooltip-shipping').textContent = '{{ currency() }}' + d.shipping;
-          trendTooltip.querySelector('.trend-tooltip-total .mono').textContent = '{{ currency() }}' + d.total;
-          trendTooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' comic' : ' comics') + ' this month';
-          trendTooltip.style.display = 'block';
-          var cx = parseFloat(d.cx), cy = parseFloat(d.cy);
-          if (dot) { dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.style.display = ''; }
-          if (guide) { guide.setAttribute('x1', cx); guide.setAttribute('x2', cx); guide.style.display = ''; }
-        }
-        function move(e) {
-          var wrap = hit.closest('.insight-chart-wrap');
-          var rect = wrap.getBoundingClientRect();
-          var cursorX = e.clientX - rect.left;
-          var cursorY = e.clientY - rect.top;
-          var tooltipWidth = trendTooltip.offsetWidth || 220;
-          var x = (cursorX + 14 + tooltipWidth > rect.width)
-            ? cursorX - 14 - tooltipWidth
-            : cursorX + 14;
-          trendTooltip.style.left = x + 'px';
-          trendTooltip.style.top = (cursorY - 10) + 'px';
-        }
-        hit.addEventListener('mouseenter', show);
-        hit.addEventListener('mousemove', move);
-        hit.addEventListener('mouseleave', function () {
-          trendTooltip.style.display = 'none';
-          if (dot) dot.style.display = 'none';
-          if (guide) guide.style.display = 'none';
-        });
-        hit.addEventListener('touchstart', function (e) {
-          e.preventDefault();
-          show();
-          var t = e.touches[0];
-          move({ clientX: t.clientX, clientY: t.clientY });
-        }, { passive: false });
+  document.querySelectorAll('.trend-svg').forEach(function (svg) {
+    var wrap = svg.closest('.insight-chart-wrap');
+    var trendTooltip = wrap ? wrap.querySelector('.trend-tooltip') : null;
+    if (!trendTooltip) return;
+    var dot = svg.querySelector('.trend-dot');
+    var guide = svg.querySelector('.trend-guide');
+    svg.querySelectorAll('.trend-hit').forEach(function (hit) {
+      function show() {
+        var d = hit.dataset;
+        trendTooltip.querySelector('.trend-tooltip-label').textContent = d.label;
+        trendTooltip.querySelector('.trend-tooltip-comics').textContent = '{{ currency() }}' + d.comics;
+        trendTooltip.querySelector('.trend-tooltip-shipping').textContent = '{{ currency() }}' + d.shipping;
+        trendTooltip.querySelector('.trend-tooltip-total .mono').textContent = '{{ currency() }}' + d.total;
+        trendTooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' comic' : ' comics') + ' this month';
+        trendTooltip.style.display = 'block';
+        var cx = parseFloat(d.cx), cy = parseFloat(d.cy);
+        if (dot) { dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.style.display = ''; }
+        if (guide) { guide.setAttribute('x1', cx); guide.setAttribute('x2', cx); guide.style.display = ''; }
+      }
+      function move(e) {
+        var rect = wrap.getBoundingClientRect();
+        var cursorX = e.clientX - rect.left;
+        var cursorY = e.clientY - rect.top;
+        var tooltipWidth = trendTooltip.offsetWidth || 220;
+        var x = (cursorX + 14 + tooltipWidth > rect.width)
+          ? cursorX - 14 - tooltipWidth
+          : cursorX + 14;
+        trendTooltip.style.left = x + 'px';
+        trendTooltip.style.top = (cursorY - 10) + 'px';
+      }
+      hit.addEventListener('mouseenter', show);
+      hit.addEventListener('mousemove', move);
+      hit.addEventListener('mouseleave', function () {
+        trendTooltip.style.display = 'none';
+        if (dot) dot.style.display = 'none';
+        if (guide) guide.style.display = 'none';
       });
+      hit.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        show();
+        var t = e.touches[0];
+        move({ clientX: t.clientX, clientY: t.clientY });
+      }, { passive: false });
     });
-  }
+  });
 })();
 
 document.querySelectorAll('.section-collapse-toggle').forEach(function (btn) {
