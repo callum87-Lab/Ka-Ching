@@ -42,7 +42,7 @@
       {% for day in week %}
         {% if day %}
         <div class="cal-day {{ 'cal-today' if day.is_today else '' }} {{ 'cal-has-items' if day.count else '' }}"
-             {% if day.count %}data-jump-date="{{ day.date_iso }}"{% endif %}>
+             {% if day.count %}style="background: rgba(47, 216, 255, {{ 0.08 + day.intensity * 0.35 }});" data-jump-date="{{ day.date_iso }}"{% endif %}>
           <span class="cal-day-num">{{ day.day }}</span>
           {% if day.count %}
           <span class="cal-day-total mono">{{ currency() }}{{ "%.2f"|format(day.total) }}</span>

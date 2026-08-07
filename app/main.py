@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.4.5"
+APP_VERSION = "1.5.0"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -2236,13 +2236,26 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
     cur = conn.cursor()
     items = fetch_items_between(cur, v_start, v_end, source)
     filter_tab_sources = get_filter_tab_sources(cur)
-    conn.close()
 
     by_date = {}
     for it in items:
         by_date.setdefault(it["release_date"], []).append(it)
 
-    agenda_groups = group_by_date(items)
+    # Real per-day spend (comics + shipping, matching every other total
+    # figure in the app) - grouped the same way the agenda list below
+    # already groups by date, so a day showing "one parcel of £54.88"
+    # in the agenda and this same day's heatmap intensity are computed
+    # from the exact same real shipping figures, not two different
+    # notions of "total" drifting apart from each other.
+    day_groups = group_by_date(items)
+    day_totals = {}
+    for group in day_groups:
+        day_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, [group])
+        day_totals[group["date"]] = round(group["subtotal"] + day_shipping, 2)
+    max_day_total = max(day_totals.values(), default=0) or 1
+    conn.close()
+
+    agenda_groups = day_groups
     today_iso = today.isoformat()
     default_open_date = None
     upcoming = [g["date"] for g in agenda_groups if g["date"] >= today_iso]
@@ -2260,12 +2273,14 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
         d = date(viewed_month.year, viewed_month.month, day_num)
         d_iso = d.isoformat()
         day_items = by_date.get(d_iso, [])
+        day_total = day_totals.get(d_iso, 0.0)
         week.append({
             "day": day_num,
             "date_iso": d_iso,
             "is_today": d == today,
             "count": len(day_items),
-            "total": round(sum(i["price"] for i in day_items), 2),
+            "total": day_total,
+            "intensity": round(day_total / max_day_total, 2) if day_total else 0,
         })
         if len(week) == 7:
             weeks.append(week)
