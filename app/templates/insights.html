@@ -274,6 +274,67 @@
   {% endif %}
 </section>
 
+{% if cumulative_curve|length > 1 %}
+<section class="block">
+  <div class="block-head">
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 3 5-8"/></svg></span>Cumulative spend, {{ cumulative_month_label }}</h2>
+  </div>
+  <svg viewBox="0 0 700 90" preserveAspectRatio="none" style="width:100%; display:block;" role="img" aria-label="Running total of this month's spend, day by day">
+    {% set max_running = cumulative_curve[-1].total or 1 %}
+    {% set pts = [] %}
+    {% for pt in cumulative_curve %}
+      {% set x = (20 + (pt.day - 1) * (660 / (cumulative_curve|length - 1 if cumulative_curve|length > 1 else 1)))|round(1) %}
+      {% set y = (80 - (pt.total / max_running) * 70)|round(1) %}
+      {% if pts.append((x, y)) %}{% endif %}
+    {% endfor %}
+    <polyline points="{% for x, y in pts %}{{ x }},{{ y }} {% endfor %}" fill="none" stroke="var(--neon-blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    {% set last_x, last_y = pts[-1] %}
+    <circle cx="{{ last_x }}" cy="{{ last_y }}" r="5" fill="var(--bg-1)" stroke="var(--neon-blue)" stroke-width="2.5"/>
+  </svg>
+  <p class="muted item-form-hint">
+    Running total of {{ cumulative_month_label }}'s comics + shipping so far, day by day - shows where the month's spending actually clusters rather than one flat monthly figure.
+  </p>
+</section>
+{% endif %}
+
+{% if price_distribution and max_bucket_count > 0 %}
+<section class="block">
+  <div class="block-head">
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>Price distribution</h2>
+  </div>
+  <div style="display:flex; align-items:flex-end; gap:8px; height:70px;">
+    {% for b in price_distribution %}
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">
+      <div style="width:100%; background:var(--neon-blue); opacity:{{ 0.3 + (b.count / max_bucket_count) * 0.6 }}; border-radius:3px 3px 0 0; height:{{ (b.count / max_bucket_count * 100)|round }}%;"></div>
+    </div>
+    {% endfor %}
+  </div>
+  <div style="display:flex; gap:8px; margin-top:6px;">
+    {% for b in price_distribution %}
+    <div style="flex:1; text-align:center; font-size:11px; color:var(--text-muted);">{{ b.label }}</div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if charging_pattern %}
+<section class="block">
+  <div class="block-head">
+    <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>Per-shop charging pattern</h2>
+  </div>
+  <p class="muted item-form-hint">
+    Based only on orders where the paid status was actually toggled by hand after import - a real pattern, but not the full picture, since orders that arrive already marked paid don't leave a trace of when that happened.
+  </p>
+  {% for c in charging_pattern %}
+  <div style="display:flex; align-items:center; gap:10px; padding:8px 0;">
+    <span style="width:9px; height:9px; border-radius:50%; background:{{ c.color }}; flex:0 0 auto;"></span>
+    <span style="flex:1; font-size:13px;">{{ c.shop }}</span>
+    <span class="muted" style="font-size:12.5px;">{{ c.label }}</span>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 <script>
 (function () {
   document.querySelectorAll('.insight-shop-expandable').forEach(function (row) {

@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4.0"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1916,12 +1916,101 @@ def insights_page(request: Request):
         for sub in s["sub_shops"]:
             sub["pct"] = round((sub["total"] / max_shop_total) * 100, 1)
 
+    # Cumulative spend curve: running total through the current month,
+    # comics + shipping together (matching every other total figure on
+    # this page), day by day from the 1st through today. Only the
+    # current month, not a full calendar year of curves - a whole
+    # year of running totals reset back to zero eleven times isn't a
+    # meaningful shape to look at, unlike one month's own build-up.
+    today = date.today()
+    month_start = today.replace(day=1)
+    month_items = [i for i in dated_items if i["release_date"][:7] == today.strftime("%Y-%m")]
+    month_groups = group_by_date(month_items)
+    daily_totals = {}
+    for group in month_groups:
+        day_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, [group])
+        daily_totals[group["date"]] = round(group["subtotal"] + day_shipping, 2)
+
+    cumulative_curve = []
+    running = 0.0
+    day = month_start
+    while day <= today:
+        iso = day.isoformat()
+        running += daily_totals.get(iso, 0.0)
+        cumulative_curve.append({"date": iso, "day": day.day, "total": round(running, 2)})
+        day += timedelta(days=1)
+
+    # Price distribution: fixed £10 buckets up to £50, then a single
+    # £50+ catch-all - fixed rather than dynamically sized so the shape
+    # reads consistently release to release rather than the bucket
+    # boundaries themselves shifting around.
+    price_buckets = [(0, 10), (10, 20), (20, 30), (30, 40), (40, 50)]
+    bucket_counts = [0] * (len(price_buckets) + 1)
+    for it in all_items:
+        placed = False
+        for idx, (low, high) in enumerate(price_buckets):
+            if low <= it["price"] < high:
+                bucket_counts[idx] += 1
+                placed = True
+                break
+        if not placed:
+            bucket_counts[-1] += 1
+    price_distribution = [
+        {"label": f"£{low}-{high}", "count": bucket_counts[idx]}
+        for idx, (low, high) in enumerate(price_buckets)
+    ]
+    price_distribution.append({"label": "£50+", "count": bucket_counts[-1]})
+    max_bucket_count = max((b["count"] for b in price_distribution), default=0) or 1
+
+    # Per-shop charging pattern: only items whose charge_status was
+    # actually toggled after import leave a trace here (item_history
+    # only logs changes, not the state something arrived in) - genuine
+    # data, but a real subset, not every charged item. Needs at least 3
+    # real samples before showing a shop's pattern, same minimum bar
+    # used for shipping-estimate calibration elsewhere in this app.
+    cur.execute("""
+        SELECT items.release_date, items.source, item_history.changed_at
+        FROM item_history
+        JOIN items ON items.id = item_history.item_id
+        WHERE item_history.field_name = 'charge_status'
+          AND item_history.new_value = 'charged'
+          AND items.release_date IS NOT NULL
+    """)
+    charging_samples = {}
+    for row in cur.fetchall():
+        try:
+            release = datetime.strptime(row["release_date"], "%Y-%m-%d").date()
+            changed = datetime.fromisoformat(row["changed_at"]).date()
+        except (ValueError, TypeError):
+            continue
+        days_diff = (changed - release).days
+        charging_samples.setdefault(row["source"], []).append(days_diff)
+
+    charging_pattern = []
+    for shop, samples in charging_samples.items():
+        if len(samples) < 3:
+            continue
+        avg_days = round(sum(samples) / len(samples))
+        if avg_days <= 0:
+            label = "charges at or before release"
+        elif avg_days == 1:
+            label = "charges ~1 day after release"
+        else:
+            label = f"charges ~{avg_days} days after release"
+        charging_pattern.append({"shop": shop, "color": source_color(shop), "label": label, "sample_count": len(samples)})
+    charging_pattern.sort(key=lambda c: c["shop"])
+
     conn.close()
     return templates.TemplateResponse("insights.html", {
         "request": request,
         "top_month": top_month,
         "priciest_item": priciest_item,
         "shop_stats": shop_stats,
+        "cumulative_curve": cumulative_curve,
+        "cumulative_month_label": today.strftime("%B"),
+        "price_distribution": price_distribution,
+        "max_bucket_count": max_bucket_count,
+        "charging_pattern": charging_pattern,
         "has_data": bool(all_items),
         "total_issues": total_issues,
         "twelve_month_svg": twelve_month_svg,
