@@ -203,7 +203,10 @@ Pasting an order no longer saves anything straight away. Instead:
    orders back to back - Ka-Ching! splits these apart automatically, so
    each item ends up tagged with its own correct seller, order number,
    and shipping figure rather than everything getting lumped into
-   whichever order happened to be first),
+   whichever order happened to be first), then Whatnot's order
+   confirmation email (item, price, order number, and exact shipping,
+   marked paid automatically since Whatnot charges at checkout rather
+   than on release like a pre-order shop),
    then a generic parser built around patterns common to small-shop
    checkouts generally (most run on shared platforms like Shopify, so
    confirmations tend to share a recognisable shape - Order Number /
@@ -354,6 +357,11 @@ An optional weekly digest can run alongside the daily one - same idea, but
 covering the next 7 days rather than just tomorrow, sent once a week on
 whichever day you pick.
 
+A separate **budget alert** can fire once your monthly budget crosses 80% -
+a fixed threshold, not something to tune per person, on the reasoning that
+one sensible default beats a slider nobody actually adjusts. Fires at most
+once per budget cycle.
+
 Supports **ntfy**, **Gotify**, **Telegram**, or a **custom webhook** — pick
 one from the dropdown, fill in its details (server URL + topic for ntfy,
 server URL + app token for Gotify, bot token + chat ID for Telegram), and set
@@ -430,11 +438,15 @@ time you pick.
   next month's forecast so far, average shipping per month, the busiest
   release day of the week, the biggest and cheapest single shipping charge
   ever actually captured, money saved by cancelling, top 3 most expensive
-  titles, a 12-month rolling spend trend, and spend by shop across all
-  time, each shop's real shipping worked in the same exact-first way as
-  everywhere else. eBay sellers are grouped into one row (same as
-  everywhere else in the app) - click it to expand and see each seller's
-  own individual total.
+  titles, a price distribution chart (how many tracked items fall into
+  each price bracket - a real signal for drifting toward pricier variants
+  without noticing), a cumulative spend curve for the current month (day
+  by day, showing where spending actually clusters rather than one flat
+  monthly figure), a 12-month rolling spend trend, and spend by shop
+  across all time, each shop's real shipping worked in the same
+  exact-first way as everywhere else. eBay sellers are grouped into one
+  row (same as everywhere else in the app) - click it to expand and see
+  each seller's own individual total.
 - **Shop filter on the Calendar page** — same filter tabs as the dashboard,
   carried through month navigation so switching months doesn't reset it.
 - **Monthly budget bar** — set a target on the Settings page and the
@@ -468,6 +480,16 @@ time you pick.
   has already passed but is still sitting unpaid and unmarked. Usually just
   a normal short delay before the retailer charges, but worth a look if
   something's been sitting there a while.
+- **Delay this item** — on an item's edit screen, one tap (+30/+60/+90
+  days) pushes its release date back for the common case of a
+  manufacturer delay, rather than opening a date picker. The change is
+  logged the same way a manual edit is, so there's a real record of what
+  moved and when.
+- **Biggest still to come** — a dashboard card showing the single
+  highest-value item not yet released alongside its due date, and the
+  total size of everything still on order (item count and combined
+  price) - a "how big is my pipeline right now" figure that's
+  forward-looking, distinct from Insights' own all-time totals.
 - **Your place is kept** — marking something paid, cancelling, removing an
   item, or browsing to a different month all return you to exactly where
   you were - same section, same month, same search filters - rather than
@@ -482,7 +504,11 @@ time you pick.
   also remembered between visits.
 - **Spend trend chart** — a smooth gradient area for total spend (comics +
   shipping, matching the hero's own figures exactly), with a second thin
-  bar strip beneath showing how many comics released each period. Hover
+  bar strip beneath showing how many comics released each period. Total,
+  Comics, and Shipping can each be switched on or off independently and
+  overlaid on the same chart via three toggle switches beneath it, each
+  in its own colour, so you can compare how much of a period's spend was
+  shipping versus the comics themselves without leaving the chart. Hover
   any point for the exact breakdown - comics, shipping, total, and item
   count. Hand-built in plain SVG, so it works with no internet connection
   and no external library, same as everything else here.
@@ -521,11 +547,14 @@ tracked properly; check before removing.
 ## Calendar view and export
 
 The **Calendar** tab shows a compact month grid — release days are
-highlighted with that day's total and issue count, kept deliberately simple
-since a full title list doesn't fit a calendar cell without turning into a
-mess. Full detail (every item, with the same tap-to-pay circles and cancel
-&times; as the dashboard) lives in the "releases" list underneath the grid.
-Navigate month to month the same way as the dashboard's shipment view.
+highlighted with that day's total and issue count, and shaded by how much
+is actually due that day (a genuinely expensive day stands out at a glance,
+not just which days have something releasing at all), kept deliberately
+simple since a full title list doesn't fit a calendar cell without turning
+into a mess. Full detail (every item, with the same tap-to-pay circles and
+cancel &times; as the dashboard) lives in the "releases" list underneath
+the grid. Navigate month to month the same way as the dashboard's shipment
+view.
 
 The **Download .ics** button exports every upcoming (non-cancelled) release
 as a calendar file, one event per release day rather than one per variant, so
@@ -587,12 +616,12 @@ that never leaves it.
 
 ## Contributing a new shop's parser
 
-Ka-Ching! only knows how to reliably read Forbidden Planet and eBay, because
-those are the two that have actually been built and tested against real
-orders. If you shop somewhere else and want that shop supported too, that's
-genuinely welcome — but it has to start from a real example, not a guess,
-since retailer pages are full of small surprises no one would think to
-account for in advance.
+Ka-Ching! only knows how to reliably read Forbidden Planet, eBay, and
+Whatnot, because those are the ones that have actually been built and
+tested against real orders. If you shop somewhere else and want that shop
+supported too, that's genuinely welcome — but it has to start from a real
+example, not a guess, since retailer pages are full of small surprises no
+one would think to account for in advance.
 
 **The right way to contribute one:** take a real order confirmation or
 order-history page from that shop, and manually replace anything personal —
