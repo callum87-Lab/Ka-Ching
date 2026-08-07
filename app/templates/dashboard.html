@@ -239,11 +239,15 @@
   {% endif %}
 </section>
 
-{% if next_up %}
+{% if biggest_still_to_come %}
 <section class="block next-up-card">
-  <div class="next-up-meta">{{ next_up.source }} &middot; <span class="next-up-countdown">{{ next_up.days_until_label }}</span></div>
-  <div class="next-up-name">{{ next_up.name }}</div>
-  <div class="next-up-price mono">{{ currency() }}{{ "%.2f"|format(next_up.price) }}</div>
+  <div class="next-up-meta">Biggest still to come &middot; <span class="next-up-countdown">Due {{ biggest_still_to_come.due_label }}</span></div>
+  <div class="next-up-name">{{ biggest_still_to_come.name }}</div>
+  <div class="next-up-price mono">{{ currency() }}{{ "%.2f"|format(biggest_still_to_come.price) }}</div>
+  <div class="next-up-divider"></div>
+  <div class="next-up-meta">Still on order</div>
+  <div class="next-up-name">{{ still_to_come_count }} item{{ "s" if still_to_come_count != 1 else "" }}, not yet released</div>
+  <div class="next-up-price mono">{{ currency() }}{{ "%.2f"|format(still_to_come_total) }}</div>
 </section>
 {% endif %}
 

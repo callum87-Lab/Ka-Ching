@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.5.1"
+APP_VERSION = "1.5.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1102,23 +1102,30 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     recently_cancelled = [dict(r) for r in cur.fetchall()]
 
     # Next Up: the single nearest upcoming item, same filter convention
-    # as Insights' own "Coming up" list (not cancelled, has a release
-    # date, not already past) - just showing #1 alone here rather than
-    # a list, for a genuinely zero-friction "what's coming next" glance
-    # that doesn't need scrolling past This Week to find.
+    # "Still to come" summary: the pipeline of everything not yet
+    # released (not cancelled, has a release date in the future),
+    # regardless of paid status - a pre-order you've already paid for
+    # is still "on order" from a pipeline point of view. Replaces an
+    # earlier single-item "Next Up" card, which turned out to just be a
+    # smaller, less accurate copy of This Week directly below it -
+    # picking one of several same-day items and only showing its own
+    # price understated what was actually due that day. This instead
+    # answers two questions nothing else on the page covers: what's the
+    # single biggest thing still ahead, and how big is the whole
+    # pipeline right now.
     cur.execute(
         """
         SELECT * FROM items
         WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) >= date(?)
-        ORDER BY release_date ASC LIMIT 1
         """,
         (today.isoformat(),),
     )
-    next_up_row = cur.fetchone()
-    next_up = dict(next_up_row) if next_up_row else None
-    if next_up:
-        days_until = (date.fromisoformat(next_up["release_date"]) - today).days
-        next_up["days_until_label"] = "Today" if days_until == 0 else ("Tomorrow" if days_until == 1 else f"In {days_until} days")
+    still_to_come_items = [dict(r) for r in cur.fetchall()]
+    biggest_still_to_come = max(still_to_come_items, key=lambda i: i["price"], default=None)
+    if biggest_still_to_come:
+        biggest_still_to_come["due_label"] = date.fromisoformat(biggest_still_to_come["release_date"]).strftime("%-d %b")
+    still_to_come_count = len(still_to_come_items)
+    still_to_come_total = round(sum(i["price"] for i in still_to_come_items), 2)
 
     conn.close()
 
@@ -1176,7 +1183,9 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "total_items_tracked": total_items_tracked,
         "has_any_data": total_items_tracked > 0,
         "recently_cancelled": recently_cancelled,
-        "next_up": next_up,
+        "biggest_still_to_come": biggest_still_to_come,
+        "still_to_come_count": still_to_come_count,
+        "still_to_come_total": still_to_come_total,
     })
 
 

@@ -154,6 +154,11 @@ a:focus-visible, button:focus-visible, textarea:focus-visible {
   font-weight: 700;
   color: var(--neon-blue);
 }
+.next-up-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
 
 .price-stamp {
   flex: 0 0 auto;
