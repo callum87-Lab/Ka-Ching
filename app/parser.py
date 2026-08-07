@@ -1149,7 +1149,7 @@ _WHATNOT_SELLER_RE = re.compile(r"purchase from\s+(\S+)\s+on Whatnot", re.IGNORE
 _WHATNOT_ORDER_NUM_RE = re.compile(r"Order\s*#\s*(\d+)")
 _WHATNOT_TOTAL_RE = re.compile(r"Order Total:\s*£\s*(\d+\.\d{2})")
 _WHATNOT_SUBTOTAL_RE = re.compile(r"Subtotal\s*\n?\s*£\s*(\d+\.\d{2})")
-_WHATNOT_SHIPPING_RE = re.compile(r"Shipping\s*\n\s*£\s*(\d+\.\d{2})")
+_WHATNOT_SHIPPING_RE = re.compile(r"Shipping\s+£\s*(\d+\.\d{2})")
 _WHATNOT_PAID_RE = re.compile(r"Payment Method", re.IGNORECASE)
 
 
