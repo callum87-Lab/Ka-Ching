@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.4.1"
+APP_VERSION = "1.4.2"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1166,7 +1166,7 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, name, order_number, release_date, status, manual_override FROM items WHERE id = ?",
+        "SELECT id, name, order_number, release_date, status, charge_status, manual_override FROM items WHERE id = ?",
         (item_id,),
     )
     before = cur.fetchone()
@@ -1188,6 +1188,16 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
             """,
             (now, item_id),
         )
+        # This quick toggle is how most items actually get marked paid day
+        # to day - the full edit form's own history logging (elsewhere in
+        # this file) never sees this path at all, which silently starved
+        # the per-shop charging-pattern insight of virtually all its real
+        # data despite people genuinely using this button constantly.
+        if before_dict and before_dict["charge_status"] != "charged":
+            cur.execute(
+                "INSERT INTO item_history (item_id, changed_at, field_name, old_value, new_value) VALUES (?, ?, ?, ?, ?)",
+                (item_id, now, "charge_status", before_dict["charge_status"], "charged"),
+            )
     elif action == "cancel":
         cur.execute(
             """
@@ -1916,29 +1926,52 @@ def insights_page(request: Request):
         for sub in s["sub_shops"]:
             sub["pct"] = round((sub["total"] / max_shop_total) * 100, 1)
 
-    # Cumulative spend curve: running total through the current month,
-    # comics + shipping together (matching every other total figure on
-    # this page), day by day from the 1st through today. Only the
-    # current month, not a full calendar year of curves - a whole
-    # year of running totals reset back to zero eleven times isn't a
-    # meaningful shape to look at, unlike one month's own build-up.
+    # Cumulative spend curve: reuses the exact same chart component as
+    # the 12-month trend above (gradient glow line, permanent dots, the
+    # existing hover tooltip) rather than a separate hand-rolled mini
+    # chart - same real interactivity, same polish, just fed day-by-day
+    # data for the current month instead of month-by-month for the
+    # year. Comics/shipping/count are tracked as running cumulative
+    # sums, not each day's own figure, so hovering any point reads as
+    # "as of this day" - matching what the line itself is showing.
     today = date.today()
     month_start = today.replace(day=1)
     month_items = [i for i in dated_items if i["release_date"][:7] == today.strftime("%Y-%m")]
     month_groups = group_by_date(month_items)
-    daily_totals = {}
+    daily = {}
     for group in month_groups:
         day_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, [group])
-        daily_totals[group["date"]] = round(group["subtotal"] + day_shipping, 2)
+        daily[group["date"]] = {
+            "comics": group["subtotal"],
+            "shipping": day_shipping,
+            "count": sum(len(sg["entries"]) for sg in group["source_groups"]),
+        }
 
+    days_so_far = (today - month_start).days + 1
+    label_every = 5 if days_so_far > 15 else (2 if days_so_far > 7 else 1)
     cumulative_curve = []
-    running = 0.0
-    day = month_start
-    while day <= today:
+    running_comics = running_shipping = 0.0
+    running_count = 0
+    for offset in range(days_so_far):
+        day = month_start + timedelta(days=offset)
         iso = day.isoformat()
-        running += daily_totals.get(iso, 0.0)
-        cumulative_curve.append({"date": iso, "day": day.day, "total": round(running, 2)})
-        day += timedelta(days=1)
+        d = daily.get(iso)
+        if d:
+            running_comics += d["comics"]
+            running_shipping += d["shipping"]
+            running_count += d["count"]
+        is_last = offset == days_so_far - 1
+        show_label = offset == 0 or is_last or (offset + 1) % label_every == 0
+        cumulative_curve.append({
+            "label": str(day.day) if show_label else "",
+            "total": round(running_comics + running_shipping, 2),
+            "comics_total": round(running_comics, 2),
+            "shipping_total": round(running_shipping, 2),
+            "count": running_count,
+            "is_current": is_last,
+        })
+    cumulative_svg = render_trend_svg(cumulative_curve, "cumulative") if len(cumulative_curve) > 1 else ""
+    cumulative_month_label = today.strftime("%B")
 
     # Price distribution: fixed £10 buckets up to £50, then a single
     # £50+ catch-all - fixed rather than dynamically sized so the shape
@@ -2006,8 +2039,8 @@ def insights_page(request: Request):
         "top_month": top_month,
         "priciest_item": priciest_item,
         "shop_stats": shop_stats,
-        "cumulative_curve": cumulative_curve,
-        "cumulative_month_label": today.strftime("%B"),
+        "cumulative_svg": cumulative_svg,
+        "cumulative_month_label": cumulative_month_label,
         "price_distribution": price_distribution,
         "max_bucket_count": max_bucket_count,
         "charging_pattern": charging_pattern,
