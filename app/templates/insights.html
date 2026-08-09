@@ -272,7 +272,7 @@
       </div>
       <span class="insight-card-title">12-month spend trend</span>
     </div>
-    <div class="chart insight-chart-wrap">
+    <div class="chart insight-chart-wrap chart-multi hide-comics hide-shipping" id="insights-trend-multi">
       {{ twelve_month_svg|safe }}
       <div class="trend-tooltip" style="display: none;">
         <div class="trend-tooltip-label"></div>
@@ -281,6 +281,29 @@
         <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
         <div class="trend-tooltip-count"></div>
       </div>
+    </div>
+    <div class="trend-toggles">
+      <label class="trend-toggle-row trend-toggle-total trend-toggle-checked">
+        <span class="toggle">
+          <input type="checkbox" data-series="total" checked>
+          <span class="toggle-track"></span>
+        </span>
+        <span class="trend-toggle-label">Total</span>
+      </label>
+      <label class="trend-toggle-row trend-toggle-comics">
+        <span class="toggle">
+          <input type="checkbox" data-series="comics">
+          <span class="toggle-track"></span>
+        </span>
+        <span class="trend-toggle-label">Comics</span>
+      </label>
+      <label class="trend-toggle-row trend-toggle-shipping">
+        <span class="toggle">
+          <input type="checkbox" data-series="shipping">
+          <span class="toggle-track"></span>
+        </span>
+        <span class="trend-toggle-label">Shipping</span>
+      </label>
     </div>
   </div>
   {% endif %}
@@ -381,6 +404,21 @@
         var t = e.touches[0];
         move({ clientX: t.clientX, clientY: t.clientY });
       }, { passive: false });
+    });
+  });
+})();
+
+(function () {
+  var wrap = document.getElementById('insights-trend-multi');
+  if (!wrap) return;
+  var toggles = wrap.parentElement.querySelector('.trend-toggles');
+  if (!toggles) return;
+  toggles.querySelectorAll('.trend-toggle-row input[data-series]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      var series = input.dataset.series;
+      wrap.classList.toggle('hide-' + series, !input.checked);
+      var row = input.closest('.trend-toggle-row');
+      if (row) row.classList.toggle('trend-toggle-checked', input.checked);
     });
   });
 })();
