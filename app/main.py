@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.7.0"
+APP_VERSION = "1.7.1"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -3176,7 +3176,7 @@ async def api_sync(request: Request, payload: SyncRequest):
                 """
                 UPDATE items
                 SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
-                    charge_status = ?, price = ?, note = ?, source = ?, tracking_number = ?,
+                    charge_status = ?, price = ?, note = COALESCE(?, note), source = ?, tracking_number = ?,
                     manual_override = ?, updated_at = ?, deleted_at = NULL
                 WHERE uuid = ?
                 """,
@@ -3229,7 +3229,7 @@ async def api_sync(request: Request, payload: SyncRequest):
                     """
                     UPDATE items
                     SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
-                        charge_status = ?, price = ?, note = ?, source = ?, tracking_number = ?,
+                        charge_status = ?, price = ?, note = COALESCE(?, note), source = ?, tracking_number = ?,
                         manual_override = ?, updated_at = ?
                     WHERE uuid = ?
                     """,
