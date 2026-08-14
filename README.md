@@ -485,6 +485,11 @@ time you pick.
   manufacturer delay, rather than opening a date picker. The change is
   logged the same way a manual edit is, so there's a real record of what
   moved and when.
+- **Rename a shop** — in Settings, rename a shop across every item that
+  has it in one go. Useful for fixing a typo, or merging two names that
+  are really the same shop (renaming to a name that already exists just
+  folds them together). Shipping estimates already calibrated for that
+  shop carry over to the new name rather than starting from scratch.
 - **Biggest still to come** — a dashboard card showing the single
   highest-value item not yet released alongside its due date, and the
   total size of everything still on order (item count and combined

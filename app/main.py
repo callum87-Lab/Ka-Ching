@@ -31,7 +31,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "1.7.1"
+APP_VERSION = "2.0.0"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -1582,6 +1582,20 @@ SEARCH_SORT_OPTIONS = {
 SEARCH_PER_PAGE = 50
 
 
+def _csv_safe(value):
+    """Guards against CSV/formula injection: if a value starts with a
+    character a spreadsheet would interpret as the start of a formula
+    (=, +, -, @), prefix it with a single quote so Excel/Sheets treats it
+    as plain text instead of trying to evaluate it. Low realistic risk
+    for a single-user app, but a cheap, standard precaution worth having
+    on any export - item names ultimately come from pasted third-party
+    text, not just what's typed in directly."""
+    text = str(value) if value is not None else ""
+    if text and text[0] in ("=", "+", "-", "@"):
+        return "'" + text
+    return text
+
+
 def build_search_query(q, source, status, start_date, end_date, min_price=None, max_price=None, has_tracking=None):
     """Returns (where_clause, params) shared by the search page and CSV
     export, so both stay in sync with exactly the same filtering logic."""
@@ -1820,7 +1834,7 @@ def insights_page(request: Request):
         """
         SELECT * FROM items
         WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) <= date(?)
-        ORDER BY release_date DESC LIMIT 10
+        ORDER BY release_date DESC, name ASC LIMIT 10
         """,
         (date.today().isoformat(),),
     )
@@ -1854,7 +1868,7 @@ def insights_page(request: Request):
         """
         SELECT * FROM items
         WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) >= date(?)
-        ORDER BY release_date ASC LIMIT 2
+        ORDER BY release_date ASC, name ASC LIMIT 2
         """,
         (date.today().isoformat(),),
     )
@@ -2263,13 +2277,13 @@ def export_search_csv(
     writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number"])
     for r in rows:
         writer.writerow([
-            r["name"],
+            _csv_safe(r["name"]),
             f"{r['price']:.2f}",
             r["release_date"] or "",
-            r["source"],
+            _csv_safe(r["source"]),
             r["status"],
             "Yes" if r["charge_status"] == "charged" else "No",
-            r["order_number"] or "",
+            _csv_safe(r["order_number"]) if r["order_number"] else "",
         ])
 
     return Response(
@@ -2923,13 +2937,13 @@ def export_all_csv():
     writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number"])
     for r in rows:
         writer.writerow([
-            r["name"],
+            _csv_safe(r["name"]),
             f"{r['price']:.2f}",
             r["release_date"] or "",
-            r["source"],
+            _csv_safe(r["source"]),
             r["status"],
             "Yes" if r["charge_status"] == "charged" else "No",
-            r["order_number"] or "",
+            _csv_safe(r["order_number"]) if r["order_number"] else "",
         ])
     csv_bytes = buffer.getvalue().encode("utf-8")
     filename = f"kaching-full-export-{date.today().isoformat()}.csv"
@@ -3295,6 +3309,15 @@ async def api_sync(request: Request, payload: SyncRequest):
         cur.execute("SELECT * FROM orders WHERE declared_total IS NOT NULL")
     order_changes = [dict(row) for row in cur.fetchall()]
 
+    # A shop-name -> colour mapping and the server's own configured
+    # shipping default, computed once here and handed to the app rather
+    # than the app trying to replicate this server's colour-hashing
+    # algorithm independently - a full DISTINCT query, not scoped to
+    # this delta, so every shop the app might display gets a colour,
+    # not just ones that happen to have changed recently.
+    cur.execute("SELECT DISTINCT source FROM items WHERE source IS NOT NULL")
+    shop_colors = {row["source"]: source_color(row["source"]) for row in cur.fetchall()}
+
     cur.execute(
         """
         INSERT INTO sync_state (client_id, client_label, last_synced_at, created_at)
@@ -3326,4 +3349,6 @@ async def api_sync(request: Request, payload: SyncRequest):
         "shipping_changes": shipping_changes,
         "orders_applied": orders_applied,
         "order_changes": order_changes,
+        "shop_colors": shop_colors,
+        "default_shipping_estimate": DEFAULT_SHIPPING_ESTIMATE,
     }
