@@ -1,0 +1,39 @@
+{# Category filter chip row - shared by Insights Price creep and Top titles. #}
+{% if category_chips %}
+<div class="filter-row" id="category-filter">
+  <span class="lbl">Showing:</span>
+  {% for c in category_chips %}
+  <button type="button" class="cat-chip{{ ' on' if c.on }}" style="--chip: {{ c.color }};" aria-pressed="{{ 'true' if c.on else 'false' }}" data-cat-id="{{ c.id }}"><span class="cat-dot" style="background: {{ c.color }};"></span>{{ c.name }}</button>
+  {% endfor %}
+</div>
+<script>
+(function () {
+  var row = document.getElementById('category-filter');
+  if (!row) return;
+  row.addEventListener('click', function (e) {
+    var chip = e.target.closest('.cat-chip');
+    if (!chip) return;
+    chip.classList.toggle('on');
+    chip.setAttribute('aria-pressed', chip.classList.contains('on') ? 'true' : 'false');
+
+    // Remember every chip's on/off state. Categories not in the map (new
+    // ones, or ones that had no items at the time) keep following their
+    // own default, so a new "has series" category still starts on.
+    var saved = KC.pref.get('insights_categories', {});
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
+    var on = [];
+    row.querySelectorAll('.cat-chip').forEach(function (c) {
+      var isOn = c.classList.contains('on');
+      saved[c.dataset.catId] = isOn;
+      if (isOn) on.push(c.dataset.catId);
+    });
+    KC.pref.set('insights_categories', saved);
+
+    var params = new URLSearchParams(window.location.search);
+    params.delete('cats');
+    var rest = params.toString();
+    window.location.replace(window.location.pathname + '?cats=' + on.join(',') + (rest ? '&' + rest : ''));
+  });
+})();
+</script>
+{% endif %}

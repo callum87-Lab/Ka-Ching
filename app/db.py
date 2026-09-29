@@ -32,6 +32,15 @@ CREATE TABLE IF NOT EXISTS items (
     UNIQUE(order_number, name, price)
 );
 
+CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    color TEXT NOT NULL,
+    has_series INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS orders (
     order_number TEXT PRIMARY KEY,
     declared_total REAL,
@@ -109,6 +118,7 @@ MIGRATIONS = {
         ("uuid", "TEXT"),
         ("updated_at", "TEXT"),
         ("deleted_at", "TEXT"),
+        ("category_id", "INTEGER"),
     ],
     "shipment_postage": [
         ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
@@ -163,10 +173,86 @@ def _backfill_sync_columns(conn):
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_items_uuid ON items(uuid)")
 
 
+# Starter categories, seeded once on first run. Comics comes first and is
+# the default, since every item that existed before categories did was a
+# comic. After seeding, the list is the user's to edit in Settings.
+STARTER_CATEGORIES = [
+    ("Comics", "#2fd8ff", 1),
+    ("Manga", "#9b7bff", 1),
+    ("Omnibus / collected editions", "#6aa8ff", 1),
+    ("Pokémon cards", "#ffcb3c", 0),
+    ("Pokémon sealed products", "#ff9f43", 0),
+    ("Magic: The Gathering", "#ff4d8d", 0),
+    ("Funko Pop", "#3cf2a6", 0),
+    ("DVD / Blu-ray", "#c77dff", 0),
+    ("Books", "#8fd3c9", 0),
+    ("Vinyl", "#f07167", 0),
+    ("Coins", "#d4a373", 0),
+    ("Gold / silver", "#e9c46a", 0),
+    ("Other", "#7c89ad", 0),
+]
+
+# Colours handed out, in order, to categories the user adds themselves.
+EXTRA_CATEGORY_COLORS = [
+    "#5ec8ff", "#b388ff", "#ff8fab", "#80ed99", "#ffd166", "#90e0ef",
+    "#f4a261", "#e5989b", "#a0c4ff", "#caffbf",
+]
+
+
+def _seed_categories(conn):
+    """First run only: fill the categories table with the starter list.
+    Never touches an existing list, so user edits survive restarts."""
+    count = conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
+    if count:
+        return
+    now = utc_now()
+    for i, (name, color, has_series) in enumerate(STARTER_CATEGORIES):
+        conn.execute(
+            "INSERT INTO categories (name, color, has_series, sort_order, created_at) VALUES (?, ?, ?, ?, ?)",
+            (name, color, has_series, i, now),
+        )
+
+
+def default_category_id(conn):
+    """The category new items get when none is chosen (sync from an app
+    that doesn't know about categories yet, older code paths). Stored as a
+    setting so it survives renames; falls back to the first category."""
+    row = conn.execute("SELECT value FROM settings WHERE key = 'default_category_id'").fetchone()
+    if row:
+        try:
+            cat_id = int(row[0])
+            if conn.execute("SELECT 1 FROM categories WHERE id = ?", (cat_id,)).fetchone():
+                return cat_id
+        except (TypeError, ValueError):
+            pass
+    first = conn.execute("SELECT id FROM categories ORDER BY sort_order, id LIMIT 1").fetchone()
+    return first[0] if first else None
+
+
+def _backfill_categories(conn):
+    """Every item without a category gets the default one. On the first
+    run after upgrading, that's all existing items - which were all comics.
+    Afterwards it only catches items added by code paths that don't set a
+    category themselves (e.g. sync from an older app version)."""
+    default_id = default_category_id(conn)
+    if default_id is None:
+        return
+    row = conn.execute("SELECT value FROM settings WHERE key = 'default_category_id'").fetchone()
+    if not row:
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES ('default_category_id', ?)",
+            (str(default_id),),
+        )
+    conn.execute("UPDATE items SET category_id = ? WHERE category_id IS NULL", (default_id,))
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id)")
+
+
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
     _migrate(conn)
     _backfill_sync_columns(conn)
+    _seed_categories(conn)
+    _backfill_categories(conn)
     conn.commit()
     conn.close()

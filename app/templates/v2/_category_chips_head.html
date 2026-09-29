@@ -1,0 +1,20 @@
+{# Runs in <head>: if there's no ?cats= in the URL but a remembered
+   choice differs from the default the server just used, swap to the
+   remembered one before the page draws. #}
+<script>
+(function () {
+  var data = {{ category_chips_json|safe }};
+  if (data.explicit || !data.chips.length) return;
+  var saved = KC.pref.get('insights_categories', null);
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return;
+  var want = data.chips.filter(function (c) {
+    var v = saved[String(c.id)];
+    return v === undefined ? c.default : !!v;
+  }).map(function (c) { return c.id; }).sort(function (a, b) { return a - b; });
+  if (want.join(',') === data.selected.join(',')) return;
+  var params = new URLSearchParams(window.location.search);
+  params.delete('cats');
+  var rest = params.toString();
+  window.location.replace(window.location.pathname + '?cats=' + want.join(',') + (rest ? '&' + rest : ''));
+})();
+</script>

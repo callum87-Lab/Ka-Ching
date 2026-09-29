@@ -10,6 +10,10 @@ services:
     environment:
       # Flat estimate added per distinct release date (i.e. per likely shipment)
       - SHIPPING_ESTIMATE=4.00
+      # Phone sync for the Android app - off and hidden by default while
+      # the app is dormant (see README). Uncomment only if you know you
+      # need it, then switch it on in Settings -> Sync.
+      # - KACHING_PHONE_SYNC=1
       # Off by default. Uncomment to turn on the /debug/shipping-groups
       # developer diagnostic (still requires your sync key even when on).
       # - DEBUG_TOOLS_ENABLED=true

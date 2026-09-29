@@ -1,0 +1,333 @@
+{% extends "v2/base.html" %}
+{% block title %}Ka-Ching! &middot; Price creep{% endblock %}
+
+{% block head_script %}{% include "v2/_category_chips_head.html" %}{% endblock %}
+
+{% block extra_style %}
+  .plain-stat { grid-column: span 3; }
+  .plain-stat-label { font-size: 13.5px; color: var(--text-muted); margin-bottom: 4px; }
+  .plain-stat-value { font-size: 25px; font-weight: 800; }
+  .plain-stat-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
+
+  .creep-hero { grid-column: span 5; background: radial-gradient(circle at 100% 0%, rgba(47,216,255,0.30) 0%, transparent 55%), linear-gradient(160deg, #0a2540 0%, #0c1830 55%, var(--surface) 100%); border-color: rgba(47,216,255,0.35); display: flex; flex-direction: column; justify-content: space-between; }
+  .creep-hero-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a8e0ff; margin-bottom: 8px; }
+  .creep-hero-title { font-size: 20.5px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+  .creep-hero-sub { font-size: 13.5px; color: #a8e0ff; }
+  .creep-hero-prices { margin-top: 16px; display: flex; align-items: baseline; gap: 10px; }
+  .creep-hero-old { font-size: 17px; color: #a8e0ff; text-decoration: line-through; opacity: 0.7; }
+  .creep-hero-arrow { color: #a8e0ff; }
+  .creep-hero-new { font-size: 25px; font-weight: 800; color: #fff; }
+  .creep-hero-divider { height: 1px; background: rgba(255,255,255,0.15); margin: 14px 0; }
+  .creep-hero-note { font-size: 13.5px; color: #a8e0ff; }
+  .creep-hero-note b { color: #fff; font-family: var(--font-mono); }
+
+  .dist-card { grid-column: span 7; }
+  .dist-chart { display: flex; align-items: flex-end; gap: 10px; height: 130px; margin-top: 10px; }
+  .dist-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
+  .dist-count { font-size: 13px; color: var(--text-muted); }
+  .dist-bar { width: 100%; max-width: 30px; border-radius: 6px 6px 3px 3px; }
+  .dist-label { font-size: 12.5px; color: var(--text-dim); }
+  .card-note { font-size: 13px; color: var(--text-dim); margin-top: 14px; line-height: 1.5; }
+
+  .creep-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .creep-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700; padding: 0 8px 10px; }
+  .creep-table th.num, .creep-table td.num { text-align: right; }
+  .creep-table td { padding: 9px 8px; border-top: 1px solid var(--border); }
+  .creep-table tr:first-child td { border-top: none; }
+  .trend-pill { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; display: inline-block; }
+  .trend-pill.trend-up { color: var(--neon-pink); background: rgba(255,77,141,0.10); }
+  .trend-pill.trend-flat { color: var(--text-dim); background: rgba(255,255,255,0.06); }
+  .trend-pill.trend-down { color: var(--neon-green); background: rgba(60,242,166,0.10); }
+  .creep-table .nowrap { white-space: nowrap; }
+  .prem { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 12.5px; }
+  .prem-track { width: 90px; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); flex: 0 0 90px; }
+  .prem-fill { height: 6px; border-radius: 4px; background: linear-gradient(90deg, var(--neon-violet), var(--neon-pink)); }
+  .prem-none { color: var(--text-dim); font-size: 12.5px; white-space: nowrap; }
+
+  .creep-chart-card { grid-column: span 12; }
+  .warn-action-btn { font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; }
+  .creep-chart-wrap { position: relative; }
+  .creep-tooltip { position: absolute; display: none; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 12px; font-size: 13px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; z-index: 20; min-width: 120px; }
+  @media (max-width: 900px) {
+    /* Phone blocks: name with the change pill beside it, then issues and
+       cover prices, then the variants bar across the full width */
+    .main table.creep-table td:nth-child(1) { grid-column: 1 / 3; grid-row: 1; }
+    .main table.creep-table td:nth-child(4) { grid-column: 3; grid-row: 1; justify-self: end; align-self: start; }
+    .main table.creep-table td:nth-child(4)[data-label]::before { display: none; }
+    .main table.creep-table td:nth-child(2) { grid-column: 1; grid-row: 2; }
+    .main table.creep-table td:nth-child(3) { grid-column: 2 / -1; grid-row: 2; white-space: nowrap; }
+    .main table.creep-table td:nth-child(5) { grid-column: 1 / -1; grid-row: 3; }
+  }
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <h1>Insights</h1>
+  <p>Which series are getting pricier, and by how much</p>
+</div>
+
+{% include "v2/_category_chips.html" %}
+
+{% if all_series_stats %}
+<div class="grid">
+  <div class="card plain-stat">
+    <div class="plain-stat-label">Series tracked</div>
+    <div class="plain-stat-value mono">{{ creep_series_tracked }}</div>
+    <div class="plain-stat-sub">with 2+ issues logged</div>
+  </div>
+  <div class="card plain-stat">
+    <div class="plain-stat-label">Average increase</div>
+    <div class="plain-stat-value mono">{{ '+' if creep_avg_increase >= 0 else '' }}{{ creep_avg_increase }}%</div>
+    <div class="plain-stat-sub">across all tracked series</div>
+  </div>
+  <div class="card plain-stat">
+    <div class="plain-stat-label">Biggest jumper</div>
+    {% if creep_biggest_jumper %}
+    <div class="plain-stat-value mono" style="color:var(--neon-pink);">+{{ creep_biggest_jumper.change_pct }}%</div>
+    <div class="plain-stat-sub">{{ creep_biggest_jumper.series }}</div>
+    {% else %}
+    <div class="plain-stat-value">&mdash;</div>
+    {% endif %}
+  </div>
+  <div class="card plain-stat">
+    <div class="plain-stat-label">Extra spend from creep</div>
+    <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(creep_total_extra) }}</div>
+    <div class="plain-stat-sub">this year, vs first-tracked prices</div>
+  </div>
+</div>
+
+{% if creep_biggest_jumper %}
+<div class="grid">
+  <div class="card creep-hero">
+    <div>
+      <div class="creep-hero-eyebrow">Biggest jumper</div>
+      <div class="creep-hero-title">{{ creep_biggest_jumper.series }}</div>
+      <div class="creep-hero-sub">{{ creep_biggest_jumper.issue_count }} issue{{ "s" if creep_biggest_jumper.issue_count != 1 else "" }} tracked</div>
+    </div>
+    <div class="creep-hero-prices">
+      <span class="mono creep-hero-old">{{ currency() }}{{ "%.2f"|format(creep_biggest_jumper.first_price) }}</span>
+      <span class="creep-hero-arrow">&rarr;</span>
+      <span class="mono creep-hero-new">{{ currency() }}{{ "%.2f"|format(creep_biggest_jumper.latest_price) }}</span>
+    </div>
+    <div class="creep-hero-divider"></div>
+    <div class="creep-hero-note">Up <b>+{{ creep_biggest_jumper.change_pct }}%</b> since your first tracked issue &mdash; the sharpest climb of anything you follow.</div>
+  </div>
+
+  <div class="card dist-card">
+    <div class="card-title" style="margin-bottom:14px;">Increase distribution</div>
+    <div class="dist-chart">
+      {% for b in creep_buckets %}
+      <div class="dist-bar-wrap">
+        <span class="dist-count mono">{{ b.count }}</span>
+        <div class="dist-bar" style="height:{{ b.bar_pct }}%; background:{{ b.color }};"></div>
+        <span class="dist-label">{{ b.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="card-note">Most series are creeping gently &mdash; 5&ndash;10% is the norm. Anything past 25% is the real outlier worth watching.</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid">
+  <div class="card" style="grid-column: span 12;">
+    <div class="card-head">
+      <div class="card-title">All tracked series, ranked by increase</div>
+      <div class="range-tabs" id="creep-sort-tabs" style="display:flex; gap:6px;">
+        <button type="button" class="tab-pill active" data-sort="increase">By increase</button>
+        <button type="button" class="tab-pill" data-sort="issues">By issues tracked</button>
+      </div>
+    </div>
+    <table class="creep-table">
+      <thead><tr><th>Series</th><th class="num">Issues</th><th>Cover, first &rarr; latest</th><th class="num">Change</th><th>Variants cost extra</th></tr></thead>
+      <tbody id="creep-table-body">
+        {% for s in all_series_stats|sort(attribute='change_pct', reverse=true) %}
+        <tr data-change="{{ s.change_pct }}" data-issues="{{ s.issue_count }}">
+          <td>{{ s.series }}</td>
+          <td class="num mono">{{ s.issue_count }}</td>
+          <td class="mono nowrap"><span class="{{ 'muted' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "%.2f"|format(s.first_price) }}</span> &rarr; <span style="{{ 'color:var(--neon-pink);' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "%.2f"|format(s.latest_price) }}</span></td>
+          <td class="num">
+            {% if s.change_pct > 0 %}
+            <span class="trend-pill trend-up">+{{ s.change_pct }}%</span>
+            {% elif s.change_pct < 0 %}
+            <span class="trend-pill trend-down">{{ s.change_pct }}%</span>
+            {% else %}
+            <span class="trend-pill trend-flat">{{ s.change_pct }}%</span>
+            {% endif %}
+          </td>
+          <td>{% if s.variant_count %}<div class="prem"><div class="prem-track"><div class="prem-fill" style="width:{{ [s.premium_bar_pct, 4]|max }}%;"></div></div><span class="mono">+{{ currency() }}{{ "%.2f"|format(s.variant_premium) }}</span></div>{% else %}<span class="prem-none">no variants</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="card-note">Cover price is the cheapest copy you bought of each issue, so variants don't skew the trend. &ldquo;Variants cost extra&rdquo; is the average mark-up of the variant covers you bought over that issue's standard cover.</div>
+    <div class="search-pagination" id="creep-pagination" style="display:none; margin-top:14px;">
+      <button type="button" class="warn-action-btn" id="creep-prev-btn">&larr; Prev</button>
+      <span class="muted" style="font-size:12px;" id="creep-page-label">Page 1 of 1</span>
+      <button type="button" class="warn-action-btn" id="creep-next-btn">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card creep-chart-card">
+    <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Extra spend from creep</div>
+    <p style="margin:0 0 14px; font-size:13px; color:var(--text-dim);">Running total of (latest price &minus; first tracked price) &times; issues bought since, per month</p>
+    <div class="creep-chart-wrap">
+      <svg id="creep-svg" viewBox="0 0 760 170" style="width:100%; height:auto;"></svg>
+      <div class="creep-tooltip" id="creep-tooltip"></div>
+    </div>
+    <div class="card-note">{{ currency() }}{{ "%.2f"|format(creep_total_extra) }} extra this year is small next to your total spend, but it's a real number &mdash; worth a glance if it starts accelerating rather than climbing steadily.</div>
+  </div>
+</div>
+
+{% else %}
+{% if category_chips and category_chips|rejectattr('on')|list %}
+<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">No series in the selected categories. Switch a category on above to see its prices.</div></div>
+{% else %}
+<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">No series with 2+ tracked issues yet.</div></div>
+{% endif %}
+{% endif %}
+
+{% endblock %}
+
+{% block extra_script %}
+(function () {
+  var PAGE_SIZE = 10;
+  var tbody = document.getElementById('creep-table-body');
+  if (!tbody) return;  // empty state - no table on the page
+  var allRows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+  var pagination = document.getElementById('creep-pagination');
+  var pageLabel = document.getElementById('creep-page-label');
+  var prevBtn = document.getElementById('creep-prev-btn');
+  var nextBtn = document.getElementById('creep-next-btn');
+  var currentPage = 1;
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(allRows.length / PAGE_SIZE));
+  }
+
+  function showPage(page) {
+    var pages = totalPages();
+    currentPage = Math.min(Math.max(1, page), pages);
+    var start = (currentPage - 1) * PAGE_SIZE;
+    allRows.forEach(function (row, i) {
+      row.style.display = (i >= start && i < start + PAGE_SIZE) ? '' : 'none';
+    });
+    pageLabel.textContent = 'Page ' + currentPage + ' of ' + pages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= pages;
+    pagination.style.display = pages > 1 ? 'flex' : 'none';
+  }
+
+  prevBtn.addEventListener('click', function () { showPage(currentPage - 1); });
+  nextBtn.addEventListener('click', function () { showPage(currentPage + 1); });
+
+  function applySort(btn) {
+    document.querySelectorAll('#creep-sort-tabs .tab-pill').forEach(function (b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var sortKey = btn.dataset.sort === 'issues' ? 'issues' : 'change';
+    allRows.sort(function (a, b) {
+      return parseFloat(b.dataset[sortKey]) - parseFloat(a.dataset[sortKey]);
+    });
+    allRows.forEach(function (row) { tbody.appendChild(row); });
+    showPage(1);
+  }
+  document.querySelectorAll('#creep-sort-tabs .tab-pill').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      applySort(btn);
+      KC.pref.set('pricecreep.sort', btn.dataset.sort);
+    });
+  });
+
+  var savedSort = KC.pref.get('pricecreep.sort', null);
+  var savedSortBtn = savedSort && document.querySelector('#creep-sort-tabs .tab-pill[data-sort="' + CSS.escape(savedSort) + '"]');
+  if (savedSortBtn && !savedSortBtn.classList.contains('active')) {
+    applySort(savedSortBtn);
+  } else {
+    showPage(1);
+  }
+})();
+
+(function () {
+  var svg = document.getElementById('creep-svg');
+  var tooltip = document.getElementById('creep-tooltip');
+  if (!svg) return;
+  var data = {{ creep_cumulative_json|safe }};
+  if (data.length < 2) return;
+
+  var W = 760, H = 170, padL = 10, padR = 10, padT = 15, padB = 20;
+  var innerW = W - padL - padR, innerH = H - padT - padB;
+  var maxVal = Math.max.apply(null, data.map(function (d) { return d.value; })) || 1;
+  var peakIdx = 0;
+  data.forEach(function (d, i) { if (d.value >= data[peakIdx].value) peakIdx = i; });
+
+  function xFor(i) { return data.length > 1 ? padL + (i / (data.length - 1)) * innerW : padL + innerW / 2; }
+  function yFor(v) { return padT + innerH - (v / maxVal) * innerH; }
+
+  var svgns = 'http://www.w3.org/2000/svg';
+  var defs = document.createElementNS(svgns, 'defs');
+  var grad = document.createElementNS(svgns, 'linearGradient');
+  grad.setAttribute('id', 'creepGrad');
+  grad.setAttribute('x1', '0'); grad.setAttribute('y1', '0'); grad.setAttribute('x2', '0'); grad.setAttribute('y2', '1');
+  grad.innerHTML = '<stop offset="0%" stop-color="#ff4d8d" stop-opacity="0.25"/><stop offset="100%" stop-color="#ff4d8d" stop-opacity="0"/>';
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
+  var pts = data.map(function (d, i) { return xFor(i) + ',' + yFor(d.value); }).join(' ');
+  var area = document.createElementNS(svgns, 'polyline');
+  area.setAttribute('points', pts + ' ' + xFor(data.length - 1) + ',' + (padT + innerH) + ' ' + xFor(0) + ',' + (padT + innerH));
+  area.setAttribute('fill', 'url(#creepGrad)');
+  area.setAttribute('stroke', 'none');
+  svg.appendChild(area);
+
+  var line = document.createElementNS(svgns, 'polyline');
+  line.setAttribute('points', pts);
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', '#ff4d8d');
+  line.setAttribute('stroke-width', '2.5');
+  line.setAttribute('stroke-linejoin', 'round');
+  line.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(line);
+
+  for (var i = 0; i < data.length; i += Math.max(1, Math.ceil(data.length / 8))) {
+    var lbl = document.createElementNS(svgns, 'text');
+    lbl.setAttribute('x', xFor(i));
+    lbl.setAttribute('y', H - 4);
+    lbl.setAttribute('font-size', '10');
+    lbl.setAttribute('fill', 'var(--text-dim)');
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.textContent = data[i].label;
+    svg.appendChild(lbl);
+  }
+
+  data.forEach(function (d, i) {
+    var hit = document.createElementNS(svgns, 'rect');
+    hit.setAttribute('x', xFor(i) - (innerW / data.length) / 2);
+    hit.setAttribute('y', padT);
+    hit.setAttribute('width', innerW / data.length);
+    hit.setAttribute('height', innerH);
+    hit.setAttribute('fill', 'transparent');
+    hit.style.cursor = 'pointer';
+    hit.addEventListener('mouseenter', function (e) { showTip(i, e); });
+    hit.addEventListener('mousemove', function (e) { positionTip(e); });
+    hit.addEventListener('mouseleave', function () { tooltip.style.display = 'none'; });
+    svg.appendChild(hit);
+  });
+
+  function showTip(i, e) {
+    var peakBadge = i === peakIdx ? ' <span style="background:rgba(60,242,166,0.14); color:var(--neon-green); font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px;">PEAK</span>' : '';
+    tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + data[i].label + ' 2026' + peakBadge + '</div><div class="mono">{{ currency() }}' + data[i].value.toFixed(2) + '</div>';
+    tooltip.style.display = 'block';
+    positionTip(e);
+  }
+  function positionTip(e) {
+    var rect = svg.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+    tooltip.style.left = Math.min(x + 14, rect.width - 140) + 'px';
+    tooltip.style.top = (y - 10) + 'px';
+  }
+})();
+{% endblock %}

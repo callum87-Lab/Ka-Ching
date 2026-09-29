@@ -17,6 +17,7 @@ from urllib.parse import quote
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse, Response, PlainTextResponse
+from starlette.background import BackgroundTask
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -31,7 +32,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "3.0.0"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -167,6 +168,23 @@ async def _weekly_notification_loop():
             await asyncio.sleep(3600)
 
 
+def _snapshot_db(dest_path):
+    """Writes a consistent copy of the live database to dest_path using
+    SQLite's own backup API. A plain file copy isn't safe here: the
+    database runs in WAL mode, so recent changes can still be sitting in
+    kaching.db-wal rather than the main file, and a file copy silently
+    leaves them out."""
+    src = db.get_db()
+    try:
+        dst = sqlite3.connect(dest_path)
+        try:
+            src.backup(dst)
+        finally:
+            dst.close()
+    finally:
+        src.close()
+
+
 async def _daily_backup_loop():
     """Runs forever in the background: once a day, if auto-backup is turned
     on in Settings, copies the database into a timestamped file under
@@ -192,7 +210,7 @@ async def _daily_backup_loop():
             os.makedirs(backup_dir, exist_ok=True)
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
             dest = os.path.join(backup_dir, f"kaching-auto-{stamp}.db")
-            shutil.copyfile(db.DB_PATH, dest)
+            _snapshot_db(dest)
             logger.info("AUTO BACKUP: saved %s", dest)
 
             existing = sorted(
@@ -217,6 +235,8 @@ async def start_notification_scheduler():
 def source_color(name: str) -> str:
     if name == DEFAULT_SOURCE:
         return "#2fd8ff"
+    if name == "Whatnot" or name.startswith("Whatnot -"):
+        return "#00e0b8"
     h = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
     return SOURCE_PALETTE[h % len(SOURCE_PALETTE)]
 
@@ -326,7 +346,9 @@ def group_by_date(items):
         key = it["release_date"] or it["placed_date"]
         groups.setdefault(key, []).append(it)
     result = []
-    for key in sorted(groups.keys()):
+    # Items with no release date AND no placed date (some Forbidden Planet
+    # imports arrive like this) group together under "No date yet", last.
+    for key in sorted(groups.keys(), key=lambda k: (k is None, k or "")):
         group_items = groups[key]
 
         by_source = {}
@@ -344,7 +366,7 @@ def group_by_date(items):
 
         result.append({
             "date": key,
-            "date_label": date.fromisoformat(key).strftime("%a %d %b"),
+            "date_label": date.fromisoformat(key).strftime("%a %d %b") if key else "No date yet",
             "source_groups": source_groups,
             "subtotal": round(sum(i["price"] for i in group_items), 2),
             "all_paid": all(i["charge_status"] == "charged" for i in group_items),
@@ -581,7 +603,21 @@ def render_two_segment_ring_svg(pct1: float, color1: str, pct2: float, color2: s
 </svg>'''
 
 
-def render_trend_svg(chart_data, range_key):
+def _step_svg_path(points):
+    """Step-after interpolation - a horizontal line to each new x, then a
+    vertical jump to the new y, for a staircase look. Suits a running
+    total where each day's real jump should read as a clear step rather
+    than a smoothed slope blurring together several days' worth of
+    separate purchases."""
+    d = f"M{points[0][0]},{points[0][1]}"
+    for i in range(1, len(points)):
+        prev_y = points[i - 1][1]
+        x, y = points[i]
+        d += f" L{x},{prev_y} L{x},{y}"
+    return d
+
+
+def render_trend_svg(chart_data, range_key, style="curve", label_font_size=12):
     """Self-contained SVG spend-trend chart - no external chart library, so
     the dashboard never needs to reach the internet to render it. Three
     toggleable series sharing one Y-axis (comics + shipping are genuine
@@ -623,9 +659,10 @@ def render_trend_svg(chart_data, range_key):
     comics_points = [(x_at(i), y_at(c["comics_total"])) for i, c in enumerate(chart_data)]
     shipping_points = [(x_at(i), y_at(c["shipping_total"])) for i, c in enumerate(chart_data)]
 
-    total_line = _smooth_svg_path(total_points)
-    comics_line = _smooth_svg_path(comics_points)
-    shipping_line = _smooth_svg_path(shipping_points)
+    path_fn = _step_svg_path if style == "step" else _smooth_svg_path
+    total_line = path_fn(total_points)
+    comics_line = path_fn(comics_points)
+    shipping_line = path_fn(shipping_points)
     total_area = f"{total_line} L{total_points[-1][0]},{baseline_y} L{total_points[0][0]},{baseline_y} Z"
 
     parts = [
@@ -689,7 +726,7 @@ def render_trend_svg(chart_data, range_key):
         weight = "700" if c["is_current"] else "400"
         color = "var(--neon-blue)" if c["is_current"] else "var(--text-muted)"
         alt_class = " trend-axis-label-alt" if i % 2 == 1 else ""
-        parts.append(f'<text class="trend-axis-label{alt_class}" x="{x_at(i)}" y="{label_y}" text-anchor="middle" font-size="12" '
+        parts.append(f'<text class="trend-axis-label{alt_class}" x="{x_at(i)}" y="{label_y}" text-anchor="middle" font-size="{label_font_size}" '
                       f'font-weight="{weight}" fill="{color}">{c["label"]}</text>')
 
     hit_w = round(step, 1)
@@ -859,6 +896,260 @@ def find_awaiting_charge(cur, today: date):
     return rows
 
 
+def _topbar_alert_count():
+    """Real alert count for the topbar bell badge, queried fresh on every
+    template render - a Jinja global rather than per-route context, so
+    every single page shows the same real count regardless of whether
+    that route's own Python function happens to compute duplicate/ghost/
+    awaiting-charge data for its own purposes."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    today = date.today()
+    count = len(find_duplicate_groups(cur)) + len(find_ghost_items(cur)) + len(find_awaiting_charge(cur, today))
+    conn.close()
+    return count
+
+
+def _sync_feature_available():
+    """Whether phone-app sync exists on this install at all. Hidden
+    completely (no Sync settings tab, /api/sync refused) unless the
+    container is started with KACHING_PHONE_SYNC=1 - parked until the
+    Android app is ready again."""
+    return os.environ.get("KACHING_PHONE_SYNC", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _sync_enabled():
+    """Phone-app sync on/off (Settings -> Sync on the v2 UI). Off by default,
+    so sync stays hidden and /api/sync refuses until it's switched on. The
+    sync key is kept either way, so switching back on needs no re-pairing.
+    Always off while the feature itself is hidden."""
+    if not _sync_feature_available():
+        return False
+    conn = db.get_db()
+    value = notifications.get_setting(conn.cursor(), "sync_enabled", "0")
+    conn.close()
+    return value == "1"
+
+
+def _topbar_most_recent_sync():
+    """Real most-recent-sync info for the topbar, queried fresh on every
+    template render - same reasoning as _topbar_alert_count above."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT client_label, last_synced_at FROM sync_state ORDER BY last_synced_at DESC LIMIT 1")
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    synced_at = datetime.fromisoformat(row["last_synced_at"])
+    return {
+        "client_label": row["client_label"] or "A device",
+        "label": synced_at.strftime("%d %b, %H:%M"),
+    }
+
+
+def _topbar_budget_status():
+    """Real sidebar budget-status, queried fresh on every template render
+    - same reasoning as the other topbar globals above. Faithfully
+    replicates Dashboard's real cycle/rollover logic (weekly/monthly/
+    28-day, with monthly rollover of unused budget) rather than a
+    simplified approximation, but as its own self-contained query since
+    Dashboard's version is tangled into that route's own in-flight
+    variables (hero_items, week_total, etc)."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    today = date.today()
+
+    monthly_budget_raw = notifications.get_setting(cur, "monthly_budget", "")
+    budget_cycle = notifications.get_setting(cur, "budget_cycle", "monthly")
+    budget_rollover = notifications.get_setting(cur, "budget_rollover", "no") == "yes"
+    budget_cycle_label = {"monthly": "this month", "weekly": "this week", "28day": "this 28-day period"}.get(budget_cycle, "this month")
+
+    if not monthly_budget_raw:
+        conn.close()
+        return None
+
+    try:
+        base_budget = float(monthly_budget_raw)
+    except (ValueError, TypeError):
+        conn.close()
+        return None
+    if base_budget <= 0:
+        conn.close()
+        return None
+
+    # Split of the cycle into "spent so far" (released up to today) and
+    # "still due" (scheduled later in the cycle), plus days left - used by
+    # the sidebar box's display options. cycle_spend itself is unchanged.
+    spent_to_date = None
+    days_left = None
+    if budget_cycle == "weekly":
+        week_end = today + timedelta(days=6)
+        week_items = fetch_items_between(cur, today, week_end)
+        cycle_spend = round(sum(i["price"] for i in week_items), 2)
+        spent_to_date = round(sum(i["price"] for i in week_items if (i["release_date"] or i["placed_date"]) <= today.isoformat()), 2)
+        days_left = 7
+    elif budget_cycle == "28day":
+        twenty_eight_start = today - timedelta(days=27)
+        cur.execute(
+            "SELECT COALESCE(SUM(price), 0) AS s FROM items WHERE status != 'cancelled' AND date(release_date) BETWEEN date(?) AND date(?)",
+            (twenty_eight_start.isoformat(), today.isoformat()),
+        )
+        cycle_spend = cur.fetchone()["s"]
+        spent_to_date = cycle_spend
+    else:
+        month_start, month_end = month_bounds(today)
+        month_items = fetch_items_between(cur, month_start, month_end)
+        month_comics = round(sum(i["price"] for i in month_items), 2)
+        month_groups = group_by_date(month_items)
+        month_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, month_groups)
+        cycle_spend = round(month_comics + month_shipping, 2)
+        past_groups = [g for g in month_groups if g["date"] <= today.isoformat()]
+        past_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, past_groups) if past_groups else (0,) * 9
+        spent_to_date = round(sum(g["subtotal"] for g in past_groups) + past_shipping, 2)
+        days_left = (month_end - today).days + 1
+
+    effective_budget = base_budget
+    if budget_rollover and budget_cycle == "monthly":
+        prev_start, prev_end = month_bounds(shift_month(today, -1))
+        prev_items = fetch_items_between(cur, prev_start, prev_end)
+        prev_comics = round(sum(i["price"] for i in prev_items), 2)
+        prev_groups = group_by_date(prev_items)
+        prev_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, prev_groups)
+        prev_total = round(prev_comics + prev_shipping, 2)
+        if prev_total < base_budget:
+            effective_budget = round(base_budget + (base_budget - prev_total), 2)
+
+    display = notifications.get_setting(cur, "sidebar_budget_display", "spent_of")
+    conn.close()
+    budget_pct = round((cycle_spend / effective_budget) * 100, 1) if effective_budget else 0
+    left = round(effective_budget - cycle_spend, 2)
+    still_due = round(max(cycle_spend - (spent_to_date or 0), 0), 2)
+    return {
+        "monthly_budget": effective_budget,
+        "cycle_spend": cycle_spend,
+        "budget_bar_pct": min(100, budget_pct),
+        "budget_cycle_label": budget_cycle_label,
+        "budget_pct": budget_pct,
+        "over": left < 0,
+        "left": left,
+        "spent_to_date": spent_to_date,
+        "still_due": still_due,
+        "spent_bar_pct": min(100, round((spent_to_date or 0) / effective_budget * 100, 1)) if effective_budget else 0,
+        "days_left": days_left,
+        "per_day": round(left / days_left, 2) if (days_left and left > 0) else None,
+        "display": display,
+    }
+
+
+def get_categories(cur, with_counts=False):
+    """All categories in display order. with_counts adds how many live
+    (not deleted) items each one has, for the Settings list and to block
+    removing a category that's still in use."""
+    if with_counts:
+        cur.execute(
+            """
+            SELECT c.id, c.name, c.color, c.has_series, c.sort_order,
+                   (SELECT COUNT(*) FROM items i WHERE i.category_id = c.id AND i.deleted_at IS NULL) AS item_count
+            FROM categories c ORDER BY c.sort_order, c.id
+            """
+        )
+    else:
+        cur.execute("SELECT id, name, color, has_series, sort_order FROM categories ORDER BY sort_order, id")
+    return [dict(r) for r in cur.fetchall()]
+
+
+def _valid_category_id(cur, raw):
+    """A submitted category id if it's real, otherwise None."""
+    try:
+        cat_id = int(raw)
+    except (TypeError, ValueError):
+        return None
+    cur.execute("SELECT 1 FROM categories WHERE id = ?", (cat_id,))
+    return cat_id if cur.fetchone() else None
+
+
+def _create_category(cur, name):
+    """Creates a category (no series by default) and returns its id. New
+    ones slot in just above "Other" if it exists, otherwise at the end."""
+    clean = " ".join((name or "").split())[:60]
+    if not clean:
+        return None
+    cur.execute("SELECT id FROM categories WHERE name = ? COLLATE NOCASE", (clean,))
+    existing = cur.fetchone()
+    if existing:
+        return existing[0]
+    cur.execute("SELECT COUNT(*) FROM categories")
+    used = cur.fetchone()[0]
+    color = db.EXTRA_CATEGORY_COLORS[max(0, used - len(db.STARTER_CATEGORIES)) % len(db.EXTRA_CATEGORY_COLORS)]
+    cur.execute("SELECT sort_order FROM categories WHERE name = 'Other' COLLATE NOCASE")
+    other = cur.fetchone()
+    if other:
+        cur.execute("UPDATE categories SET sort_order = sort_order + 1 WHERE sort_order >= ?", (other[0],))
+        sort_order = other[0]
+    else:
+        cur.execute("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories")
+        sort_order = cur.fetchone()[0]
+    cur.execute(
+        "INSERT INTO categories (name, color, has_series, sort_order, created_at) VALUES (?, ?, 0, ?, ?)",
+        (clean, color, sort_order, db.utc_now()),
+    )
+    logger.info("CATEGORY ADDED: %r", clean)
+    return cur.lastrowid
+
+
+def _resolve_category(cur, raw):
+    """What a category box submitted -> a category id. The v2 forms let you
+    pick an existing category or type a new one, so this accepts an id, an
+    existing name (any capitalisation), or a brand-new name, which gets
+    created on the spot. Blank or unusable input returns None."""
+    if raw is None:
+        return None
+    text = " ".join(str(raw).split())
+    if not text:
+        return None
+    if text.isdigit():
+        valid = _valid_category_id(cur, text)
+        if valid:
+            return valid
+    return _create_category(cur, text)
+
+
+def _categories_global():
+    conn = db.get_db()
+    try:
+        return get_categories(conn.cursor())
+    finally:
+        conn.close()
+
+
+def _default_category_global():
+    conn = db.get_db()
+    try:
+        return db.default_category_id(conn)
+    finally:
+        conn.close()
+
+
+templates.env.globals["all_categories"] = _categories_global
+templates.env.globals["default_category_id"] = _default_category_global
+templates.env.globals["topbar_alert_count"] = _topbar_alert_count
+templates.env.globals["topbar_most_recent_sync"] = _topbar_most_recent_sync
+templates.env.globals["sync_enabled"] = _sync_enabled
+
+
+def _sidebar_budget_display():
+    conn = db.get_db()
+    value = notifications.get_setting(conn.cursor(), "sidebar_budget_display", "spent_of")
+    conn.close()
+    return value
+
+
+templates.env.globals["sidebar_budget_display"] = _sidebar_budget_display
+templates.env.globals["sync_feature_available"] = _sync_feature_available
+templates.env.globals["topbar_budget_status"] = _topbar_budget_status
+
+
 def get_year_to_date(cur, today: date):
     year_start = date(today.year, 1, 1)
     year_end = date(today.year, 12, 31)
@@ -926,8 +1217,98 @@ def source_filter_sql(source: str):
 
 # --- Dashboard ---------------------------------------------------------------
 
-@app.get("/")
+@app.get("/alerts")
+def alerts_v2(request: Request, test_result: str | None = None, test_error: str | None = None, notif_import_result: str | None = None):
+    today = date.today()
+    conn = db.get_db()
+    cur = conn.cursor()
+    duplicate_groups = find_duplicate_groups(cur)
+    ghost_items = find_ghost_items(cur)
+    awaiting_charge = find_awaiting_charge(cur, today)
+    cur.execute("SELECT * FROM notification_log ORDER BY id DESC LIMIT 20")
+    notification_log = [dict(r) for r in cur.fetchall()]
+    values = notifications.get_all_settings(cur)
+
+    # Alert history log: real dismissed-duplicate events, real
+    # awaiting-charge resolutions (item_history's charge_status ->
+    # 'charged' entries), and real ghost-item removals (logged just
+    # before the hard delete, since the item row itself won't exist
+    # afterward to join against) - merged and sorted by date.
+    alert_events = []
+    cur.execute("SELECT name, release_date, dismissed_at FROM dismissed_duplicates ORDER BY dismissed_at DESC")
+    for r in cur.fetchall():
+        alert_events.append({
+            "at": r["dismissed_at"],
+            "kind": "duplicate",
+            "text": f'Duplicate dismissed — "{r["name"]}"',
+        })
+    cur.execute(
+        """
+        SELECT ih.changed_at, i.name FROM item_history ih
+        JOIN items i ON i.id = ih.item_id
+        WHERE ih.field_name = 'charge_status' AND ih.new_value = 'charged'
+        ORDER BY ih.changed_at DESC
+        """
+    )
+    for r in cur.fetchall():
+        alert_events.append({
+            "at": r["changed_at"],
+            "kind": "awaiting_charge",
+            "text": f'Awaiting charge resolved — "{r["name"]}" marked paid',
+        })
+    cur.execute(
+        """
+        SELECT changed_at, old_value AS name FROM item_history
+        WHERE field_name = 'removed'
+        ORDER BY changed_at DESC
+        """
+    )
+    for r in cur.fetchall():
+        alert_events.append({
+            "at": r["changed_at"],
+            "kind": "ghost_item",
+            "text": f'Ghost item removed — "{r["name"]}"',
+        })
+    alert_events.sort(key=lambda e: e["at"], reverse=True)
+    alert_history = alert_events
+
+    month_start = today.replace(day=1).isoformat()
+    resolved_this_month = sum(1 for e in alert_events if e["at"] >= month_start)
+    currently_open = len(duplicate_groups) + len(ghost_items) + len(awaiting_charge)
+    if alert_events:
+        last_event_date = date.fromisoformat(alert_events[0]["at"][:10])
+        days_since_last_alert = (today - last_event_date).days
+    else:
+        days_since_last_alert = None
+
+    conn.close()
+    return templates.TemplateResponse("v2/alerts.html", {
+        "request": request,
+        "duplicate_groups": duplicate_groups,
+        "ghost_items": ghost_items,
+        "awaiting_charge": awaiting_charge,
+        "notification_log": notification_log,
+        "values": values,
+        "alert_history": alert_history,
+        "resolved_this_month": resolved_this_month,
+        "currently_open": currently_open,
+        "days_since_last_alert": days_since_last_alert,
+        "test_result": test_result,
+        "test_error": test_error,
+        "notif_import_result": notif_import_result,
+    })
+
+
+@app.get("/classic")
+@app.get("/classic/")
 def dashboard(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None):
+    ctx = _build_dashboard_context(request, month, chart_range, source, apply_landing_redirect=False)
+    if isinstance(ctx, RedirectResponse):
+        return ctx
+    return templates.TemplateResponse("dashboard.html", ctx)
+
+
+def _build_dashboard_context(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None, apply_landing_redirect: bool = True):
     today = date.today()
     conn = db.get_db()
     cur = conn.cursor()
@@ -935,7 +1316,10 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     # Only redirect on a clean, unparameterised visit to "/" - once someone's
     # actively navigating the dashboard (a month, chart range, or shop filter
     # in the URL), respect that rather than bouncing them away mid-browse.
-    if not month and not chart_range and not source:
+    # Skipped entirely for the /v2/ test routes (apply_landing_redirect=False)
+    # since "go straight to Calendar" is a preference about the live site,
+    # not something that should hijack a deliberate visit to the test UI.
+    if apply_landing_redirect and not month and not chart_range and not source:
         landing = notifications.get_setting(cur, "default_landing_page", "dashboard")
         landing_paths = {"calendar": "/calendar", "search": "/search", "add": "/items/new"}
         if landing in landing_paths:
@@ -953,6 +1337,23 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
             "client_label": most_recent_sync_row["client_label"] or "A device",
             "label": synced_at.strftime("%d %b, %H:%M"),
         }
+
+    most_recent_backup = None
+    backup_dir = os.path.join(os.path.dirname(db.DB_PATH), "backups")
+    if os.path.isdir(backup_dir):
+        backup_files = sorted(
+            (f for f in os.listdir(backup_dir) if _AUTO_BACKUP_NAME_RE.match(f)),
+            reverse=True,
+        )
+        if backup_files:
+            fpath = os.path.join(backup_dir, backup_files[0])
+            size_bytes = os.path.getsize(fpath)
+            size_label = f"{size_bytes / 1024 / 1024:.1f} MB" if size_bytes >= 1024 * 1024 else f"{size_bytes / 1024:.1f} KB"
+            mtime = datetime.fromtimestamp(os.path.getmtime(fpath))
+            most_recent_backup = {
+                "label": mtime.strftime("%d %b, %H:%M"),
+                "size_label": size_label,
+            }
 
     date_changes_flash = None
     cur.execute("SELECT value FROM settings WHERE key = '_flash_date_changes'")
@@ -1124,12 +1525,13 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
     biggest_still_to_come = max(still_to_come_items, key=lambda i: i["price"], default=None)
     if biggest_still_to_come:
         biggest_still_to_come["due_label"] = date.fromisoformat(biggest_still_to_come["release_date"]).strftime("%-d %b")
+        biggest_still_to_come["days_until_due"] = (date.fromisoformat(biggest_still_to_come["release_date"]) - today).days
     still_to_come_count = len(still_to_come_items)
     still_to_come_total = round(sum(i["price"] for i in still_to_come_items), 2)
 
     conn.close()
 
-    return templates.TemplateResponse("dashboard.html", {
+    return {
         "request": request,
         "today": today,
         "current_month_label": today.strftime("%B %Y"),
@@ -1150,6 +1552,7 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "cycle_spend": cycle_spend,
         "date_changes_flash": date_changes_flash,
         "most_recent_sync": most_recent_sync,
+        "most_recent_backup": most_recent_backup,
         "hero_spent_count": hero_spent_count,
         "next_month_total": next_month_total,
         "viewed_month_label": viewed_month.strftime("%B %Y"),
@@ -1186,7 +1589,106 @@ def dashboard(request: Request, month: str | None = None, chart_range: str | Non
         "biggest_still_to_come": biggest_still_to_come,
         "still_to_come_count": still_to_come_count,
         "still_to_come_total": still_to_come_total,
-    })
+    }
+
+
+# --- v2 redesign (test routes, separate from the live UI above) -------------
+# Reuses the exact same data-building logic as the real dashboard route -
+# same queries, same numbers - just rendered into the new template set
+# living in templates/v2/. Nothing here changes what "/" or any other
+# existing route does.
+
+@app.get("/v2")
+@app.get("/v2/")
+@app.get("/v2/dashboard")
+def v2_home_redirect(request: Request):
+    q = request.url.query
+    return RedirectResponse(url="/" + ("?" + q if q else ""), status_code=301)
+
+
+@app.get("/v2/{rest:path}")
+def v2_redirect(rest: str, request: Request):
+    """The redesign used to live under /v2/ while it was being tested;
+    it's the main UI now, so old /v2/ links go to the same page without
+    the prefix."""
+    q = request.url.query
+    return RedirectResponse(url="/" + rest + ("?" + q if q else ""), status_code=301)
+
+
+@app.get("/")
+def dashboard_v2(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None):
+    ctx = _build_dashboard_context(request, month, chart_range, source)
+    if isinstance(ctx, RedirectResponse):
+        return ctx
+    return templates.TemplateResponse("v2/dashboard.html", ctx)
+
+
+@app.get("/orders")
+def orders_v2(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None):
+    ctx = _build_dashboard_context(request, month, chart_range, source, apply_landing_redirect=False)
+    if isinstance(ctx, RedirectResponse):
+        return ctx
+
+    today = date.today()
+    conn = db.get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND charge_status != 'charged'
+        """
+    )
+    unpaid_items = [dict(r) for r in cur.fetchall()]
+    awaiting_charge_rows = find_awaiting_charge(cur, today)
+    awaiting_charge_ids = {r["id"] for r in awaiting_charge_rows}
+    awaiting_charge_days = {r["id"]: r["days_late"] for r in awaiting_charge_rows}
+    for it in unpaid_items:
+        it["is_awaiting_charge"] = it["id"] in awaiting_charge_ids
+    unpaid_groups = group_by_date(unpaid_items)
+    for g in unpaid_groups:
+        g_date = date.fromisoformat(g["date"]) if g["date"] else None
+        days_late = max((awaiting_charge_days.get(it["id"], 0) for sg in g["source_groups"] for it in sg["entries"]), default=0)
+        g["days_late"] = days_late if (g_date and g_date < today) else 0
+    unpaid_total = round(sum(i["price"] for i in unpaid_items), 2)
+    unpaid_count = len(unpaid_items)
+
+    year_start = date(today.year, 1, 1).isoformat()
+    cur.execute(
+        """
+        SELECT id, name, price, updated_at FROM items
+        WHERE status = 'cancelled' AND date(updated_at) >= date(?)
+        ORDER BY updated_at DESC
+        """,
+        (year_start,),
+    )
+    cancelled_this_year = [dict(r) for r in cur.fetchall()]
+    for it in cancelled_this_year:
+        it["cancelled_label"] = datetime.fromisoformat(it["updated_at"]).strftime("%-d %b")
+    cancelled_saved_total = round(sum(i["price"] for i in cancelled_this_year), 2)
+
+    # Recently cancelled for the v2 Orders card: same 30-day window and filter
+    # as the shared dashboard context's recently_cancelled, but without its
+    # LIMIT 15 - the v2 card paginates, so it can show everything in the window.
+    # Kept separate so the old dashboard's capped list is left untouched.
+    recent_cutoff = (today - timedelta(days=30)).isoformat()
+    cur.execute(
+        "SELECT * FROM items WHERE status = 'cancelled' AND manual_override = 1 "
+        "AND date(updated_at) >= date(?) ORDER BY id DESC",
+        (recent_cutoff,),
+    )
+    recently_cancelled_all = [dict(r) for r in cur.fetchall()]
+
+    conn.close()
+
+    ctx["unpaid_groups"] = unpaid_groups
+    ctx["unpaid_total"] = unpaid_total
+    ctx["unpaid_count"] = unpaid_count
+    ctx["cancelled_this_year"] = cancelled_this_year
+    ctx["cancelled_saved_total"] = cancelled_saved_total
+    ctx["recently_cancelled_all"] = recently_cancelled_all
+
+    return templates.TemplateResponse("v2/orders.html", ctx)
 
 
 @app.post("/items/{item_id}/mark")
@@ -1260,6 +1762,18 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
         # Still hard-deleted for now - soft-delete (deleted_at) so removals
         # propagate over sync instead of just vanishing locally is coming
         # in the sync endpoint work itself, not this schema pass.
+        #
+        # Log the removal before deleting, so the Alerts page's history
+        # has something real to show - the item's name is stored directly
+        # in the log row (not just item_id) since a join to the items
+        # table won't find anything once this row is gone.
+        cur.execute("SELECT name FROM items WHERE id = ?", (item_id,))
+        removed_row = cur.fetchone()
+        if removed_row:
+            cur.execute(
+                "INSERT INTO item_history (item_id, changed_at, field_name, old_value, new_value) VALUES (?, ?, ?, ?, ?)",
+                (item_id, now, "removed", removed_row["name"], None),
+            )
         cur.execute("DELETE FROM items WHERE id = ?", (item_id,))
     else:
         logger.warning("MARK request with unknown action=%s item_id=%s - no update applied", action, item_id)
@@ -1373,7 +1887,7 @@ def _parse_item_form_date(raw: str, fallback: date) -> str:
         return fallback.isoformat()
 
 
-@app.get("/items/new")
+@app.get("/classic/items/new")
 def new_items_form(request: Request):
     conn = db.get_db()
     cur = conn.cursor()
@@ -1390,17 +1904,36 @@ def new_items_form(request: Request):
     })
 
 
+@app.get("/items/new")
+def new_items_form_v2(request: Request):
+    conn = db.get_db()
+    cur = conn.cursor()
+    all_sources = get_all_sources(cur)
+    cur.execute("SELECT source FROM items ORDER BY imported_at DESC LIMIT 1")
+    last_row = cur.fetchone()
+    last_used_source = last_row["source"] if last_row else DEFAULT_SOURCE
+    conn.close()
+    return templates.TemplateResponse("v2/logorders.html", {
+        "request": request,
+        "all_sources": all_sources,
+        "last_used_source": last_used_source,
+        "result": None,
+    })
+
+
 @app.post("/items/new")
 async def create_items(request: Request):
     form = await request.form()
     names = form.getlist("name")
     prices = form.getlist("price")
+    category_ids = form.getlist("category_id")
     release_date = form.get("release_date", "")
     source = (form.get("source") or "").strip() or DEFAULT_SOURCE
     already_paid = form.get("already_paid")
     order_number = (form.get("order_number") or "").strip() or None
     shipping_cost_raw = (form.get("shipping_cost") or "").strip()
     tracking_number = (form.get("tracking_number") or "").strip() or None
+    next_url = form.get("next") or "/"
 
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
@@ -1410,7 +1943,8 @@ async def create_items(request: Request):
     conn = db.get_db()
     cur = conn.cursor()
     created = []
-    for raw_name, raw_price in zip(names, prices):
+    fallback_category = db.default_category_id(conn)
+    for idx, (raw_name, raw_price) in enumerate(zip(names, prices)):
         clean_name = raw_name.strip()
         if not clean_name:
             continue
@@ -1418,15 +1952,16 @@ async def create_items(request: Request):
             price_val = float(raw_price)
         except (TypeError, ValueError):
             continue
+        category_id = _resolve_category(cur, category_ids[idx] if idx < len(category_ids) else None) or fallback_category
         cur.execute(
             """
             INSERT INTO items
                 (name, order_number, placed_date, status, release_date, charge_status,
-                 price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
-            VALUES (?, ?, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?, ?, ?, ?)
+                 price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at, category_id)
+            VALUES (?, ?, ?, 'preorder', ?, ?, ?, NULL, ?, 1, ?, ?, ?, ?, ?)
             """,
             (clean_name, order_number, today.isoformat(), release_iso, charge_status, price_val, now, source,
-             tracking_number, db.new_uuid(), now),
+             tracking_number, db.new_uuid(), now, category_id),
         )
         created.append((cur.lastrowid, clean_name, price_val))
 
@@ -1451,10 +1986,10 @@ async def create_items(request: Request):
         "MANUAL BATCH ADD: release_date=%s source=%r order_number=%s shipping=%s created=%s",
         release_iso, source, order_number, shipping_cost_raw, created,
     )
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url=next_url, status_code=303)
 
 
-@app.get("/items/{item_id}/edit")
+@app.get("/classic/items/{item_id}/edit")
 def edit_item_form(request: Request, item_id: int):
     conn = db.get_db()
     cur = conn.cursor()
@@ -1480,6 +2015,38 @@ def edit_item_form(request: Request, item_id: int):
     })
 
 
+@app.get("/items/{item_id}/edit")
+def edit_item_form_v2(request: Request, item_id: int):
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    item = cur.fetchone()
+    all_sources = get_all_sources(cur)
+    cur.execute(
+        "SELECT * FROM item_history WHERE item_id = ? ORDER BY id DESC LIMIT 20",
+        (item_id,),
+    )
+    edit_history = [dict(r) for r in cur.fetchall()]
+    for h in edit_history:
+        try:
+            h["date_label"] = datetime.fromisoformat(h["changed_at"]).strftime("%d %b")
+        except (ValueError, TypeError):
+            h["date_label"] = h["changed_at"][:10] if h["changed_at"] else ""
+    conn.close()
+    if not item:
+        return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse("v2/edititem.html", {
+        "request": request,
+        "item": dict(item),
+        "form_action": f"/items/{item_id}/edit",
+        "form_next": "/",
+        "all_sources": all_sources,
+        "heading": "Edit item",
+        "submit_label": "Save changes",
+        "edit_history": edit_history,
+    })
+
+
 @app.post("/items/{item_id}/edit")
 def update_item(
     item_id: int,
@@ -1490,6 +2057,8 @@ def update_item(
     already_paid: str | None = Form(None),
     tracking_number: str = Form(""),
     note: str = Form(""),
+    next: str = Form("/"),
+    category_id: str | None = Form(None),
 ):
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
@@ -1510,6 +2079,17 @@ def update_item(
         "source": source_clean, "charge_status": charge_status,
         "tracking_number": tracking_clean, "note": note_clean,
     }
+    # Category is only changed when the form actually sent one (the v2 edit
+    # form). The old UI's form has no category field, so it leaves it alone.
+    new_category_id = _resolve_category(cur, category_id) if category_id is not None else None
+    if existing is not None and new_category_id and new_category_id != existing["category_id"]:
+        cur.execute("SELECT id, name FROM categories WHERE id IN (?, ?)", (existing["category_id"], new_category_id))
+        cat_names = {r["id"]: r["name"] for r in cur.fetchall()}
+        cur.execute(
+            "INSERT INTO item_history (item_id, changed_at, field_name, old_value, new_value) VALUES (?, ?, ?, ?, ?)",
+            (item_id, now, "category", cat_names.get(existing["category_id"]), cat_names.get(new_category_id)),
+        )
+        cur.execute("UPDATE items SET category_id = ? WHERE id = ?", (new_category_id, item_id))
     if existing is not None:
         for field, new_val in new_values.items():
             old_val = existing[field]
@@ -1534,7 +2114,7 @@ def update_item(
         "MANUAL EDIT: id=%s name=%r price=%s release_date=%s source=%r",
         item_id, name, price, release_iso, source_clean,
     )
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url=next, status_code=303)
 
 
 @app.post("/items/{item_id}/delay")
@@ -1719,12 +2299,72 @@ def debug_shipping_groups(request: Request, source: str = DEFAULT_SOURCE, key: s
     return PlainTextResponse("\n".join(lines))
 
 
-@app.get("/insights")
+@app.get("/classic/insights")
 def insights_page(request: Request):
+    ctx = _build_insights_context(request)
+    return templates.TemplateResponse("insights.html", ctx)
+
+
+def _insights_category_chips(cats_param):
+    """Category filter chips for the v2 Price creep / Top titles pages.
+
+    Only categories that currently have (non-cancelled) items get a chip.
+    With no ?cats= at all, the default is every category with "has
+    series" switched on (or all of them, if none of those have items).
+    ?cats= present but empty means the user switched every chip off.
+    Returns (chips, selected_ids)."""
+    conn = db.get_db()
+    default_id = db.default_category_id(conn)
+    cats = [dict(r) for r in conn.execute(
+        "SELECT id, name, color, has_series FROM categories ORDER BY sort_order, id"
+    ).fetchall()]
+    known_ids = {c["id"] for c in cats}
+    counts = {}
+    for row in conn.execute(
+        "SELECT category_id, COUNT(*) FROM items WHERE status != 'cancelled' GROUP BY category_id"
+    ).fetchall():
+        cid = row[0] if row[0] in known_ids else default_id
+        counts[cid] = counts.get(cid, 0) + row[1]
+    conn.close()
+
+    chips = [c for c in cats if counts.get(c["id"], 0) > 0]
+    chip_ids = [c["id"] for c in chips]
+    defaults = [c["id"] for c in chips if c["has_series"]] or list(chip_ids)
+    for c in chips:
+        c["is_default"] = c["id"] in defaults
+
+    if cats_param is None:
+        selected = set(defaults)
+    else:
+        wanted = set()
+        for part in cats_param.split(","):
+            part = part.strip()
+            if part.isdigit():
+                wanted.add(int(part))
+        selected = wanted & set(chip_ids)
+        # Every requested category has since been deleted or emptied -
+        # fall back to the default rather than showing nothing.
+        if wanted and not selected:
+            selected = set(defaults)
+    for c in chips:
+        c["on"] = c["id"] in selected
+    return chips, selected
+
+
+def _build_insights_context(request: Request, category_ids=None):
     conn = db.get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM items WHERE status != 'cancelled'")
     all_items = [dict(r) for r in cur.fetchall()]
+    if category_ids is not None:
+        # Items with no (or a since-deleted) category count as the default
+        # category, same as the backfill would make them.
+        _default_cat = db.default_category_id(conn)
+        _known_cats = {r[0] for r in cur.execute("SELECT id FROM categories").fetchall()}
+        all_items = [
+            i for i in all_items
+            if (i.get("category_id") if i.get("category_id") in _known_cats else _default_cat) in category_ids
+        ]
     dated_items = [i for i in all_items if i["release_date"]]
 
     by_month = {}
@@ -1776,7 +2416,7 @@ def insights_page(request: Request):
             date.fromisoformat(priciest_item["release_date"]).strftime("%d %b %Y")
             if priciest_item["release_date"] else "no date set"
         )
-    top_titles = sorted(all_items, key=lambda i: -i["price"])[:3]
+    top_titles = sorted(all_items, key=lambda i: -i["price"])[:5]
 
     # Price creep: group items into a "series" by stripping the issue
     # number and anything after it (variant info usually follows the
@@ -1791,13 +2431,44 @@ def insights_page(request: Request):
             continue
         series_key = m.group(1).strip()
         sort_key = it["release_date"] or it["placed_date"] or ""
-        series_groups.setdefault(series_key, []).append((sort_key, it["price"], it["name"]))
+        series_groups.setdefault(series_key, []).append({"sort_key": sort_key, "price": it["price"], "name": it["name"], "release_date": it["release_date"]})
+
+    # Real per-series stats for EVERY series with 2+ tracked issues (not
+    # just the ones that got pricier) - powers the stat cards, the
+    # distribution buckets, and the full ranked table with real
+    # sparklines built from each series' actual price history.
+    all_series_stats = []
+    for series_key, entries in series_groups.items():
+        if len(entries) < 2:
+            continue
+        entries.sort(key=lambda e: e["sort_key"])
+        first_price = entries[0]["price"]
+        latest_price = entries[-1]["price"]
+        change_pct = round(((latest_price - first_price) / first_price) * 100) if first_price else 0
+        prices = [e["price"] for e in entries]
+        min_p, max_p = min(prices), max(prices)
+        spread = (max_p - min_p) or 1
+        spark_pts = []
+        n = len(prices)
+        for i, p in enumerate(prices):
+            sx = round((i / (n - 1)) * 70, 1) if n > 1 else 0
+            sy = round(22 - ((p - min_p) / spread) * 20, 1)
+            spark_pts.append(f"{sx},{sy}")
+        all_series_stats.append({
+            "series": series_key,
+            "issue_count": len(entries),
+            "first_price": first_price,
+            "latest_price": latest_price,
+            "change_pct": change_pct,
+            "sparkline_points": " ".join(spark_pts),
+            "entries": entries,
+        })
 
     price_creep = []
     for series_key, entries in series_groups.items():
-        entries.sort(key=lambda e: e[0])
-        first_price = entries[0][1]
-        latest_price = entries[-1][1]
+        entries.sort(key=lambda e: e["sort_key"])
+        first_price = entries[0]["price"]
+        latest_price = entries[-1]["price"]
         if latest_price > first_price + 0.01:
             price_creep.append({
                 "series": series_key,
@@ -1807,11 +2478,133 @@ def insights_page(request: Request):
                 "issue_count": len(entries),
             })
     price_creep.sort(key=lambda p: -(p["latest_price"] - p["first_price"]))
+    price_creep_all = price_creep  # full list, before the top-3 cap below
     price_creep = price_creep[:3]
+
+    # Real stat-card figures
+    creep_series_tracked = len(all_series_stats)
+    creep_avg_increase = round(sum(s["change_pct"] for s in all_series_stats) / creep_series_tracked, 1) if creep_series_tracked else 0
+    creep_biggest_jumper = max(all_series_stats, key=lambda s: s["change_pct"], default=None)
+
+    # Real distribution buckets, counting only series that actually increased
+    creep_buckets = [
+        {"label": "0\u20135%", "min": 0, "max": 5, "count": 0, "color": "#3cf2a6"},
+        {"label": "5\u201310%", "min": 5, "max": 10, "count": 0, "color": "#67e6c4"},
+        {"label": "10\u201315%", "min": 10, "max": 15, "count": 0, "color": "#7bb8f0"},
+        {"label": "15\u201325%", "min": 15, "max": 25, "count": 0, "color": "#a487ff"},
+        {"label": "25%+", "min": 25, "max": 999999, "count": 0, "color": "#ff4d8d"},
+    ]
+    for p in price_creep_all:
+        for b in creep_buckets:
+            if b["min"] <= p["increase_pct"] < b["max"]:
+                b["count"] += 1
+                break
+    creep_bucket_max = max((b["count"] for b in creep_buckets), default=0) or 1
+    for b in creep_buckets:
+        b["bar_pct"] = round((b["count"] / creep_bucket_max) * 100)
+
+    # Real "Extra spend from creep" - for every series with genuine price
+    # creep, every issue bought AFTER the price rose above its own
+    # first-tracked price counts its markup (price - first_price) toward
+    # the month it was bought in, then run a real cumulative total
+    # across the last 12 months.
+    creep_series_keys = {p["series"] for p in price_creep_all}
+    creep_month_extra = {}
+    creep_total_extra = 0.0
+    for s in all_series_stats:
+        if s["series"] not in creep_series_keys:
+            continue
+        first_price = s["first_price"]
+        for e in s["entries"]:
+            if e["price"] > first_price + 0.01 and e["release_date"]:
+                extra = e["price"] - first_price
+                month_key = e["release_date"][:7]
+                creep_month_extra[month_key] = creep_month_extra.get(month_key, 0) + extra
+                creep_total_extra += extra
+    creep_total_extra = round(creep_total_extra, 2)
+
+    creep_month_keys = []
+    creep_today = date.today()
+    creep_range_start = creep_today.replace(day=1) - timedelta(days=365)
+    creep_range_start = creep_range_start.replace(day=1)
+    creep_cursor = creep_range_start
+    while creep_cursor <= creep_today.replace(day=1):
+        creep_month_keys.append(creep_cursor.strftime("%Y-%m"))
+        creep_cursor = (creep_cursor.replace(day=28) + timedelta(days=4)).replace(day=1)
+    creep_cumulative = []
+    running = 0.0
+    for mk in creep_month_keys:
+        running += creep_month_extra.get(mk, 0)
+        creep_cumulative.append({
+            "month_key": mk,
+            "label": datetime.strptime(mk, "%Y-%m").strftime("%b"),
+            "value": round(running, 2),
+        })
+    creep_cumulative_json = json.dumps(creep_cumulative)
+
+    # Every series ranked by total spend (not just the ones with price
+    # creep) - reuses the same series_groups grouping above, just a
+    # different cut of it: total money spent per series, for the "top
+    # series by spend" view rather than "which series got pricier".
+    series_totals = []
+    for series_key, entries in series_groups.items():
+        total_spent = round(sum(e["price"] for e in entries), 2)
+        prices = [e["price"] for e in entries]
+        dates = [e["sort_key"] for e in entries if e["sort_key"]]
+        series_totals.append({
+            "series": series_key,
+            "total": total_spent,
+            "count": len(entries),
+            "avg_price": round(total_spent / len(entries), 2) if entries else 0,
+            "first_date": min(dates) if dates else None,
+            "latest_date": max(dates) if dates else None,
+        })
+    all_series_totals = list(series_totals)
+    for s in all_series_totals:
+        s["first_date_label"] = date.fromisoformat(s["first_date"]).strftime("%b %Y") if s["first_date"] else "\u2014"
+        s["latest_date_label"] = date.fromisoformat(s["latest_date"]).strftime("%b %Y") if s["latest_date"] else "\u2014"
+    series_totals.sort(key=lambda s: -s["total"])
+    series_totals = series_totals[:10]
+    top_series_by_spend = series_totals[0] if series_totals else None
+
+    most_collected_series = max(all_series_totals, key=lambda s: s["count"], default=None)
+    longest_running_series = min((s for s in all_series_totals if s["first_date"]), key=lambda s: s["first_date"], default=None)
+    if longest_running_series:
+        years_running = (date.today() - date.fromisoformat(longest_running_series["first_date"])).days / 365.25
+        longest_running_series = dict(longest_running_series)
+        longest_running_series["years_running"] = round(years_running, 1)
+        longest_running_series["first_date_label"] = date.fromisoformat(longest_running_series["first_date"]).strftime("%b %Y")
+
     for t in top_titles:
         t["release_date_label"] = (
             date.fromisoformat(t["release_date"]).strftime("%d %b %Y") if t["release_date"] else "no date set"
         )
+        m = re.match(r"^(.*?)\s*#\d+", t["name"])
+        t["series"] = m.group(1).strip() if m else t["name"]
+
+    # Spend by category: same item set as every other total on this page
+    # (everything not cancelled). "This year" goes by release date, since
+    # that's when the money actually goes out.
+    cur.execute("SELECT id, name, color FROM categories ORDER BY sort_order, id")
+    category_rows = [dict(r) for r in cur.fetchall()]
+    this_year_prefix = str(date.today().year)
+    cat_all, cat_year = {}, {}
+    for it in all_items:
+        cid = it.get("category_id")
+        cat_all[cid] = cat_all.get(cid, 0.0) + it["price"]
+        if (it["release_date"] or "").startswith(this_year_prefix):
+            cat_year[cid] = cat_year.get(cid, 0.0) + it["price"]
+
+    def _category_spend(totals):
+        rows = [
+            {"name": c["name"], "color": c["color"], "total": round(totals.get(c["id"], 0.0), 2)}
+            for c in category_rows if totals.get(c["id"], 0.0) > 0
+        ]
+        rows.sort(key=lambda r: -r["total"])
+        return rows
+
+    spend_by_category_all = _category_spend(cat_all)
+    spend_by_category_year = _category_spend(cat_year)
 
     months_with_data = len(month_stats) or 1
     total_all_comics = round(sum(i["price"] for i in all_items), 2)
@@ -1830,6 +2623,17 @@ def insights_page(request: Request):
         preorder_count + released_count, "issues",
     )
 
+    # Semi-circle gauge split point, for the pre-order/released gauge shape
+    # matching the approved design (a half-circle, not the full ring above -
+    # preorder_ring_svg is kept for anywhere a full ring is still wanted).
+    _gauge_cx, _gauge_cy, _gauge_r = 88, 92, 74
+    _gauge_frac = (preorder_pct / 100) if total_issues else 0.5
+    _gauge_theta = math.radians(180 * (1 - _gauge_frac))
+    preorder_gauge_split_x = round(_gauge_cx + _gauge_r * math.cos(_gauge_theta), 1)
+    preorder_gauge_split_y = round(_gauge_cy - _gauge_r * math.sin(_gauge_theta), 1)
+    preorder_gauge_has_preorder = preorder_count > 0
+    preorder_gauge_has_released = released_count > 0
+
     cur.execute(
         """
         SELECT * FROM items
@@ -1840,6 +2644,30 @@ def insights_page(request: Request):
     )
     recent_releases = [dict(r) for r in cur.fetchall()]
     for r in recent_releases:
+        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
+
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) <= date(?)
+        ORDER BY price DESC, name ASC LIMIT 10
+        """,
+        (date.today().isoformat(),),
+    )
+    most_expensive_releases = [dict(r) for r in cur.fetchall()]
+    for r in most_expensive_releases:
+        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
+
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) <= date(?)
+        ORDER BY price ASC, name ASC LIMIT 10
+        """,
+        (date.today().isoformat(),),
+    )
+    lowest_releases = [dict(r) for r in cur.fetchall()]
+    for r in lowest_releases:
         r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
 
 
@@ -1946,6 +2774,30 @@ def insights_page(request: Request):
         for day in weekday_order
     ]
 
+    # Same weekday breakdown, but split per shop so each day's bar can show
+    # a stacked segment per shop, with a toggle to show/hide each one.
+    weekday_shop_counts = {day: {} for day in weekday_order}
+    for it in dated_items:
+        wd = date.fromisoformat(it["release_date"]).strftime("%A")
+        shop = source_tab_group(it["source"])
+        weekday_shop_counts[wd][shop] = weekday_shop_counts[wd].get(shop, 0) + 1
+    weekday_shops = sorted({source_tab_group(it["source"]) for it in dated_items})
+    weekday_shop_colors = {s: source_color(s) for s in weekday_shops}
+    weekday_chart_by_shop = []
+    for day in weekday_order:
+        day_total = weekday_counts.get(day, 0)
+        segments = []
+        for shop in weekday_shops:
+            cnt = weekday_shop_counts[day].get(shop, 0)
+            if cnt:
+                segments.append({"shop": shop, "count": cnt, "pct_of_day": round(cnt / day_total * 100, 1) if day_total else 0})
+        weekday_chart_by_shop.append({
+            "label": day[:3],
+            "bar_pct": round((day_total / max_weekday_count) * 100) if max_weekday_count else 0,
+            "is_busiest": day == busiest_weekday,
+            "segments": segments,
+        })
+
     # Biggest and cheapest single shipping charge ever actually captured -
     # real per-shipment amounts, not an estimate.
     cur.execute("SELECT amount, source FROM shipment_postage ORDER BY amount DESC LIMIT 1")
@@ -2001,6 +2853,110 @@ def insights_page(request: Request):
         for sub in s["sub_shops"]:
             sub["pct"] = round((sub["total"] / max_shop_total) * 100, 1)
 
+    # Real 90-day trend per shop group - current 90 days' spend vs the
+    # 90 days before that, so both "fastest growing" and the comparison
+    # table's trend arrows are backed by the same real comparison rather
+    # than two separate ad-hoc calculations.
+    today_ins = date.today()
+    window_start = today_ins - timedelta(days=90)
+    prev_window_start = today_ins - timedelta(days=180)
+    shop_90d_total = {}
+    shop_prev90d_total = {}
+    for it in dated_items:
+        rd = date.fromisoformat(it["release_date"])
+        group_name = source_tab_group(it["source"])
+        if window_start <= rd <= today_ins:
+            shop_90d_total[group_name] = shop_90d_total.get(group_name, 0) + it["price"]
+        elif prev_window_start <= rd < window_start:
+            shop_prev90d_total[group_name] = shop_prev90d_total.get(group_name, 0) + it["price"]
+    for s in shop_stats:
+        cur_90 = round(shop_90d_total.get(s["source"], 0), 2)
+        prev_90 = round(shop_prev90d_total.get(s["source"], 0), 2)
+        s["last_90d_total"] = cur_90
+        if prev_90 > 0:
+            s["trend_pct"] = round(((cur_90 - prev_90) / prev_90) * 100)
+            s["trend_up"] = cur_90 >= prev_90
+        elif cur_90 > 0:
+            s["trend_pct"] = None
+            s["trend_up"] = True
+        else:
+            s["trend_pct"] = None
+            s["trend_up"] = None
+        avg_shipping_shop_items = [i for i in dated_items if source_tab_group(i["source"]) == s["source"] and i["release_date"]]
+        if avg_shipping_shop_items:
+            shop_groups = group_by_date(avg_shipping_shop_items)
+            shop_shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, shop_groups)
+            s["avg_shipping"] = round(shop_shipping_total / s["count"], 2) if s["count"] else 0
+        else:
+            s["avg_shipping"] = 0
+
+    shop_90d_grand_total = round(sum(shop_90d_total.values()), 2)
+    _shop_all_time_grand_total = round(sum(s["total"] for s in shop_stats), 2)
+    donut_data = {
+        "all": {
+            "total": _shop_all_time_grand_total,
+            "shops": [{"source": s["source"], "value": s["total"], "pct": round((s["total"] / max(_shop_all_time_grand_total, 1)) * 100, 1)} for s in shop_stats[:6]],
+        },
+        "90": {
+            "total": shop_90d_grand_total,
+            "shops": [{"source": s["source"], "value": round(shop_90d_total.get(s["source"], 0), 2), "pct": round((shop_90d_total.get(s["source"], 0) / shop_90d_grand_total) * 100, 1) if shop_90d_grand_total else 0} for s in shop_stats[:6]],
+        },
+    }
+    donut_data_json = json.dumps(donut_data)
+
+    shop_total_all_time = round(sum(s["total"] for s in shop_stats), 2)
+    shop_total_issues = sum(s["count"] for s in shop_stats)
+    top_shop = shop_stats[0] if shop_stats else None
+    top_shop_pct_of_total = round((top_shop["total"] / shop_total_all_time) * 100, 1) if top_shop and shop_total_all_time else 0
+    fastest_growing_shop = max(
+        (s for s in shop_stats if s["trend_pct"] is not None and s["trend_up"]),
+        key=lambda s: s["trend_pct"],
+        default=None,
+    )
+    avg_per_shop = round(shop_total_all_time / len(shop_stats), 2) if shop_stats else 0
+
+    # Spend by shop, over the last 12 months - same top-level shop grouping
+    # as shop_stats above (eBay sellers folded together), one total per
+    # shop per month, for the "spend by shop over time" multi-line chart.
+    shop_over_time_start = today.replace(day=1) - timedelta(days=365)
+    shop_over_time_start = shop_over_time_start.replace(day=1)
+    cur.execute(
+        """
+        SELECT strftime('%Y-%m', COALESCE(release_date, placed_date)) AS ym, source, SUM(price) AS total
+        FROM items
+        WHERE status != 'cancelled'
+          AND COALESCE(release_date, placed_date) IS NOT NULL
+          AND date(COALESCE(release_date, placed_date)) >= date(?)
+        GROUP BY ym, source
+        """,
+        (shop_over_time_start.isoformat(),),
+    )
+    monthly_shop_raw = {}
+    for r in cur.fetchall():
+        group_name = source_tab_group(r["source"])
+        monthly_shop_raw.setdefault(r["ym"], {})
+        monthly_shop_raw[r["ym"]][group_name] = monthly_shop_raw[r["ym"]].get(group_name, 0) + r["total"]
+
+    month_keys = []
+    cursor_month = shop_over_time_start
+    while cursor_month <= today.replace(day=1):
+        month_keys.append(cursor_month.strftime("%Y-%m"))
+        cursor_month = (cursor_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+    top_shop_names = [s["source"] for s in shop_stats[:5]]
+    shop_over_time = {
+        "months": [datetime.strptime(m, "%Y-%m").strftime("%b") for m in month_keys],
+        "series": [
+            {
+                "name": name,
+                "color": source_color(name),
+                "data": [round(monthly_shop_raw.get(m, {}).get(name, 0), 2) for m in month_keys],
+            }
+            for name in top_shop_names
+        ],
+    }
+    shop_over_time_json = json.dumps(shop_over_time)
+
     # Cumulative spend curve: reuses the exact same chart component as
     # the 12-month trend above (gradient glow line, permanent dots, the
     # existing hover tooltip) rather than a separate hand-rolled mini
@@ -2045,8 +3001,58 @@ def insights_page(request: Request):
             "count": running_count,
             "is_current": is_last,
         })
-    cumulative_svg = render_trend_svg(cumulative_curve, "cumulative") if len(cumulative_curve) > 1 else ""
+    cumulative_svg = render_trend_svg(cumulative_curve, "cumulative", style="step") if len(cumulative_curve) > 1 else ""
     cumulative_month_label = today.strftime("%B")
+
+    # Weekly-sampled version of the same cumulative curve - same running
+    # totals, just checkpointed at the end of each week instead of every
+    # day, so the step chart has room to breathe on a narrow screen
+    # rather than cramming ~20-30 daily steps into one card.
+    cumulative_curve_weekly = []
+    for offset in range(days_so_far):
+        day = month_start + timedelta(days=offset)
+        week_of_month = (offset // 7) + 1
+        is_last_of_week = (offset % 7 == 6) or (offset == days_so_far - 1)
+        if is_last_of_week:
+            entry = cumulative_curve[offset]
+            cumulative_curve_weekly.append({
+                "label": f"Wk {week_of_month}",
+                "total": entry["total"],
+                "comics_total": entry["comics_total"],
+                "shipping_total": entry["shipping_total"],
+                "count": entry["count"],
+                "is_current": entry["is_current"],
+            })
+    cumulative_svg_weekly = render_trend_svg(cumulative_curve_weekly, "cumulative-weekly", style="step", label_font_size=22) if len(cumulative_curve_weekly) > 1 else ""
+
+    # v2 Overview "Cumulative spend" card (budget bar + release-day bars).
+    # Every release day of the whole month, including ones still to come,
+    # so the card can show "spent so far" and "still due". The budget is
+    # the same figure the sidebar shows (rollover included), and only when
+    # the budget cycle is monthly - a weekly/28-day budget doesn't line up
+    # with a calendar-month card.
+    cm_days = {}
+    for group in month_groups:
+        day_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, [group])
+        cm_days[group["date"]] = {
+            "items": round(group["subtotal"], 2),
+            "ship": round(day_shipping, 2),
+            "count": sum(len(sg["entries"]) for sg in group["source_groups"]),
+            "names": [e["name"] for sg in group["source_groups"] for e in sg["entries"]],
+        }
+    cm_budget = None
+    if notifications.get_setting(cur, "budget_cycle", "monthly") == "monthly":
+        _bs = _topbar_budget_status()
+        if _bs:
+            cm_budget = _bs["monthly_budget"]
+    cumulative_month_json = json.dumps({
+        "ym": today.strftime("%Y-%m"),
+        "month_name": today.strftime("%B"),
+        "days_in_month": calendar.monthrange(today.year, today.month)[1],
+        "today": today.day,
+        "days": cm_days,
+        "budget": cm_budget,
+    })
 
     # Price distribution: fixed £10 buckets up to £50, then a single
     # £50+ catch-all - fixed rather than dynamically sized so the shape
@@ -2071,13 +3077,23 @@ def insights_page(request: Request):
     max_bucket_count = max((b["count"] for b in price_distribution), default=0) or 1
 
     conn.close()
-    return templates.TemplateResponse("insights.html", {
+    return {
         "request": request,
         "top_month": top_month,
         "priciest_item": priciest_item,
         "shop_stats": shop_stats,
+        "donut_data_json": donut_data_json,
+        "shop_total_all_time": shop_total_all_time,
+        "shop_total_issues": shop_total_issues,
+        "top_shop": top_shop,
+        "top_shop_pct_of_total": top_shop_pct_of_total,
+        "fastest_growing_shop": fastest_growing_shop,
+        "avg_per_shop": avg_per_shop,
+        "shop_over_time_json": shop_over_time_json,
         "cumulative_svg": cumulative_svg,
+        "cumulative_svg_weekly": cumulative_svg_weekly,
         "cumulative_month_label": cumulative_month_label,
+        "cumulative_month_json": cumulative_month_json,
         "price_distribution": price_distribution,
         "max_bucket_count": max_bucket_count,
         "has_data": bool(all_items),
@@ -2085,6 +3101,19 @@ def insights_page(request: Request):
         "twelve_month_svg": twelve_month_svg,
         "top_titles": top_titles,
         "price_creep": price_creep,
+        "price_creep_all": price_creep_all,
+        "all_series_stats": all_series_stats,
+        "creep_series_tracked": creep_series_tracked,
+        "creep_avg_increase": creep_avg_increase,
+        "creep_biggest_jumper": creep_biggest_jumper,
+        "creep_buckets": creep_buckets,
+        "creep_total_extra": creep_total_extra,
+        "creep_cumulative_json": creep_cumulative_json,
+        "series_totals": series_totals,
+        "all_series_totals": all_series_totals,
+        "most_collected_series": most_collected_series,
+        "longest_running_series": longest_running_series,
+        "top_series_by_spend": top_series_by_spend,
         "avg_per_month": avg_per_month,
         "avg_per_issue": avg_per_issue,
         "preorder_count": preorder_count,
@@ -2092,7 +3121,13 @@ def insights_page(request: Request):
         "preorder_pct": preorder_pct,
         "released_pct": released_pct,
         "preorder_ring_svg": preorder_ring_svg,
+        "preorder_gauge_split_x": preorder_gauge_split_x,
+        "preorder_gauge_split_y": preorder_gauge_split_y,
+        "preorder_gauge_has_preorder": preorder_gauge_has_preorder,
+        "preorder_gauge_has_released": preorder_gauge_has_released,
         "recent_releases": recent_releases,
+        "most_expensive_releases": most_expensive_releases,
+        "lowest_releases": lowest_releases,
         "month_trend": month_trend,
         "upcoming_releases": upcoming_releases,
         "avg_issue_bar_pct": avg_issue_bar_pct,
@@ -2103,10 +3138,15 @@ def insights_page(request: Request):
         "budget_vs_month_pct": budget_vs_month_pct,
         "budget_vs_month_bar_pct": budget_vs_month_bar_pct,
         "weekday_chart": weekday_chart,
+        "weekday_chart_by_shop": weekday_chart_by_shop,
+        "weekday_shops": weekday_shops,
+        "weekday_shop_colors": weekday_shop_colors,
         "cancelled_saved": cancelled_saved,
         "shipping_ratio_pct": shipping_ratio_pct,
         "total_all_spend": total_all_spend,
         "total_all_comics": total_all_comics,
+        "spend_by_category_all": spend_by_category_all,
+        "spend_by_category_year": spend_by_category_year,
         "total_all_shipping": total_all_shipping,
         "next_month_forecast": next_month_forecast,
         "next_month_forecast_label": next_month_forecast_label,
@@ -2115,11 +3155,151 @@ def insights_page(request: Request):
         "busiest_weekday_count": busiest_weekday_count,
         "biggest_shipping": biggest_shipping,
         "cheapest_shipping": cheapest_shipping,
+    }
+
+
+@app.get("/insights")
+def insights_overview_v2(request: Request):
+    ctx = _build_insights_context(request)
+    return templates.TemplateResponse("v2/insights_overview.html", ctx)
+
+
+@app.get("/insights/spend-by-shop")
+def insights_shop_v2(request: Request):
+    ctx = _build_insights_context(request)
+    return templates.TemplateResponse("v2/insights_shop.html", ctx)
+
+
+def _cover_price_creep(ctx):
+    """v2 Price creep, based on COVER price: the cheapest copy bought of
+    each issue number stands in for that issue's standard cover, and the
+    trend runs first issue -> latest issue. Variants are counted
+    separately (how much extra they cost on average) instead of making
+    the trend spike. Returns overrides for the page's context; the old UI
+    keeps its original first-copy/latest-copy figures untouched."""
+    series_rows = []
+    for st in ctx["all_series_stats"]:
+        by_issue = {}
+        for e in st["entries"]:
+            m = re.match(r"^.*?#(\d+)", e["name"])
+            if not m:
+                continue
+            by_issue.setdefault(int(m.group(1)), []).append(e)
+        if len(by_issue) < 2:
+            continue  # one issue (just variants of it) has no trend
+        issues = []
+        premiums = []
+        for num in sorted(by_issue):
+            copies = sorted(by_issue[num], key=lambda e: e["price"])
+            cover = copies[0]["price"]
+            issues.append({"issue": num, "cover": cover, "copies": copies})
+            # A second copy at the cover price is a duplicate, not a variant
+            premiums.extend(c["price"] - cover for c in copies[1:] if c["price"] - cover > 0.005)
+        first, latest = issues[0]["cover"], issues[-1]["cover"]
+        series_rows.append({
+            "series": st["series"],
+            "issue_count": len(issues),
+            "first_price": first,
+            "latest_price": latest,
+            "change_pct": round((latest - first) / first * 100) if first else 0,
+            "variant_count": len(premiums),
+            "variant_premium": round(sum(premiums) / len(premiums), 2) if premiums else 0,
+            "issues": issues,
+        })
+    max_premium = max((r["variant_premium"] for r in series_rows), default=0) or 1
+    for r in series_rows:
+        r["premium_bar_pct"] = round(r["variant_premium"] / max_premium * 100) if r["variant_count"] else 0
+
+    tracked = len(series_rows)
+    increased = [r for r in series_rows if r["latest_price"] > r["first_price"] + 0.01]
+    buckets = [dict(b, count=0) for b in ctx["creep_buckets"]]
+    for r in increased:
+        for b in buckets:
+            if b["min"] <= r["change_pct"] < b["max"]:
+                b["count"] += 1
+                break
+    bmax = max((b["count"] for b in buckets), default=0) or 1
+    for b in buckets:
+        b["bar_pct"] = round(b["count"] / bmax * 100)
+
+    # Extra spend: every copy of an issue whose cover price had risen above
+    # the series' first cover price counts that rise (not a variant's own
+    # mark-up) toward the month it released in.
+    month_extra = {}
+    total_extra = 0.0
+    for r in increased:
+        for iss in r["issues"]:
+            rise = iss["cover"] - r["first_price"]
+            if rise <= 0.01:
+                continue
+            for c in iss["copies"]:
+                if c["release_date"]:
+                    mk = c["release_date"][:7]
+                    month_extra[mk] = month_extra.get(mk, 0) + rise
+                    total_extra += rise
+    cumulative = []
+    running = 0.0
+    for pt in json.loads(ctx["creep_cumulative_json"]):
+        running += month_extra.get(pt["month_key"], 0)
+        cumulative.append(dict(pt, value=round(running, 2)))
+
+    return {
+        "all_series_stats": series_rows,
+        "creep_series_tracked": tracked,
+        "creep_avg_increase": round(sum(r["change_pct"] for r in series_rows) / tracked, 1) if tracked else 0,
+        "creep_biggest_jumper": max(series_rows, key=lambda r: r["change_pct"], default=None),
+        "creep_buckets": buckets,
+        "creep_total_extra": round(total_extra, 2),
+        "creep_cumulative_json": json.dumps(cumulative),
+    }
+
+
+def _insights_category_ctx(request: Request):
+    cats_param = request.query_params.get("cats")
+    chips, selected = _insights_category_chips(cats_param)
+    ctx = _build_insights_context(request, category_ids=selected)
+    ctx["category_chips"] = chips
+    ctx["category_none_on"] = bool(chips) and not selected
+    ctx["category_chips_json"] = json.dumps({
+        "chips": [{"id": c["id"], "default": c["is_default"]} for c in chips],
+        "selected": sorted(selected),
+        "explicit": cats_param is not None,
     })
+    return ctx
 
 
-@app.get("/search")
+@app.get("/insights/price-creep")
+def insights_price_creep_v2(request: Request):
+    ctx = _insights_category_ctx(request)
+    ctx.update(_cover_price_creep(ctx))
+    return templates.TemplateResponse("v2/insights_pricecreep.html", ctx)
+
+
+@app.get("/insights/top-titles")
+def insights_top_titles_v2(request: Request):
+    ctx = _insights_category_ctx(request)
+    return templates.TemplateResponse("v2/insights_toptitles.html", ctx)
+
+
+@app.get("/classic/search")
 def search_items(
+    request: Request,
+    q: str | None = None,
+    source: str | None = None,
+    status: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    sort: str | None = None,
+    min_price: str | None = None,
+    max_price: str | None = None,
+    has_tracking: str | None = None,
+    page: int = 1,
+):
+    ctx = _build_search_context(request, q, source, status, start_date, end_date, sort, min_price, max_price, has_tracking, page)
+    return templates.TemplateResponse("search.html", ctx)
+
+
+def _build_search_context(
     request: Request,
     q: str | None = None,
     source: str | None = None,
@@ -2203,7 +3383,7 @@ def search_items(
             r["source_color"] = source_color(r["source"])
 
     conn.close()
-    return templates.TemplateResponse("search.html", {
+    return {
         "request": request,
         "q": q or "",
         "results": results,
@@ -2228,7 +3408,25 @@ def search_items(
         "total_pages": total_pages,
         "current_page": current_page,
         "per_page": SEARCH_PER_PAGE,
-    })
+    }
+
+
+@app.get("/search")
+def search_v2(
+    request: Request,
+    q: str | None = None,
+    source: str | None = None,
+    status: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    sort: str | None = None,
+    min_price: str | None = None,
+    max_price: str | None = None,
+    has_tracking: str | None = None,
+    page: int = 1,
+):
+    ctx = _build_search_context(request, q, source, status, start_date, end_date, sort, min_price, max_price, has_tracking, page)
+    return templates.TemplateResponse("v2/search.html", ctx)
 
 
 @app.get("/search/export.csv")
@@ -2270,11 +3468,12 @@ def export_search_csv(
     order_sql = SEARCH_SORT_OPTIONS[active_sort][0]
     cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
     rows = [dict(r) for r in cur.fetchall()]
+    category_names = _sync_category_names(cur)
     conn.close()
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number"])
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category"])
     for r in rows:
         writer.writerow([
             _csv_safe(r["name"]),
@@ -2284,6 +3483,7 @@ def export_search_csv(
             r["status"],
             "Yes" if r["charge_status"] == "charged" else "No",
             _csv_safe(r["order_number"]) if r["order_number"] else "",
+            _csv_safe(category_names.get(r.get("category_id")) or category_names.get(None) or ""),
         ])
 
     return Response(
@@ -2295,8 +3495,13 @@ def export_search_csv(
 
 # --- Calendar -----------------------------------------------------------------
 
-@app.get("/calendar")
+@app.get("/classic/calendar")
 def calendar_view(request: Request, month: str | None = None, source: str | None = None):
+    ctx = _build_calendar_context(request, month, source)
+    return templates.TemplateResponse("calendar.html", ctx)
+
+
+def _build_calendar_context(request: Request, month: str | None = None, source: str | None = None):
     today = date.today()
     if month:
         try:
@@ -2328,6 +3533,47 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
         day_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, [group])
         day_totals[group["date"]] = round(group["subtotal"] + day_shipping, 2)
     max_day_total = max(day_totals.values(), default=0) or 1
+
+    # Spend-by-shop legend (this viewed month) - same items already fetched
+    # above, just totalled per source rather than per day.
+    shop_month_totals = {}
+    for it in items:
+        shop_month_totals[it["source"]] = shop_month_totals.get(it["source"], 0) + it["price"]
+    month_shop_total = sum(shop_month_totals.values()) or 1
+    shop_legend = sorted(
+        [
+            {
+                "source": src,
+                "color": source_color(src),
+                "total": round(amt, 2),
+                "pct": round((amt / month_shop_total) * 100, 1),
+            }
+            for src, amt in shop_month_totals.items()
+        ],
+        key=lambda s: -s["total"],
+    )[:5]
+
+    # Year activity heatmap - real daily totals (comics only, no per-day
+    # shipping attribution - matches "each square is a day, darker means
+    # more tracked spend" at a glance, not a precise accounting figure)
+    # for the past 365 days, so the front end can render either the
+    # 1-month or 6-month zoom from one real dataset rather than two
+    # separate queries.
+    heatmap_start = today - timedelta(days=364)
+    cur.execute(
+        """
+        SELECT date(COALESCE(release_date, placed_date)) AS d, SUM(price) AS total
+        FROM items
+        WHERE status != 'cancelled'
+          AND COALESCE(release_date, placed_date) IS NOT NULL
+          AND date(COALESCE(release_date, placed_date)) BETWEEN date(?) AND date(?)
+        GROUP BY d
+        """,
+        (heatmap_start.isoformat(), today.isoformat()),
+    )
+    heatmap_daily = {r["d"]: round(r["total"], 2) for r in cur.fetchall()}
+    heatmap_daily_json = json.dumps(heatmap_daily)
+
     conn.close()
 
     agenda_groups = day_groups
@@ -2370,7 +3616,7 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
     viewed_month_param = viewed_month.strftime("%Y-%m")
     is_current_month = (viewed_month.year == today.year and viewed_month.month == today.month)
 
-    return templates.TemplateResponse("calendar.html", {
+    return {
         "request": request,
         "viewed_month_label": viewed_month.strftime("%B %Y"),
         "weeks": weeks,
@@ -2382,7 +3628,16 @@ def calendar_view(request: Request, month: str | None = None, source: str | None
         "active_source": source or "",
         "viewed_month_param": viewed_month_param,
         "default_open_date": default_open_date,
-    })
+        "shop_legend": shop_legend,
+        "heatmap_daily_json": heatmap_daily_json,
+        "heatmap_start": heatmap_start.isoformat(),
+    }
+
+
+@app.get("/calendar")
+def calendar_v2(request: Request, month: str | None = None, source: str | None = None):
+    ctx = _build_calendar_context(request, month, source)
+    return templates.TemplateResponse("v2/calendar.html", ctx)
 
 
 def _ics_escape(text: str) -> str:
@@ -2431,14 +3686,14 @@ def export_ics():
         by_date.setdefault(it["release_date"], []).append(it)
 
     now_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Ka-Ching!//Comic Releases//EN", "CALSCALE:GREGORIAN"]
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Ka-Ching!//Releases//EN", "CALSCALE:GREGORIAN"]
 
     for release_date_str, day_items in sorted(by_date.items()):
         d_compact = release_date_str.replace("-", "")
         d_next = (date.fromisoformat(release_date_str) + timedelta(days=1)).strftime("%Y%m%d")
         total = round(sum(i["price"] for i in day_items), 2)
         names = [f"{i['name']} ({i['source']})" for i in day_items]
-        summary = f"{len(day_items)} comic{'s' if len(day_items) != 1 else ''} out ({currency_symbol}{total:.2f})"
+        summary = f"{len(day_items)} item{'s' if len(day_items) != 1 else ''} out ({currency_symbol}{total:.2f})"
         description = "\\n".join(_ics_escape(n) for n in names)
         uid = f"kaching-{release_date_str}@kaching.local"
 
@@ -2491,7 +3746,8 @@ def import_form_redirect():
 
 
 @app.post("/import")
-def import_preview(request: Request, order_text: str = Form(...), shop_hint: str = Form("")):
+def import_preview(request: Request, order_text: str = Form(...), shop_hint: str = Form(""), v2: str = Form(""),
+                   category_id: str = Form("")):
     """Parses the pasted text and shows an editable review screen - nothing
     is written to the database until the person confirms it looks right."""
     preview = parser.detect_import(order_text, shop_hint=shop_hint or None)
@@ -2500,12 +3756,16 @@ def import_preview(request: Request, order_text: str = Form(...), shop_hint: str
     cur = conn.cursor()
     preview["rows"] = check_preview_duplicates(cur, preview["rows"])
     all_sources = get_all_sources(cur)
+    import_category_id = _resolve_category(cur, category_id) or db.default_category_id(conn)
+    conn.commit()
     conn.close()
 
-    return templates.TemplateResponse("import_preview.html", {
+    template_name = "v2/importpreview.html" if v2 else "import_preview.html"
+    return templates.TemplateResponse(template_name, {
         "request": request,
         "preview": preview,
         "all_sources": all_sources,
+        "import_category_id": import_category_id,
     })
 
 
@@ -2513,6 +3773,7 @@ def import_preview(request: Request, order_text: str = Form(...), shop_hint: str
 async def import_confirm(request: Request):
     form = await request.form()
     parser_type = form.get("parser_type", "generic")
+    next_url = form.get("next") or "/"
 
     if parser_type == "release_date_email":
         updates = json.loads(form.get("release_updates_json", "[]"))
@@ -2529,13 +3790,13 @@ async def import_confirm(request: Request):
             )
             conn.commit()
             conn.close()
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url=next_url, status_code=303)
 
     if parser_type == "order_detail_postage":
         samples = json.loads(form.get("postage_samples_json", "[]"))
         count = parser.store_shipment_postage(samples)
         logger.info("ORDER-DETAIL POSTAGE CAPTURED: %s samples", count)
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url=next_url, status_code=303)
 
     row_count = int(form.get("row_count", "0") or 0)
 
@@ -2564,10 +3825,20 @@ async def import_confirm(request: Request):
             "note": form.get(f"note_{i}") or None,
             "source": (form.get(f"source_{i}") or "").strip(),
             "tracking_number": (form.get(f"tracking_number_{i}") or "").strip() or None,
+            "category_id_raw": form.get(f"category_id_{i}"),
         })
 
     if not kept_items:
-        return RedirectResponse(url="/items/new", status_code=303)
+        return RedirectResponse(url=(form.get("next") or "/items/new"), status_code=303)
+
+    # Resolve each row's chosen category once, up front, for both paths below.
+    _cat_conn = db.get_db()
+    _cat_cur = _cat_conn.cursor()
+    _fallback_category = db.default_category_id(_cat_conn)
+    for it in kept_items:
+        it["category_id"] = _resolve_category(_cat_cur, it.pop("category_id_raw")) or _fallback_category
+    _cat_conn.commit()
+    _cat_conn.close()
 
     if parser_type == "forbidden_planet":
         order_totals_raw = form.get("order_totals_json", "{}")
@@ -2585,6 +3856,7 @@ async def import_confirm(request: Request):
                 "charge_status": it["charge_status"] or None,
                 "price": it["price"],
                 "note": it["note"],
+                "category_id": it["category_id"],
             }
             for it in kept_items
         ]
@@ -2625,13 +3897,14 @@ async def import_confirm(request: Request):
                 """
                 INSERT INTO items
                     (name, order_number, placed_date, status, release_date, charge_status,
-                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)
+                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at,
+                     category_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
                 """,
                 (
                     it["name"], it["order_number"], today.isoformat(), it["status"] or "preorder",
                     release_iso, it["charge_status"] or "not_charged", it["price"], it["note"], now, item_source,
-                    it["tracking_number"], db.new_uuid(), now,
+                    it["tracking_number"], db.new_uuid(), now, it["category_id"],
                 ),
             )
             created.append((cur.lastrowid, it["name"], it["price"], item_source))
@@ -2658,13 +3931,26 @@ async def import_confirm(request: Request):
         conn.close()
         logger.info("IMPORT CONFIRM (generic): created=%s shipping=%s", created, order_shipping_map)
 
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url=next_url, status_code=303)
 
 
 # --- Settings / notifications -------------------------------------------------
 
-@app.get("/settings")
+@app.get("/classic/settings")
 def settings_form(
+    request: Request,
+    test_result: str | None = None,
+    test_error: str | None = None,
+    restore_result: str | None = None,
+    restore_count: int | None = None,
+    reset_result: str | None = None,
+    notif_import_result: str | None = None,
+):
+    ctx = _build_settings_context(request, test_result, test_error, restore_result, restore_count, reset_result, notif_import_result)
+    return templates.TemplateResponse("settings.html", ctx)
+
+
+def _build_settings_context(
     request: Request,
     test_result: str | None = None,
     test_error: str | None = None,
@@ -2713,7 +3999,7 @@ def settings_form(
                 taken_at = fname
             past_backups.append({"filename": fname, "size_label": size_label, "taken_at": taken_at})
 
-    return templates.TemplateResponse("settings.html", {
+    return {
         "request": request,
         "values": values,
         "test_result": test_result,
@@ -2729,11 +4015,29 @@ def settings_form(
         "all_shops": all_shops,
         "notification_log": notification_log,
         "past_backups": past_backups,
-    })
+    }
+
+
+@app.get("/settings")
+def settings_v2(
+    request: Request,
+    test_result: str | None = None,
+    test_error: str | None = None,
+    restore_result: str | None = None,
+    restore_count: int | None = None,
+    reset_result: str | None = None,
+    notif_import_result: str | None = None,
+):
+    ctx = _build_settings_context(request, test_result, test_error, restore_result, restore_count, reset_result, notif_import_result)
+    conn = db.get_db()
+    ctx["categories_with_counts"] = get_categories(conn.cursor(), with_counts=True)
+    ctx["default_cat_id"] = db.default_category_id(conn)
+    conn.close()
+    return templates.TemplateResponse("v2/settings.html", ctx)
 
 
 @app.post("/settings/sync/generate-key")
-def generate_sync_key():
+def generate_sync_key(next: str | None = Form(None)):
     # Regenerating invalidates whatever key any already-connected device is
     # using - a deliberate choice (lost/compromised key should actually stop
     # working), just means the person needs to re-paste the new one into any
@@ -2743,11 +4047,63 @@ def generate_sync_key():
     notifications.set_setting(cur, "sync_api_key", secrets.token_urlsafe(24))
     conn.commit()
     conn.close()
-    return RedirectResponse(url="/settings", status_code=303)
+    # v2 sends next=/v2/settings; the old UI sends nothing. Local paths only.
+    back = next if (next and next.startswith("/") and not next.startswith("//")) else "/settings"
+    return RedirectResponse(url=back, status_code=303)
+
+
+@app.post("/settings/sync/enabled")
+def set_sync_enabled(enabled: str = Form(...), next: str = Form("/settings")):
+    conn = db.get_db()
+    notifications.set_setting(conn.cursor(), "sync_enabled", "1" if enabled == "1" else "0")
+    conn.commit()
+    conn.close()
+    back = next if (next.startswith("/") and not next.startswith("//")) else "/settings"
+    return RedirectResponse(url=back, status_code=303)
+
+
+@app.post("/settings/categories/add")
+def add_category(name: str = Form(...), next: str = Form("/settings")):
+    conn = db.get_db()
+    _create_category(conn.cursor(), name)
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
+@app.post("/settings/categories/{category_id}/series")
+def toggle_category_series(category_id: int, next: str = Form("/settings")):
+    conn = db.get_db()
+    conn.execute("UPDATE categories SET has_series = 1 - has_series WHERE id = ?", (category_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
+@app.post("/settings/categories/{category_id}/remove")
+def remove_category(category_id: int, next: str = Form("/settings")):
+    """Only removes a category nothing uses - items are never left without
+    one. The default category can't be removed either, since new items
+    from sync and older code paths fall back to it."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM items WHERE category_id = ? AND deleted_at IS NULL", (category_id,))
+    in_use = cur.fetchone()[0]
+    default_id = db.default_category_id(conn)
+    if not in_use and category_id != default_id:
+        # Deleted items aren't shown anywhere, but still point at this
+        # category - move them to the default so nothing is left pointing
+        # at a category that no longer exists.
+        cur.execute("UPDATE items SET category_id = ? WHERE category_id = ?", (default_id, category_id))
+        cur.execute("DELETE FROM categories WHERE id = ?", (category_id,))
+        conn.commit()
+        logger.info("CATEGORY REMOVED: id=%s", category_id)
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
 
 
 @app.post("/settings/shops/rename")
-def rename_shop(old_name: str = Form(...), new_name: str = Form(...)):
+def rename_shop(old_name: str = Form(...), new_name: str = Form(...), next: str = Form("/settings")):
     """Renames a shop across every item, or merges it into an existing
     shop of that name if one already exists - same operation either way,
     just a plain rename of the source column. Also renames it in
@@ -2756,7 +4112,7 @@ def rename_shop(old_name: str = Form(...), new_name: str = Form(...)):
     old_clean = old_name.strip()
     new_clean = new_name.strip()
     if not old_clean or not new_clean or old_clean == new_clean:
-        return RedirectResponse(url="/settings", status_code=303)
+        return RedirectResponse(url=next, status_code=303)
 
     conn = db.get_db()
     cur = conn.cursor()
@@ -2765,7 +4121,10 @@ def rename_shop(old_name: str = Form(...), new_name: str = Form(...)):
     conn.commit()
     conn.close()
     logger.info("SHOP RENAME: %r -> %r", old_clean, new_clean)
-    return RedirectResponse(url="/settings", status_code=303)
+    return RedirectResponse(url=next, status_code=303)
+
+
+SIDEBAR_BUDGET_DISPLAYS = ("spent_of", "left", "percent", "daily", "due", "hidden")
 
 
 @app.post("/settings")
@@ -2790,7 +4149,16 @@ def save_settings(
     currency_symbol: str = Form("gbp"),
     default_landing_page: str = Form("dashboard"),
     auto_backup: str = Form("no"),
+    sidebar_budget_display: str | None = Form(None),
+    next: str = Form("/settings"),
 ):
+    # Only the v2 Budget card sends this; every other settings form (and
+    # the old UI) leaves it alone rather than resetting it.
+    if sidebar_budget_display in SIDEBAR_BUDGET_DISPLAYS:
+        _c = db.get_db()
+        notifications.set_setting(_c.cursor(), "sidebar_budget_display", sidebar_budget_display)
+        _c.commit()
+        _c.close()
     notifications.save_settings({
         "notify_provider": notify_provider,
         "notify_hour": notify_hour,
@@ -2814,11 +4182,11 @@ def save_settings(
         "auto_backup": auto_backup,
     })
     logger.info("SETTINGS SAVED: provider=%s notify_hour=%s monthly_budget=%s", notify_provider, notify_hour, monthly_budget)
-    return RedirectResponse(url="/settings", status_code=303)
+    return RedirectResponse(url=next, status_code=303)
 
 
 @app.post("/settings/test")
-def test_notification():
+def test_notification(next: str = Form("/settings")):
     conn = db.get_db()
     cur = conn.cursor()
     ok, err = notifications.send_via_configured_provider(
@@ -2826,41 +4194,41 @@ def test_notification():
     )
     conn.close()
     if ok:
-        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
-    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+        return RedirectResponse(url=f"{next}?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"{next}?test_error={quote(err or 'Unknown error')}", status_code=303)
 
 
 @app.post("/settings/test-digest")
-def test_digest():
+def test_digest(next: str = Form("/settings")):
     result = notifications.check_and_notify_tomorrow(force=True)
     if result is None:
-        return RedirectResponse(url="/settings?test_error=No+provider+configured", status_code=303)
+        return RedirectResponse(url=f"{next}?test_error=No+provider+configured", status_code=303)
     ok, err = result
     if ok:
-        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
-    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+        return RedirectResponse(url=f"{next}?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"{next}?test_error={quote(err or 'Unknown error')}", status_code=303)
 
 
 @app.post("/settings/test-weekly-digest")
-def test_weekly_digest():
+def test_weekly_digest(next: str = Form("/settings")):
     result = notifications.check_and_notify_week(force=True)
     if result is None:
-        return RedirectResponse(url="/settings?test_error=No+provider+configured", status_code=303)
+        return RedirectResponse(url=f"{next}?test_error=No+provider+configured", status_code=303)
     ok, err = result
     if ok:
-        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
-    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+        return RedirectResponse(url=f"{next}?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"{next}?test_error={quote(err or 'Unknown error')}", status_code=303)
 
 
 @app.post("/settings/test-budget-alert")
-def test_budget_alert():
+def test_budget_alert(next: str = Form("/settings")):
     result = check_budget_threshold(force=True)
     if result is None:
-        return RedirectResponse(url="/settings?test_error=No+provider+configured", status_code=303)
+        return RedirectResponse(url=f"{next}?test_error=No+provider+configured", status_code=303)
     ok, err = result
     if ok:
-        return RedirectResponse(url="/settings?test_result=sent", status_code=303)
-    return RedirectResponse(url=f"/settings?test_error={quote(err or 'Unknown error')}", status_code=303)
+        return RedirectResponse(url=f"{next}?test_result=sent", status_code=303)
+    return RedirectResponse(url=f"{next}?test_error={quote(err or 'Unknown error')}", status_code=303)
 
 
 @app.post("/settings/factory-reset")
@@ -2905,21 +4273,21 @@ def export_notification_config():
 
 
 @app.post("/settings/import-notifications")
-async def import_notification_config(notification_config_file: UploadFile = File(...)):
+async def import_notification_config(notification_config_file: UploadFile = File(...), next: str = Form("/settings")):
     contents = await notification_config_file.read()
     try:
         config = json.loads(contents)
     except (json.JSONDecodeError, UnicodeDecodeError):
         logger.warning("NOTIFICATION CONFIG IMPORT rejected: not valid JSON (filename=%s)", notification_config_file.filename)
-        return RedirectResponse(url="/settings?notif_import_result=bad_file", status_code=303)
+        return RedirectResponse(url=f"{next}?notif_import_result=bad_file", status_code=303)
 
     if not isinstance(config, dict):
-        return RedirectResponse(url="/settings?notif_import_result=bad_file", status_code=303)
+        return RedirectResponse(url=f"{next}?notif_import_result=bad_file", status_code=303)
 
     to_apply = {key: str(config[key]) for key in NOTIFICATION_SETTINGS_KEYS if key in config}
     notifications.save_settings(to_apply)
     logger.info("NOTIFICATION CONFIG IMPORTED: %s keys applied", len(to_apply))
-    return RedirectResponse(url="/settings?notif_import_result=ok", status_code=303)
+    return RedirectResponse(url=f"{next}?notif_import_result=ok", status_code=303)
 
 
 @app.get("/settings/export-all.csv")
@@ -2930,11 +4298,12 @@ def export_all_csv():
     cur = conn.cursor()
     cur.execute("SELECT * FROM items ORDER BY release_date DESC, name")
     rows = [dict(r) for r in cur.fetchall()]
+    category_names = _sync_category_names(cur)
     conn.close()
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number"])
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category"])
     for r in rows:
         writer.writerow([
             _csv_safe(r["name"]),
@@ -2944,6 +4313,7 @@ def export_all_csv():
             r["status"],
             "Yes" if r["charge_status"] == "charged" else "No",
             _csv_safe(r["order_number"]) if r["order_number"] else "",
+            _csv_safe(category_names.get(r.get("category_id")) or category_names.get(None) or ""),
         ])
     csv_bytes = buffer.getvalue().encode("utf-8")
     filename = f"kaching-full-export-{date.today().isoformat()}.csv"
@@ -2957,7 +4327,14 @@ def export_all_csv():
 @app.get("/settings/backup")
 def download_backup():
     backup_name = f"kaching-backup-{date.today().isoformat()}.db"
-    return FileResponse(db.DB_PATH, filename=backup_name, media_type="application/octet-stream")
+    # Snapshot first (see _snapshot_db) so the download includes changes
+    # still in the WAL file, then clean the temp copy up once it's sent.
+    tmp_path = f"{db.DB_PATH}.download-{secrets.token_hex(6)}"
+    _snapshot_db(tmp_path)
+    return FileResponse(
+        tmp_path, filename=backup_name, media_type="application/octet-stream",
+        background=BackgroundTask(os.remove, tmp_path),
+    )
 
 
 _AUTO_BACKUP_NAME_RE = re.compile(r"^kaching-auto-\d{8}-\d{6}\.db$")
@@ -2979,14 +4356,17 @@ def download_auto_backup(filename: str):
 
 
 @app.post("/settings/restore")
-async def restore_backup(backup_file: UploadFile = File(...)):
+async def restore_backup(backup_file: UploadFile = File(...), next: str | None = Form(None)):
+    # The v2 Settings page sends next=/v2/settings; the old UI sends
+    # nothing and keeps landing back on /settings. Local paths only.
+    back = next if (next and next.startswith("/") and not next.startswith("//")) else "/settings"
     contents = await backup_file.read()
 
     # A real SQLite database file always starts with this exact 16-byte header
     if not contents.startswith(b"SQLite format 3\x00"):
         logger.warning("BACKUP RESTORE rejected: uploaded file isn't a SQLite database (filename=%s)", backup_file.filename)
         return RedirectResponse(
-            url=f"/settings?test_error={quote('That file is not a valid database (wrong file type?)')}",
+            url=f"{back}?test_error={quote('That file is not a valid database (wrong file type?)')}",
             status_code=303,
         )
 
@@ -3007,7 +4387,7 @@ async def restore_backup(backup_file: UploadFile = File(...)):
         os.remove(tmp_path)
         logger.warning("BACKUP RESTORE rejected: not a Ka-Ching database (filename=%s, error=%s)", backup_file.filename, exc)
         return RedirectResponse(
-            url=f"/settings?test_error={quote('That file is a database, but not a Ka-Ching one')}",
+            url=f"{back}?test_error={quote('That file is a database, but not a Ka-Ching one')}",
             status_code=303,
         )
 
@@ -3016,13 +4396,47 @@ async def restore_backup(backup_file: UploadFile = File(...)):
     # for manual recovery via docker exec if ever needed.
     if os.path.exists(db.DB_PATH):
         safety_path = f"{db.DB_PATH}.before-restore-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        shutil.copy2(db.DB_PATH, safety_path)
+        _snapshot_db(safety_path)
         logger.info("BACKUP RESTORE: saved safety copy of current database to %s", safety_path)
 
-    os.replace(tmp_path, db.DB_PATH)
+    # Copy the backup in through SQLite rather than swapping the file on
+    # disk. Swapping the file leaves the live database's WAL/shm files
+    # behind, and SQLite can replay those stale pages over the restored
+    # data. The backup API takes the proper locks and replaces every page.
+    try:
+        restore_src = sqlite3.connect(tmp_path)
+        live = db.get_db()
+        try:
+            restore_src.backup(live)
+        finally:
+            live.close()
+            restore_src.close()
+        os.remove(tmp_path)
+    except sqlite3.Error as exc:
+        # Fallback (e.g. a backup with a different page size, which SQLite
+        # won't copy into a WAL database): empty the WAL into the main
+        # file first, swap the file, and remove the leftover WAL/shm.
+        logger.warning("BACKUP RESTORE: in-place copy failed (%s), falling back to file swap", exc)
+        chk = db.get_db()
+        chk.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        chk.close()
+        os.replace(tmp_path, db.DB_PATH)
+        for suffix in ("-wal", "-shm"):
+            try:
+                os.remove(db.DB_PATH + suffix)
+            except FileNotFoundError:
+                pass
     logger.info("BACKUP RESTORE: replaced live database, filename=%s, items=%d", backup_file.filename, item_count)
 
-    return RedirectResponse(url=f"/settings?restore_result=ok&restore_count={item_count}", status_code=303)
+    # Bring the restored file up to the current schema straight away, the
+    # same upgrade startup runs. A backup from before categories existed
+    # gets the categories table, the starter list, and every item set to
+    # the default (Comics) - without this the v2 pages would error until
+    # the container was restarted.
+    db.init_db()
+    logger.info("BACKUP RESTORE: schema upgrade applied to restored database")
+
+    return RedirectResponse(url=f"{back}?restore_result=ok&restore_count={item_count}", status_code=303)
 
 
 # --- API ------------------------------------------------------------------
@@ -3092,6 +4506,11 @@ class SyncPushItem(BaseModel):
     manual_override: bool = False
     updated_at: str
     deleted: bool = False
+    # Category by NAME, not id - ids differ between the app and this
+    # server. Missing or null (an app from before categories existed)
+    # means "don't touch": an existing item keeps its category, a new one
+    # gets the default. Never used to clear a category.
+    category: str | None = None
 
 
 class SyncPushShipping(BaseModel):
@@ -3117,15 +4536,44 @@ class SyncRequest(BaseModel):
     push_orders: list[SyncPushOrder] = []
 
 
-def _item_row_to_sync_dict(row: sqlite3.Row) -> dict:
+def _item_row_to_sync_dict(row: sqlite3.Row, category_names: dict | None = None) -> dict:
     out = {field: row[field] for field in SYNC_ITEM_FIELDS}
     out["manual_override"] = bool(row["manual_override"])
     out["updated_at"] = row["updated_at"]
     out["deleted"] = bool(row["deleted_at"])
+    if category_names is not None:
+        out["category"] = category_names.get(row["category_id"]) or category_names.get(None)
     return out
 
 
+def _sync_category_names(cur) -> dict:
+    """category id -> name for the sync payload. The None key holds the
+    default category's name, used for any item whose category is missing
+    or points at one that no longer exists."""
+    cur.execute("SELECT id, name FROM categories")
+    names = {r["id"]: r["name"] for r in cur.fetchall()}
+    default_id = db.default_category_id(cur.connection)
+    names[None] = names.get(default_id)
+    return names
+
+
+def _sync_category_id(cur, name):
+    """A pushed category name -> id (matched ignoring case, created if it's
+    new, same as typing a new one on the logging forms). None when the app
+    didn't send one, which callers treat as "leave the category alone"."""
+    if name is None or not str(name).strip():
+        return None
+    return _create_category(cur, str(name))
+
+
 def _require_sync_key(request: Request):
+    # Checked before anything else, so while sync is switched off nothing
+    # a phone sends is read or written.
+    if not _sync_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail="Sync is switched off on this server - turn it on in Settings -> Sync.",
+        )
     conn = db.get_db()
     stored_key = notifications.get_setting(conn.cursor(), "sync_api_key", None)
     conn.close()
@@ -3150,6 +4598,7 @@ async def api_sync(request: Request, payload: SyncRequest):
     conflicts = []
     skipped_duplicates = []
     reconciled = []
+    default_category = db.default_category_id(conn)
 
     for item in payload.push:
         cur.execute("SELECT * FROM items WHERE uuid = ?", (item.uuid,))
@@ -3168,7 +4617,7 @@ async def api_sync(request: Request, payload: SyncRequest):
             conflicts.append({
                 "uuid": item.uuid,
                 "mine": item.model_dump(),
-                "theirs": _item_row_to_sync_dict(existing),
+                "theirs": _item_row_to_sync_dict(existing, _sync_category_names(cur)),
             })
             continue
 
@@ -3185,18 +4634,23 @@ async def api_sync(request: Request, payload: SyncRequest):
             # cover yet, just a silent no-op rather than a crash.
             continue
 
+        # Resolved only once the item is actually being written, so a
+        # conflicting push can't create a category as a side effect.
+        pushed_category_id = _sync_category_id(cur, item.category)
+
         if existing is not None:
             cur.execute(
                 """
                 UPDATE items
                 SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
                     charge_status = ?, price = ?, note = COALESCE(?, note), source = ?, tracking_number = ?,
-                    manual_override = ?, updated_at = ?, deleted_at = NULL
+                    manual_override = ?, updated_at = ?, deleted_at = NULL,
+                    category_id = COALESCE(?, category_id)
                 WHERE uuid = ?
                 """,
                 (item.name, item.order_number, item.placed_date, item.status, item.release_date,
                  item.charge_status, item.price, item.note, item.source, item.tracking_number,
-                 int(item.manual_override), item.updated_at, item.uuid),
+                 int(item.manual_override), item.updated_at, pushed_category_id, item.uuid),
             )
             applied.append(item.uuid)
             continue
@@ -3206,12 +4660,14 @@ async def api_sync(request: Request, payload: SyncRequest):
                 """
                 INSERT INTO items
                     (name, order_number, placed_date, status, release_date, charge_status,
-                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     price, note, imported_at, manual_override, source, tracking_number, uuid, updated_at,
+                     category_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (item.name, item.order_number, item.placed_date, item.status, item.release_date,
                  item.charge_status, item.price, item.note, now, int(item.manual_override),
-                 item.source, item.tracking_number, item.uuid, item.updated_at),
+                 item.source, item.tracking_number, item.uuid, item.updated_at,
+                 pushed_category_id or default_category),
             )
             applied.append(item.uuid)
         except sqlite3.IntegrityError:
@@ -3244,12 +4700,12 @@ async def api_sync(request: Request, payload: SyncRequest):
                     UPDATE items
                     SET name = ?, order_number = ?, placed_date = ?, status = ?, release_date = ?,
                         charge_status = ?, price = ?, note = COALESCE(?, note), source = ?, tracking_number = ?,
-                        manual_override = ?, updated_at = ?
+                        manual_override = ?, updated_at = ?, category_id = COALESCE(?, category_id)
                     WHERE uuid = ?
                     """,
                     (item.name, item.order_number, item.placed_date, item.status, item.release_date,
                      item.charge_status, item.price, item.note, item.source, item.tracking_number,
-                     int(item.manual_override), item.updated_at, match["uuid"]),
+                     int(item.manual_override), item.updated_at, pushed_category_id, match["uuid"]),
                 )
             logger.info(
                 "SYNC: reconciled uuid=%s (%r) with existing server row uuid=%s",
@@ -3295,7 +4751,9 @@ async def api_sync(request: Request, payload: SyncRequest):
         cur.execute("SELECT * FROM items WHERE updated_at > ?", (payload.since,))
     else:
         cur.execute("SELECT * FROM items")
-    changes = [_item_row_to_sync_dict(row) for row in cur.fetchall()]
+    change_rows = cur.fetchall()
+    category_names = _sync_category_names(cur)
+    changes = [_item_row_to_sync_dict(row, category_names) for row in change_rows]
 
     if payload.since:
         cur.execute("SELECT * FROM shipment_postage WHERE captured_at > ?", (payload.since,))
@@ -3317,6 +4775,10 @@ async def api_sync(request: Request, payload: SyncRequest):
     # not just ones that happen to have changed recently.
     cur.execute("SELECT DISTINCT source FROM items WHERE source IS NOT NULL")
     shop_colors = {row["source"]: source_color(row["source"]) for row in cur.fetchall()}
+    sync_categories = [
+        {"name": c["name"], "color": c["color"], "has_series": bool(c["has_series"])}
+        for c in get_categories(cur)
+    ]
 
     cur.execute(
         """
@@ -3351,4 +4813,8 @@ async def api_sync(request: Request, payload: SyncRequest):
         "order_changes": order_changes,
         "shop_colors": shop_colors,
         "default_shipping_estimate": DEFAULT_SHIPPING_ESTIMATE,
+        # Full category list every sync (like shop_colors), so a renamed
+        # or recoloured category reaches the app even when none of its
+        # items changed.
+        "categories": sync_categories,
     }

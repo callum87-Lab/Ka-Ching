@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Ka-Ching!{% endblock %}</title>
+<link rel="icon" type="image/png" href="/static/img/logo.png?v={{ app_version }}">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#0a1224">
+<link rel="apple-touch-icon" href="/static/img/icon-192.png?v={{ app_version }}">
+<link rel="stylesheet" href="/static/style.css?v={{ app_version }}">
+<style>
+  :root {
+    --bg-1: #060a17;
+    --surface: #101a30;
+    --surface-raised: #16213d;
+    --sidebar: #0a0f20;
+    --border: rgba(94, 156, 255, 0.14);
+    --border-strong: rgba(94, 156, 255, 0.30);
+    --text: #e7ecfa;
+    --text-muted: #7c89ad;
+    --text-dim: #566089;
+    --neon-blue: #2fd8ff;
+    --neon-green: #3cf2a6;
+    --neon-pink: #ff4d8d;
+    --neon-violet: #9b7bff;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --radius-lg: 18px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: var(--bg-1);
+    background-image:
+      radial-gradient(circle at 10% -10%, rgba(47, 216, 255, 0.10) 0%, transparent 40%),
+      radial-gradient(circle at 100% 0%, rgba(155, 123, 255, 0.08) 0%, transparent 40%);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  a { color: inherit; text-decoration: none; }
+  .trend-svg { width: 100%; height: auto; display: block; }
+  .chart-area { width: 100%; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--text-muted); }
+  button { font-family: inherit; padding: 0; background: none; border: none; color: inherit; cursor: pointer; }
+
+  .shell { display: grid; grid-template-columns: 236px 1fr; min-height: 100vh; }
+
+  .sidebar { background: var(--sidebar); border-right: 1px solid var(--border); padding: 22px 16px; display: flex; flex-direction: column; gap: 2px;
+             position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .brand { display: flex; align-items: center; justify-content: center; padding: 4px 10px 22px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .nav-label { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); padding: 16px 10px 6px; }
+  .nav-item { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 999px; color: var(--text-muted); font-weight: 600; font-size: 15.5px; cursor: pointer; }
+  .nav-item svg.icon { width: 17px; height: 17px; flex: 0 0 auto; opacity: 0.85; }
+  .nav-item.active { background: rgba(47,216,255,0.14); color: var(--neon-blue); box-shadow: inset 0 0 0 1px var(--neon-blue); }
+  .nav-item.active svg.icon { opacity: 1; }
+  .sidebar-foot { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+  .budget-mini { padding: 12px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); }
+  .budget-mini-label { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .budget-mini-bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 6px; }
+  .budget-mini-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-green), var(--neon-blue)); }
+  .budget-mini.is-over .budget-mini-fill { background: linear-gradient(90deg, var(--neon-violet), var(--neon-pink)); }
+  .budget-mini-bar.split { display: flex; }
+  .budget-mini-bar.split .budget-mini-fill { border-radius: 4px 0 0 4px; flex: 0 0 auto; }
+  .budget-mini-due { height: 100%; flex: 0 0 auto; background: repeating-linear-gradient(135deg, rgba(47,216,255,0.45) 0 3px, rgba(47,216,255,0.15) 3px 6px); }
+  .budget-mini-main { font-size: 13px; font-weight: 700; }
+  .budget-mini-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .bm-ok { color: var(--neon-green); } .bm-over { color: var(--neon-pink); }
+
+  .main { padding: 22px 30px 46px; max-width: 1420px; }
+  .topbar { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; flex-wrap: nowrap; }
+  .search-box { flex: 0 0 380px; width: 380px; display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 9px 16px; color: var(--text-dim); font-size: 14.5px; white-space: nowrap; overflow: hidden; }
+  .search-box input::placeholder { color: var(--text-dim); opacity: 1; }
+  .search-box svg { width: 15px; height: 15px; opacity: 0.7; }
+  .topbar-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); position: relative; }
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  .page-head { margin-bottom: 18px; }
+  .page-head h1 { font-size: 25px; margin: 0 0 3px; font-weight: 700; }
+  .page-head p { margin: 0; color: var(--text-muted); font-size: 14.5px; }
+
+  .tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab-pill { padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); }
+  .tab-pill.active { background: rgba(47,216,255,0.14); color: var(--neon-blue); border-color: var(--neon-blue); }
+
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
+  .card-title { display: flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 700; }
+  .card-icon-badge { width: 26px; height: 26px; border-radius: 8px; background: rgba(94,156,255,0.08); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--neon-blue); flex: 0 0 auto; }
+  .card-icon-badge svg { width: 14px; height: 14px; }
+
+  .bulk-toolbar { position: fixed; left: 236px; right: 0; bottom: 0; display: none; align-items: center; justify-content: center; gap: 14px; background: rgba(10,15,32,0.92); backdrop-filter: blur(10px); border-top: 1px solid var(--border-strong); padding: 14px; z-index: 20; }
+  .bulk-toolbar.visible { display: flex; }
+  .bulk-btn { font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; }
+  .bulk-btn.confirm { background: var(--neon-blue); color: #04121a; border-color: transparent; }
+  .bulk-btn.danger { color: var(--neon-pink); border-color: rgba(255,77,141,0.3); }
+
+  {% block extra_style %}{% endblock %}
+
+  /* Category pick-or-type box */
+  .category-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%237c89ad' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;
+    padding-right: 34px !important; cursor: pointer;
+  }
+  .category-input:focus { cursor: text; }
+  .cat-dropdown {
+    position: absolute; z-index: 60; max-height: 280px; overflow-y: auto;
+    background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: 12px;
+    padding: 6px; box-shadow: 0 14px 34px rgba(0,0,0,0.5), 0 0 0 1px rgba(47,216,255,0.05);
+  }
+  .cat-option { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 8px; font-size: 14px; color: var(--text); cursor: pointer; white-space: nowrap; }
+  .cat-option:hover, .cat-option.is-highlighted { background: rgba(47,216,255,0.10); color: var(--neon-blue); }
+  .cat-option.is-current { color: var(--neon-blue); font-weight: 600; }
+  .cat-option-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .cat-option-new { color: var(--neon-blue); font-weight: 600; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; border-radius: 0 0 8px 8px; }
+  .cat-option-new:first-child { border-top: none; margin-top: 0; padding-top: 8px; border-radius: 8px; }
+  .cat-option-empty { padding: 8px 11px; font-size: 13px; color: var(--text-dim); }
+
+  /* Category filter chips (Price creep / Top titles) */
+  .filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .filter-row .lbl { font-size: 13.5px; color: var(--text-muted); font-weight: 600; margin-right: 4px; }
+  .cat-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-dim); background: var(--surface-raised); border: 1px solid var(--border); cursor: pointer; }
+  .cat-chip .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; opacity: 0.4; }
+  .cat-chip.on { color: var(--text); border-color: var(--chip); background: color-mix(in srgb, var(--chip) 14%, transparent); }
+  .cat-chip.on .cat-dot { opacity: 1; box-shadow: 0 0 6px var(--chip); }
+
+  /* ---- Pill buttons: one hover / selected / disabled behaviour site-wide.
+     Sizes stay per-page; only behaviour is shared here. "body" prefix so
+     these win over per-page copies and the old UI's global button:hover in
+     style.css (which the old UI still uses unchanged). ---- */
+  body :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .logorders-tab, .preset-pill,
+           .warn-action-btn, .page-btn, .btn-secondary, .export-btn, .csv-btn, .filter-toggle-btn,
+           .delay-btn, .bulk-btn, .clear-btn, .parser-hint-btn, .month-nav-today, .cat-chip,
+           .submit-btn, .btn-primary, .notif-test-btn, .add-cat-btn) {
+    --pill-glow: rgba(47,216,255,0.55);
+    transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  /* Coloured pills glow in their own colour */
+  body :is(.danger, .preset-pill.clear) { --pill-glow: rgba(255,77,141,0.55); }
+  body .cat-chip { --pill-glow: color-mix(in srgb, var(--chip) 55%, transparent); }
+  body .shop-filter-tab[style*="--shop-color"] { --pill-glow: color-mix(in srgb, var(--shop-color) 55%, transparent); }
+
+  /* Resting: nothing glows, selected or not */
+  body :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .logorders-tab, .preset-pill,
+           .warn-action-btn, .page-btn, .btn-secondary, .export-btn, .csv-btn, .filter-toggle-btn,
+           .delay-btn, .bulk-btn, .clear-btn, .parser-hint-btn, .month-nav-today, .cat-chip) { box-shadow: none; }
+
+  /* Hover, outline pills not selected: text to white, border brightens, glow */
+  body :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .logorders-tab, .preset-pill,
+           .warn-action-btn, .page-btn, .btn-secondary, .export-btn, .csv-btn, .filter-toggle-btn,
+           .delay-btn, .bulk-btn, .clear-btn, .parser-hint-btn, .cat-chip):not(.active):not(.on):not(.confirm):not(:disabled):hover {
+    color: var(--text); border-color: var(--border-strong); box-shadow: 0 0 16px var(--pill-glow); text-decoration: none;
+  }
+  /* Coloured outline pills keep their colour on hover; the border goes full strength */
+  body :is(.danger, .preset-pill.clear):not(.active):not(.on):not(.confirm):not(:disabled):hover { color: var(--neon-pink); border-color: var(--neon-pink); }
+
+  /* Selected: blue tint / text / border (the cat chips keep their own colour) */
+  body :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .logorders-tab, .preset-pill,
+           .filter-toggle-btn, .parser-hint-btn).active {
+    background: rgba(47,216,255,0.14); color: var(--neon-blue); border-color: var(--neon-blue);
+  }
+  body .shop-filter-tab[style*="--shop-color"].active { background: none; color: var(--shop-color); border-color: var(--shop-color); }
+  /* Selected + hover: look unchanged, plus the same glow */
+  body :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .logorders-tab, .preset-pill,
+           .filter-toggle-btn, .parser-hint-btn, .cat-chip, .month-nav-today):is(.active, .on, .month-nav-today):hover {
+    box-shadow: 0 0 16px var(--pill-glow);
+  }
+
+  /* Blue accent pill ("Today"): border goes full blue on hover */
+  body .month-nav-today:hover { border-color: var(--neon-blue); text-decoration: none; }
+  /* Filled buttons: same glow on hover, nothing else changes */
+  body :is(.submit-btn, .btn-primary, .notif-test-btn, .add-cat-btn, .bulk-btn.confirm):not(:disabled):hover { box-shadow: 0 0 16px var(--pill-glow); }
+
+  /* Disabled: dimmed, no hover effect at all (buttons site-wide) */
+  body button:disabled, body button:disabled:hover { box-shadow: none; }
+  body :is(.tab-pill, .range-tab, .recent-list-tab, .logorders-tab, .preset-pill, .warn-action-btn, .page-btn,
+           .btn-secondary, .export-btn, .csv-btn, .filter-toggle-btn, .delay-btn, .bulk-btn, .clear-btn,
+           .parser-hint-btn, .cat-chip, .submit-btn, .btn-primary, .notif-test-btn, .add-cat-btn):disabled { opacity: 0.4; cursor: default; }
+
+  /* Toggle switch labels: bright only while the switch is on */
+  body :is(.trend-toggles, .overtime-legend) .trend-toggle-row .trend-toggle-label { color: var(--text-muted); }
+  body :is(.trend-toggles, .overtime-legend) .trend-toggle-row:has(input:checked) .trend-toggle-label { color: var(--text); }
+
+  /* ---- Phone / narrow screens (desktop above 900px is untouched) ---- */
+  .menu-btn, .topbar-brand, .drawer-scrim, .mobile-subnav { display: none; }
+  .shop-select-wrap { display: none; align-items: center; gap: 8px; margin: 0 0 14px; }
+  .shop-select-wrap label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+  .shop-select-wrap select { flex: 1 1 auto; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong);
+    border-radius: 999px; padding: 9px 14px; font-size: 14px; font-family: inherit; }
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 260px; height: 100%; z-index: 60;
+               transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: none; }
+    body.drawer-open .sidebar { transform: none; box-shadow: 0 0 40px rgba(0,0,0,0.6); }
+    .drawer-scrim { display: block; position: fixed; inset: 0; background: rgba(3,6,15,0.6); z-index: 55;
+                    opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+    body.drawer-open .drawer-scrim { opacity: 1; pointer-events: auto; }
+    body.drawer-open { overflow: hidden; }
+    .main { padding: 14px 14px 40px; max-width: 100%; min-width: 0; }
+    .topbar { gap: 10px; margin-bottom: 16px; }
+    .menu-btn { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: 0 0 38px;
+                border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .menu-btn svg { width: 18px; height: 18px; }
+    .topbar-brand { display: block; flex: 0 0 auto; }
+    .topbar-brand img { height: 30px; width: auto; display: block; filter: drop-shadow(0 0 8px rgba(47,216,255,0.35)); }
+    .search-box { flex: 1 1 auto; width: auto; min-width: 0; }
+    .page-head h1 { font-size: 22px; }
+    /* One card per row; nothing wider than the screen */
+    .grid { gap: 12px; margin-bottom: 12px; }
+    .grid > * { grid-column: span 12 !important; min-width: 0; }
+    .card { padding: 16px; min-width: 0; }
+    img, svg { max-width: 100%; }
+    /* Tables scroll sideways inside their card, never the page */
+    .main table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* Section tabs that live in the sidebar on desktop */
+    .mobile-subnav { display: flex; gap: 8px; overflow-x: auto; margin: 0 0 14px; padding-bottom: 2px; scrollbar-width: none; }
+    .mobile-subnav::-webkit-scrollbar { display: none; }
+    .mobile-subnav .tab-pill { flex: 0 0 auto; font-size: 13px; padding: 7px 14px; white-space: nowrap; text-decoration: none; }
+    /* Shop tabs become one dropdown */
+    [data-shop-tabs] { display: none !important; }
+    .shop-select-wrap { display: flex; }
+    /* Form fields never push past the card edge */
+    .main input, .main select, .main textarea { min-width: 0; max-width: 100%; }
+    .main .settings-form-grid, .main .settings-form-grid-3 { grid-template-columns: 1fr; }
+    .main :is(.settings-form-grid, .settings-form-grid-3, .settings-form-grid-4) > * { min-width: 0; }
+    /* Tables become one block per row: the name on top, then the figures
+       three to a line, each labelled with its column heading (labels are
+       copied from the table head by the script at the bottom). Nothing
+       scrolls sideways. */
+    .main table { display: block; overflow: visible; }
+    .main table thead { display: none; }
+    .main table tbody { display: block; }
+    .main table tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px;
+                     padding: 12px 0; border-top: 1px solid var(--border); }
+    .main table tbody tr:first-child { border-top: none; }
+    .main table td { display: block; padding: 0 !important; border: none !important; text-align: left !important;
+                     min-width: 0; white-space: normal; font-size: 13.5px; }
+    .main table td[data-label]::before { content: attr(data-label); display: block; font-size: 10.5px; font-weight: 700;
+                     letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 2px;
+                     font-family: var(--font-body, inherit); }
+    .main table td:first-child { grid-column: 1 / -1; font-size: 14.5px; font-weight: 600; color: var(--text); }
+    .main table td:first-child::before { display: none !important; }
+  }
+</style>
+<script>
+/* Shared "remember my choice" helper. Values are JSON, kept in this
+   browser only (localStorage), under a kaching_pref: prefix. Anything
+   that fails (storage blocked, bad JSON) just falls back quietly. */
+window.KC = window.KC || {};
+KC.pref = {
+  get: function (key, fallback) {
+    try {
+      var raw = localStorage.getItem('kaching_pref:' + key);
+      return raw === null ? fallback : JSON.parse(raw);
+    } catch (e) { return fallback; }
+  },
+  set: function (key, value) {
+    try { localStorage.setItem('kaching_pref:' + key, JSON.stringify(value)); } catch (e) {}
+  },
+  remove: function (key) {
+    try { localStorage.removeItem('kaching_pref:' + key); } catch (e) {}
+  }
+};
+</script>
+{% block head_script %}{% endblock %}
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="/">
+      <img src="/static/img/logo.png?v={{ app_version }}" alt="Ka-Ching!" style="height:56px; width:auto; filter: drop-shadow(0 0 10px rgba(47,216,255,0.35));">
+    </a>
+
+    <div class="nav-label">Track</div>
+    <a class="nav-item {{ 'active' if request.url.path == '/' else '' }}" href="/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard</a>
+    <a class="nav-item {{ 'active expanded' if request.url.path == '/orders' else '' }}" href="/orders"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1 11H4L3 9Z"/><path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3"/></svg>Orders</a>
+    {% if request.url.path == '/orders' %}
+    <div class="sub-nav" id="orders-sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
+      <a class="sub-item active" data-orders-tab="all" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--neon-blue); font-weight:600; cursor:pointer;">All</a>
+      <a class="sub-item" data-orders-tab="unpaid" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Unpaid &amp; cancelled</a>
+    </div>
+    {% endif %}
+    <a class="nav-item {{ 'active' if request.url.path == '/calendar' else '' }}" href="/calendar"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</a>
+    <a class="nav-item {{ 'active' if request.url.path == '/search' else '' }}" href="/search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
+    <div class="nav-label">Manage</div>
+    <a class="nav-item {{ 'active' if request.url.path == '/items/new' else '' }}" href="/items/new"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg>Log orders</a>
+    <a class="nav-item {{ 'active expanded' if request.url.path.startswith('/insights') else '' }}" href="/insights"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Insights</a>
+    {% if request.url.path.startswith('/insights') %}
+    <div class="sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
+      <a class="sub-item {{ 'active' if request.url.path == '/insights' else '' }}" href="/insights" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights' else '400' }};">Overview</a>
+      <a class="sub-item {{ 'active' if request.url.path == '/insights/spend-by-shop' else '' }}" href="/insights/spend-by-shop" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights/spend-by-shop' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/spend-by-shop' else '400' }};">Spend by shop</a>
+      <a class="sub-item {{ 'active' if request.url.path == '/insights/price-creep' else '' }}" href="/insights/price-creep" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights/price-creep' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/price-creep' else '400' }};">Price creep</a>
+      <a class="sub-item {{ 'active' if request.url.path == '/insights/top-titles' else '' }}" href="/insights/top-titles" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights/top-titles' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/top-titles' else '400' }};">Top titles</a>
+    </div>
+    {% endif %}
+    <a class="nav-item {{ 'active expanded' if request.url.path == '/alerts' else '' }}" href="/alerts"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>Alerts</a>
+    {% if request.url.path == '/alerts' %}
+    <div class="sub-nav" id="alerts-sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
+      <a class="sub-item active" data-alerts-tab="alerts" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--neon-blue); font-weight:600; cursor:pointer;">Current</a>
+      <a class="sub-item" data-alerts-tab="notifications" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Notifications</a>
+    </div>
+    {% endif %}
+    <a class="nav-item {{ 'active expanded' if request.url.path == '/settings' else '' }}" href="/settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+    {% if request.url.path == '/settings' %}
+    <div class="sub-nav" id="settings-sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
+      <a class="sub-item active" data-settings-tab="general" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--neon-blue); font-weight:600; cursor:pointer;">General</a>
+      {% if sync_feature_available() %}<a class="sub-item" data-settings-tab="sync" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Sync</a>{% endif %}
+      <a class="sub-item" data-settings-tab="backup" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Data backup</a>
+      <a class="sub-item" data-settings-tab="about" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">About</a>
+      <a class="sub-item" data-settings-tab="help" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Help</a>
+    </div>
+    {% endif %}
+
+    {% set _display = sidebar_budget_display() %}
+    {% if _display != 'hidden' %}
+    <div class="sidebar-foot">
+      {% set _budget = topbar_budget_status() %}
+      {% if _budget %}
+      {% set _cls = 'bm-over' if _budget.over else 'bm-ok' %}
+      <div class="budget-mini{{ ' is-over' if _budget.over else '' }}">
+        <div class="budget-mini-label">{{ _budget.budget_cycle_label|capitalize }}'s budget</div>
+        {% if _display == 'due' %}
+        <div class="budget-mini-bar split"><div class="budget-mini-fill" style="width:{{ _budget.spent_bar_pct }}%;"></div><div class="budget-mini-due" style="width:{{ [_budget.budget_bar_pct - _budget.spent_bar_pct, 0]|max }}%;"></div></div>
+        {% else %}
+        <div class="budget-mini-bar"><div class="budget-mini-fill" style="width:{{ _budget.budget_bar_pct }}%;"></div></div>
+        {% endif %}
+        {% if _display == 'left' or (_display == 'daily' and not _budget.days_left) %}
+        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.left|abs) }} {{ 'over' if _budget.over else 'left' }}</div>
+        <div class="budget-mini-sub">of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</div>
+        {% elif _display == 'percent' %}
+        <div class="budget-mini-main mono {{ _cls }}">{{ "%.0f"|format(_budget.budget_pct) }}% used</div>
+        <div class="budget-mini-sub mono">{{ currency() }}{{ "%.2f"|format(_budget.cycle_spend) }} of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</div>
+        {% elif _display == 'daily' %}
+        {% if _budget.per_day %}
+        <div class="budget-mini-main mono bm-ok">{{ currency() }}{{ "%.2f"|format(_budget.per_day) }} a day</div>
+        <div class="budget-mini-sub">{{ currency() }}{{ "%.2f"|format(_budget.left) }} left &middot; {{ _budget.days_left }} day{{ 's' if _budget.days_left != 1 else '' }} to go</div>
+        {% else %}
+        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.left|abs) }} {{ 'over' if _budget.over else 'left' }}</div>
+        <div class="budget-mini-sub">{{ _budget.days_left }} day{{ 's' if _budget.days_left != 1 else '' }} to go</div>
+        {% endif %}
+        {% elif _display == 'due' %}
+        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.spent_to_date or 0) }} spent</div>
+        <div class="budget-mini-sub mono">{{ currency() }}{{ "%.2f"|format(_budget.still_due) }} still due &middot; of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</div>
+        {% else %}
+        <div class="mono" style="font-size:12px;"><span class="{{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.cycle_spend) }}</span> <span class="muted">of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</span></div>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="budget-mini">
+        <div class="budget-mini-label">Budget</div>
+        <div class="mono muted" style="font-size:12px;">Not set &middot; <a href="/settings" style="color:var(--neon-blue);">configure</a></div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button type="button" class="menu-btn" id="menu-btn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+      <a class="topbar-brand" href="/"><img src="/static/img/logo.png?v={{ app_version }}" alt="Ka-Ching!"></a>
+      <form class="search-box" action="/search" method="get" style="cursor:text;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" name="q" placeholder="Search a title, order #..." autocomplete="off" style="background:none; border:none; outline:none; color:var(--text); font-size:14.5px; font-family:inherit; width:100%; padding:0;">
+      </form>
+      <div class="topbar-right">
+        {% set most_recent_sync = topbar_most_recent_sync() if sync_enabled() else None %}
+        {% if most_recent_sync %}
+        <div style="font-size:14px; color:var(--text-dim); display:flex; align-items:center; gap:6px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--neon-green); box-shadow:0 0 6px var(--neon-green);"></span>Last synced {{ most_recent_sync.label }}</div>
+        {% endif %}
+        <a class="icon-btn" href="/alerts" title="Alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          {% set alert_count = topbar_alert_count() %}
+          {% if alert_count %}
+          <span style="position:absolute; top:-3px; right:-3px; background:var(--neon-pink); color:#fff; font-size:9px; font-weight:800; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 6px rgba(255,77,141,0.6);">{{ alert_count }}</span>
+          {% endif %}
+        </a>
+      </div>
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <script>
+    // Narrow screens: copy this section's sidebar tabs (Orders All/Unpaid,
+    // Insights pages, Alerts, Settings) into a pill row under the page
+    // title. Runs before the page's own scripts, so those bind to the
+    // copies too and keep both in step. Hidden by CSS on desktop.
+    (function () {
+      var subs = document.querySelectorAll('.sidebar .sub-nav .sub-item');
+      if (!subs.length) return;
+      var row = document.createElement('div');
+      row.className = 'mobile-subnav';
+      subs.forEach(function (orig) {
+        var a = orig.cloneNode(true);
+        a.removeAttribute('style');
+        a.removeAttribute('id');
+        a.className = 'tab-pill' + (orig.classList.contains('active') ? ' active' : '');
+        row.appendChild(a);
+      });
+      // The page scripts style their tabs inline (sidebar look); the pill
+      // copies use the shared pill styles instead, so drop those styles.
+      new MutationObserver(function (list) {
+        list.forEach(function (m) { if (m.target.getAttribute('style')) m.target.removeAttribute('style'); });
+      }).observe(row, { attributes: true, subtree: true, attributeFilter: ['style'] });
+      var head = document.querySelector('.main .page-head');
+      if (head) head.parentNode.insertBefore(row, head.nextSibling);
+      else { var tb = document.querySelector('.main .topbar'); tb.parentNode.insertBefore(row, tb.nextSibling); }
+    })();
+    </script>
+
+  </main>
+</div>
+<div class="drawer-scrim" id="drawer-scrim"></div>
+<script>
+// Installable as a home-screen app (the worker does no caching)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+}
+
+// Label every table cell with its column heading, used by the phone
+// layout where each row becomes its own block (desktop ignores it).
+(function () {
+  function label(t) {
+    var heads = Array.prototype.map.call(t.querySelectorAll('thead th'), function (th) { return th.textContent.replace(/\s+/g, ' ').trim(); });
+    if (!heads.length) return;
+    t.querySelectorAll('tbody tr').forEach(function (tr) {
+      Array.prototype.forEach.call(tr.children, function (td, i) {
+        if (heads[i] && !td.hasAttribute('data-label')) td.setAttribute('data-label', heads[i]);
+      });
+    });
+  }
+  document.querySelectorAll('.main table').forEach(function (t) {
+    label(t);
+    var body = t.querySelector('tbody');
+    if (body) new MutationObserver(function () { label(t); }).observe(body, { childList: true });
+  });
+})();
+
+// Narrow screens: shop tabs ([data-shop-tabs]) are offered as a dropdown.
+(function () {
+  document.querySelectorAll('[data-shop-tabs]').forEach(function (row) {
+    // Tabs are links, except the current one which may be plain text
+    var links = row.querySelectorAll('a[href], .tab-pill');
+    if (!links.length) return;
+    var wrap = document.createElement('div'), sel = document.createElement('select'), lbl = document.createElement('label');
+    wrap.className = 'shop-select-wrap';
+    lbl.textContent = 'Shop'; sel.setAttribute('aria-label', 'Shop');
+    links.forEach(function (a) {
+      var o = document.createElement('option');
+      o.value = a.getAttribute('href') || window.location.href; o.textContent = a.textContent.replace(/\s+/g, ' ').trim();
+      if (a.classList.contains('active')) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', function () { window.location.href = sel.value; });
+    wrap.appendChild(lbl); wrap.appendChild(sel);
+    row.parentNode.insertBefore(wrap, row.nextSibling);
+  });
+})();
+
+// Narrow screens: charts are drawn at desktop size and scaled down, which
+// shrinks their axis text. Enlarge it back to a readable size and drop
+// every other label where they would then overlap.
+(function () {
+  var MIN_PX = 11;
+  function fix() {
+    var narrow = window.innerWidth <= 900;
+    document.querySelectorAll('.main svg[viewBox]').forEach(function (svg) {
+      var texts = svg.querySelectorAll('text');
+      if (!texts.length) return;
+      var vb = svg.viewBox.baseVal, w = svg.getBoundingClientRect().width;
+      if (!vb || !vb.width || !w) return;
+      var scale = w / vb.width;
+      texts.forEach(function (t) {
+        // Only ever touch text on narrow screens; put it back exactly as it
+        // was if the window widens again.
+        if (t.dataset.kcFs !== undefined) {
+          t.style.removeProperty('font-size'); if (t.dataset.kcFs) t.style.fontSize = t.dataset.kcFs;
+          delete t.dataset.kcFs;
+        }
+        if (t.dataset.kcHid) { t.style.removeProperty('display'); delete t.dataset.kcHid; }
+        if (!narrow) return;
+        var px = parseFloat(getComputedStyle(t).fontSize) || 12;
+        if (px * scale < MIN_PX) {
+          t.dataset.kcFs = t.style.fontSize || '';
+          // !important: the shared stylesheet pins some axis labels with
+          // !important for the old UI's own phone layout
+          t.style.setProperty('font-size', (MIN_PX / scale).toFixed(1) + 'px', 'important');
+        }
+      });
+      if (!narrow) { svg.querySelectorAll('text[data-kc-anchor]').forEach(function (t) {
+        var a = t.dataset.kcAnchor; if (a) t.setAttribute('text-anchor', a); else t.removeAttribute('text-anchor'); delete t.dataset.kcAnchor; }); return; }
+      // Enlarged edge labels can run past the chart; pull them back inside
+      var sb = svg.getBoundingClientRect();
+      texts.forEach(function (t) {
+        var b = t.getBoundingClientRect(); if (!b.width) return;
+        if (b.right > sb.right + 1 || b.left < sb.left - 1) {
+          if (t.dataset.kcAnchor === undefined) t.dataset.kcAnchor = t.getAttribute('text-anchor') || '';
+          t.setAttribute('text-anchor', b.right > sb.right + 1 ? 'end' : 'start');
+        }
+      });
+      // Hide overlapping labels on the same row (axis labels)
+      var rows = {};
+      texts.forEach(function (t) {
+        var b = t.getBoundingClientRect(); if (!b.width) return;
+        var key = Math.round(b.top / 4);
+        (rows[key] = rows[key] || []).push({ t: t, b: b });
+      });
+      Object.keys(rows).forEach(function (k) {
+        var list = rows[k]; if (list.length < 4) return;
+        list.sort(function (a, b) { return a.b.left - b.b.left; });
+        var lastRight = -1e9;
+        list.forEach(function (it) {
+          if (it.b.left < lastRight + 4) { it.t.style.display = 'none'; it.t.dataset.kcHid = '1'; }
+          else lastRight = it.b.right;
+        });
+      });
+    });
+  }
+  var pending = null;
+  function later() { if (pending) return; pending = setTimeout(function () { pending = null; fix(); }, 60); }
+  window.addEventListener('load', fix);
+  window.addEventListener('resize', later);
+  // Charts drawn or redrawn by page scripts (range tabs, toggles) get fixed too
+  new MutationObserver(function (list) {
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].target.closest && list[i].target.closest('svg')) continue;
+      later(); return;
+    }
+  }).observe(document.querySelector('.main'), { childList: true, subtree: true });
+  fix();
+})();
+// Narrow screens: the sidebar becomes a slide-out drawer.
+(function () {
+  var btn = document.getElementById('menu-btn'), scrim = document.getElementById('drawer-scrim');
+  function setOpen(open) {
+    document.body.classList.toggle('drawer-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function () { setOpen(!document.body.classList.contains('drawer-open')); });
+  scrim.addEventListener('click', function () { setOpen(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  // Picking a page or a section tab closes it
+  document.querySelectorAll('.sidebar a[href], .sidebar .sub-item').forEach(function (a) {
+    a.addEventListener('click', function () { setOpen(false); });
+  });
+  window.addEventListener('resize', function () { if (window.innerWidth > 900) setOpen(false); });
+})();
+</script>
+
+<form id="bulk-form" method="post" action="/items/bulk-action">
+  <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+  <input type="hidden" name="bulk_action" id="bulk-action-input" value="">
+</form>
+<div class="bulk-toolbar" id="bulk-toolbar">
+  <span id="bulk-count" class="mono">0 selected</span>
+  <button type="button" class="bulk-btn confirm" onclick="submitBulk('paid')">Mark paid</button>
+  <button type="button" class="bulk-btn" onclick="submitBulk('cancel')">Cancel</button>
+  <button type="button" class="bulk-btn danger" onclick="submitBulk('remove')">Remove</button>
+</div>
+
+<script>
+(function () {
+  const toolbar = document.getElementById('bulk-toolbar');
+  if (!toolbar) return;
+  const countSpan = document.getElementById('bulk-count');
+  const actionInput = document.getElementById('bulk-action-input');
+  const bulkForm = document.getElementById('bulk-form');
+
+  function updateToolbar() {
+    const checked = document.querySelectorAll('.bulk-select:checked');
+    if (checked.length > 0) {
+      toolbar.classList.add('visible');
+      countSpan.textContent = checked.length + ' selected';
+    } else {
+      toolbar.classList.remove('visible');
+    }
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('bulk-select')) updateToolbar();
+  });
+
+  window.submitBulk = function (action) {
+    const checked = document.querySelectorAll('.bulk-select:checked');
+    if (checked.length === 0) return;
+    if (action === 'remove' && !confirm('Remove ' + checked.length + ' item(s) permanently? This cannot be undone.')) return;
+    actionInput.value = action;
+    bulkForm.submit();
+  };
+})();
+
+document.querySelectorAll('.row-menu-btn').forEach(function (btn) {
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var openNow = btn.dataset.drawerOpen === '1';
+    document.querySelectorAll('.row-actions-drawer').forEach(function (d) { d.remove(); });
+    document.querySelectorAll('.row-menu-btn').forEach(function (b) { b.dataset.drawerOpen = '0'; });
+    if (openNow) return;
+    var tpl = document.getElementById(btn.dataset.drawerTemplate);
+    if (!tpl) return;
+    var rect = btn.getBoundingClientRect();
+    var drawer = document.createElement('div');
+    drawer.className = 'row-actions-drawer';
+    drawer.innerHTML = tpl.innerHTML;
+    document.body.appendChild(drawer);
+    var dw = drawer.offsetWidth;
+    var left = rect.right - dw;
+    if (left < 8) left = 8;
+    var top = rect.bottom + 4;
+    if (top + drawer.offsetHeight > window.innerHeight - 8) top = rect.top - drawer.offsetHeight - 4;
+    drawer.style.position = 'fixed';
+    drawer.style.zIndex = '9999';
+    drawer.style.left = left + 'px';
+    drawer.style.top = top + 'px';
+    btn.dataset.drawerOpen = '1';
+  });
+});
+document.addEventListener('click', function () {
+  document.querySelectorAll('.row-actions-drawer').forEach(function (d) { d.remove(); });
+  document.querySelectorAll('.row-menu-btn').forEach(function (b) { b.dataset.drawerOpen = '0'; });
+});
+
+(function () {
+  var storageKey = 'kaching_collapse_state:' + window.location.pathname;
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (e) { state = {}; }
+
+  function groupKey(el) {
+    if (el.id) return el.id;
+    var label = el.querySelector('.day-group-label');
+    return label ? label.textContent.trim() : null;
+  }
+  function saveState() {
+    try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (e) {}
+  }
+
+  document.querySelectorAll('.day-group').forEach(function (group) {
+    var key = groupKey(group);
+    if (!key) return;
+    if (state[key] === true) {
+      group.classList.add('expanded');
+    } else {
+      group.classList.remove('expanded');
+    }
+  });
+
+  document.querySelectorAll('.day-group-head').forEach(function (head) {
+    head.addEventListener('click', function () {
+      var group = head.closest('.day-group');
+      group.classList.toggle('expanded');
+      var key = groupKey(group);
+      if (key) {
+        state[key] = group.classList.contains('expanded');
+        saveState();
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-target].collapse-btn').forEach(function (btn) {
+    var key = 'collapse:' + btn.dataset.target;
+    var body = document.getElementById(btn.dataset.target);
+    if (!body) return;
+    if (state[key] === true) {
+      body.classList.remove('collapsed');
+      btn.innerHTML = '&#9662;';
+    }
+    btn.addEventListener('click', function () {
+      var collapsed = body.classList.toggle('collapsed');
+      btn.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+      state[key] = !collapsed;
+      saveState();
+    });
+  });
+})();
+
+/* Category boxes: a styled pick-or-type dropdown. Clicking shows every
+   category; typing filters the list, and a name that doesn't exist yet
+   shows as "Add ..." - it's created when the form is saved. */
+(function () {
+  var CATS = {{ all_categories() | map(attribute='name') | list | tojson }};
+  var COLORS = {{ all_categories() | map(attribute='color') | list | tojson }};
+  var panel = null, activeBox = null, highlighted = -1;
+
+  function colorFor(name) {
+    var i = CATS.map(function (c) { return c.toLowerCase(); }).indexOf((name || '').toLowerCase());
+    return i >= 0 ? COLORS[i] : null;
+  }
+  function closePanel() {
+    if (panel) { panel.remove(); panel = null; }
+    if (activeBox) activeBox.setAttribute('aria-expanded', 'false');
+    activeBox = null; highlighted = -1;
+  }
+  function choose(value) {
+    if (!activeBox) return;
+    activeBox.value = value;
+    activeBox.dispatchEvent(new Event('change', { bubbles: true }));
+    closePanel();
+  }
+  function position() {
+    if (!panel || !activeBox) return;
+    var r = activeBox.getBoundingClientRect();
+    panel.style.left = (r.left + window.scrollX) + 'px';
+    panel.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    panel.style.minWidth = r.width + 'px';
+  }
+  function render(filterText) {
+    var text = (filterText || '').trim();
+    var lower = text.toLowerCase();
+    var matches = CATS.filter(function (c) { return !lower || c.toLowerCase().indexOf(lower) !== -1; });
+    var exact = CATS.some(function (c) { return c.toLowerCase() === lower; });
+    var current = (activeBox.dataset.shown || '').toLowerCase();
+    var html = matches.map(function (c) {
+      return '<div class="cat-option' + (c.toLowerCase() === current ? ' is-current' : '') + '" data-value="' + c.replace(/"/g, '&quot;') + '">' +
+        '<span class="cat-option-dot" style="background:' + (colorFor(c) || '#7c89ad') + '"></span>' + c.replace(/</g, '&lt;') + '</div>';
+    }).join('');
+    if (text && !exact) {
+      html += '<div class="cat-option cat-option-new" data-value="' + text.replace(/"/g, '&quot;') + '">+ Add &ldquo;' + text.replace(/</g, '&lt;') + '&rdquo;</div>';
+    }
+    panel.innerHTML = html || '<div class="cat-option-empty">No categories</div>';
+    highlighted = -1;
+  }
+  function openPanel(box, filterText) {
+    if (activeBox !== box) closePanel();
+    activeBox = box;
+    box.setAttribute('aria-expanded', 'true');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'cat-dropdown';
+      panel.setAttribute('role', 'listbox');
+      panel.addEventListener('mousedown', function (e) {
+        var opt = e.target.closest('.cat-option');
+        if (opt) { e.preventDefault(); choose(opt.dataset.value); }
+      });
+      document.body.appendChild(panel);
+    }
+    render(filterText);
+    position();
+  }
+  function moveHighlight(step) {
+    if (!panel) return;
+    var opts = panel.querySelectorAll('.cat-option');
+    if (!opts.length) return;
+    highlighted = (highlighted + step + opts.length) % opts.length;
+    opts.forEach(function (o, i) { o.classList.toggle('is-highlighted', i === highlighted); });
+    opts[highlighted].scrollIntoView({ block: 'nearest' });
+  }
+
+  document.addEventListener('focusin', function (e) {
+    var box = e.target;
+    if (!box.classList || !box.classList.contains('category-input')) return;
+    box.dataset.shown = box.value;
+    box.select();
+    openPanel(box, '');
+  });
+  document.addEventListener('input', function (e) {
+    var box = e.target;
+    if (box.classList && box.classList.contains('category-input')) openPanel(box, box.value);
+  });
+  /* clicking a box that already has focus (e.g. just after picking) reopens the list */
+  document.addEventListener('click', function (e) {
+    var box = e.target;
+    if (box.classList && box.classList.contains('category-input') && !panel) {
+      box.dataset.shown = box.value;
+      box.select();
+      openPanel(box, '');
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!e.target.classList || !e.target.classList.contains('category-input')) return;
+    if (!activeBox) activeBox = e.target;
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!panel) openPanel(e.target, ''); moveHighlight(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveHighlight(-1); }
+    else if (e.key === 'Enter' && panel && highlighted >= 0) {
+      e.preventDefault(); choose(panel.querySelectorAll('.cat-option')[highlighted].dataset.value);
+    }
+    else if (e.key === 'Escape') { activeBox.value = activeBox.dataset.shown || activeBox.value; closePanel(); }
+  });
+  document.addEventListener('focusout', function (e) {
+    var box = e.target;
+    if (!box.classList || !box.classList.contains('category-input')) return;
+    if (!box.value.trim() && box.dataset.shown) box.value = box.dataset.shown;
+    /* snap a typed name to an existing category's exact spelling */
+    var match = CATS.filter(function (c) { return c.toLowerCase() === box.value.trim().toLowerCase(); })[0];
+    if (match) box.value = match;
+    setTimeout(function () { if (activeBox === box && document.activeElement !== box) closePanel(); }, 0);
+  });
+  window.addEventListener('resize', position);
+  window.addEventListener('scroll', position, true);
+})();
+
+{% block extra_script %}{% endblock %}
+</script>
+</body>
+</html>

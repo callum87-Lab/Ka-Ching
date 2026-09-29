@@ -209,7 +209,7 @@ def check_and_notify_tomorrow(force: bool = False):
         sub = sum(i["price"] for i in its)
         lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:.2f}")
     message = "\n".join(lines)
-    title = f"Tomorrow: {len(items)} comic{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
+    title = f"Tomorrow: {len(items)} item{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
 
     result = send_via_configured_provider(cur, title, message)
     conn.close()
@@ -264,7 +264,7 @@ def check_and_notify_week(force: bool = False):
         sub = sum(i["price"] for i in its)
         lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:.2f}")
     message = "\n".join(lines)
-    title = f"This week: {len(items)} comic{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
+    title = f"This week: {len(items)} item{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
 
     result = send_via_configured_provider(cur, title, message)
     conn.close()

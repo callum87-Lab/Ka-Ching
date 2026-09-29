@@ -1,0 +1,557 @@
+{% extends "v2/base.html" %}
+{% block title %}Ka-Ching! &middot; Settings{% endblock %}
+
+{% block extra_style %}
+  .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; width: 100%; max-width: 100%; box-sizing: border-box; }
+  .field-input[type="file"]::file-selector-button { margin-right: 12px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--neon-blue); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .field-input[type="file"]::file-selector-button:hover { background: rgba(47,216,255,0.1); }
+  .field-input:focus { outline: none; border-color: var(--neon-blue); }
+  .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .notif-toggle-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
+  .toggle-switch { width: 32px; height: 18px; border-radius: 999px; background: rgba(255,255,255,0.08); position: relative; cursor: pointer; flex: 0 0 auto; }
+  .toggle-switch.on { background: var(--neon-blue); }
+  .toggle-switch::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition: left 0.15s ease; }
+  .toggle-switch.on::after { left: 16px; }
+  .submit-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; }
+  .btn-secondary { font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-primary { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: none; background: var(--neon-blue); color: #04121a; cursor: pointer; text-decoration: none; display: inline-block; }
+  .search-pagination { display: flex; align-items: center; gap: 14px; justify-content: center; }
+  .btn-secondary.danger { color: var(--neon-pink); border-color: rgba(255,77,141,0.3); }
+  .cat-list { border-top: 1px solid var(--border); }
+  .cat-row { display: grid; grid-template-columns: 14px 1fr 90px 150px 60px; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .cat-head { font-size: 12.5px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 4px; }
+  .cat-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .cat-count { font-family: var(--font-mono); font-size: 13.5px; color: var(--text-muted); }
+  .series-cell { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-muted); }
+  .series-cell form { display: contents; }
+  button.toggle-switch { border: none; padding: 0; }
+  .cat-remove { font-size: 13px; font-weight: 600; color: var(--text-dim); background: none; border: none; cursor: pointer; text-align: right; padding: 0; }
+  .cat-remove:hover { color: var(--neon-pink); }
+  .cat-remove:disabled { opacity: 0.35; cursor: default; }
+  .cat-remove:disabled:hover { color: var(--text-dim); }
+  .add-cat { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .add-cat .field-input { width: auto; flex: 1 1 220px; }
+  .add-cat-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; cursor: pointer; }
+  @media (max-width: 700px) {
+    .cat-row { grid-template-columns: 14px 1fr 70px; }
+    .cat-row .series-cell { grid-column: 2 / span 2; }
+    .cat-row .cat-remove-wrap { grid-column: 2; }
+    .cat-row .cat-remove { text-align: left; }
+    .cat-head { display: none; }
+  }
+  .warn-hint { font-size: 13.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5; max-width: 72ch; }
+  .getting-started-step { display: flex; gap: 14px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+  .getting-started-step:first-of-type { border-top: none; padding-top: 0; }
+  .getting-started-step b { color: var(--text); }
+  .gs-num { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: rgba(47,216,255,0.14); color: var(--neon-blue); font-weight: 800; font-size: 12.5px; display: flex; align-items: center; justify-content: center; }
+
+  .settings-card { grid-column: span 12; }
+  .settings-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .collapse-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; }
+  .collapsible-body { margin-top: 10px; }
+  .collapsible-body.collapsed { display: none; }
+
+  .shops-list-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .shops-list-row:first-of-type { border-top: none; }
+  .shops-count { color: var(--text-dim); font-size: 12.5px; }
+
+  .sync-switch-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sync-switch-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .sync-key-wrap { position: relative; display: flex; align-items: center; }
+  .sync-key-wrap input { flex: 1; padding-right: 36px; }
+  .sync-key-copy-icon { position: absolute; right: 12px; width: 15px; height: 15px; color: var(--text-dim); cursor: pointer; }
+  .sync-key-copied-label { position: absolute; right: 12px; font-size: 10.5px; color: var(--neon-green); display: none; }
+
+  .past-backups-list li, .sync-devices-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+  .past-backups-list li:first-of-type, .sync-devices-list li:first-of-type { border-top: none; }
+
+  .result-banner { grid-column: span 12; border-radius: 12px; padding: 12px 16px; background: rgba(60,242,166,0.08); border: 1px solid rgba(60,242,166,0.3); color: var(--neon-green); font-size: 12.5px; margin-bottom: 16px; }
+  .about-meta { font-size: 12px; color: var(--text-dim); margin-top: 10px; }
+  .about-meta a { color: var(--neon-blue); }
+
+  .day-group { border-top: 1px solid var(--border); padding: 12px 0; }
+  .day-group:first-of-type { border-top: none; padding-top: 4px; }
+  .day-group-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; cursor: pointer; }
+  .day-group-label { font-size: 12px; font-weight: 700; }
+  .day-group-arrow { color: var(--text-dim); font-size: 11px; transition: transform 0.15s ease; display: inline-block; }
+  .day-group:not(.expanded) .day-group-arrow { transform: rotate(-90deg); }
+  .day-group-body { margin-top: 10px; }
+  .day-group:not(.expanded) .day-group-body { display: none; }
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <h1>Settings</h1>
+  <p>General preferences, budget, and how this app is set up</p>
+</div>
+
+{% if reset_result == 'done' %}
+<div class="grid"><div class="result-banner">Factory reset complete &mdash; all tracked items and order data cleared. Settings above were kept.</div></div>
+{% endif %}
+{% if restore_result == 'ok' %}
+<div class="grid"><div class="result-banner">Restored &mdash; {{ restore_count }} item(s) loaded from that backup.</div></div>
+{% endif %}
+{% if test_result == 'sent' %}
+<div class="grid"><div class="result-banner">Test sent successfully.</div></div>
+{% endif %}
+{% if test_error %}
+<div class="grid"><div class="result-banner" style="background:rgba(255,77,141,0.08); border-color:rgba(255,77,141,0.3); color:var(--neon-pink);">Test failed: {{ test_error }}</div></div>
+{% endif %}
+{% if notif_import_result == 'ok' %}
+<div class="grid"><div class="result-banner">Notification settings imported.</div></div>
+{% elif notif_import_result == 'bad_file' %}
+<div class="grid"><div class="result-banner" style="background:rgba(255,77,141,0.08); border-color:rgba(255,77,141,0.3); color:var(--neon-pink);">That file didn't look like a valid notification config export.</div></div>
+{% endif %}
+
+<div id="settings-tab-general">
+
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:0;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Budget</div>
+      <p class="warn-hint" style="margin-top:10px;">Set a monthly target and the dashboard shows how close this month's forecast total is to it. Leave blank to hide the progress bar entirely.</p>
+      <form method="post" action="/settings">
+        <input type="hidden" name="next" value="/settings">
+        <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
+        <input type="hidden" name="notify_hour" value="{{ values.notify_hour }}">
+        <input type="hidden" name="ntfy_url" value="{{ values.ntfy_url }}">
+        <input type="hidden" name="ntfy_topic" value="{{ values.ntfy_topic }}">
+        <input type="hidden" name="gotify_url" value="{{ values.gotify_url }}">
+        <input type="hidden" name="gotify_token" value="{{ values.gotify_token }}">
+        <input type="hidden" name="telegram_bot_token" value="{{ values.telegram_bot_token }}">
+        <input type="hidden" name="telegram_chat_id" value="{{ values.telegram_chat_id }}">
+        <input type="hidden" name="webhook_url" value="{{ values.webhook_url }}">
+        <input type="hidden" name="webhook_json_template" value="{{ values.webhook_json_template }}">
+        <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
+        <input type="hidden" name="weekly_digest_enabled" value="{{ values.weekly_digest_enabled }}">
+        <input type="hidden" name="weekly_digest_day" value="{{ values.weekly_digest_day }}">
+        <input type="hidden" name="currency_symbol" value="{{ values.currency_symbol }}">
+        <input type="hidden" name="default_landing_page" value="{{ values.default_landing_page }}">
+        <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
+
+        <div class="settings-form-grid">
+          <label class="field-label"><span>Monthly budget ({{ currency() }})</span><input class="field-input" type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00"></label>
+          <label class="field-label"><span>Budget cycle</span>
+            <select class="field-input" name="budget_cycle">
+              <option value="monthly" {{ 'selected' if values.budget_cycle == 'monthly' else '' }}>Monthly</option>
+              <option value="weekly" {{ 'selected' if values.budget_cycle == 'weekly' else '' }}>Weekly</option>
+              <option value="28day" {{ 'selected' if values.budget_cycle == '28day' else '' }}>28-day rolling</option>
+            </select>
+          </label>
+          {% set _sbd = sidebar_budget_display() %}
+          <label class="field-label"><span>Sidebar budget box shows</span>
+            <select class="field-input" name="sidebar_budget_display">
+              <option value="spent_of" {{ 'selected' if _sbd == 'spent_of' else '' }}>Spent of budget</option>
+              <option value="left" {{ 'selected' if _sbd == 'left' else '' }}>Left / over</option>
+              <option value="percent" {{ 'selected' if _sbd == 'percent' else '' }}>Percentage used</option>
+              <option value="daily" {{ 'selected' if _sbd == 'daily' else '' }}>Daily allowance</option>
+              <option value="due" {{ 'selected' if _sbd == 'due' else '' }}>Spent + still due</option>
+              <option value="hidden" {{ 'selected' if _sbd == 'hidden' else '' }}>Hidden</option>
+            </select>
+          </label>
+        </div>
+        <label class="notif-toggle-row">
+          <span class="toggle-switch {{ 'on' if values.budget_rollover == 'yes' else '' }}" data-toggle-name="budget_rollover"></span>
+          <input type="checkbox" name="budget_rollover" value="yes" {{ 'checked' if values.budget_rollover == 'yes' else '' }} style="display:none;">
+          <span>Roll over unused budget into the next cycle (monthly only)</span>
+        </label>
+        <label class="notif-toggle-row">
+          <span class="toggle-switch {{ 'on' if values.budget_alert_enabled == 'yes' else '' }}" data-toggle-name="budget_alert_enabled"></span>
+          <input type="checkbox" name="budget_alert_enabled" value="yes" {{ 'checked' if values.budget_alert_enabled == 'yes' else '' }} style="display:none;">
+          <span>Also notify when I cross 80% of this month's budget</span>
+        </label>
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+          <button type="submit" class="submit-btn" style="margin-top:0;">Save settings</button>
+      </form>
+          <form method="post" action="/settings/test-budget-alert" style="display:contents;"><input type="hidden" name="next" value="/settings"><button type="submit" class="btn-secondary">Test budget alert now</button></form>
+        </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg></span>General preferences</div>
+      <form method="post" action="/settings">
+        <input type="hidden" name="next" value="/settings">
+        <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
+        <input type="hidden" name="notify_hour" value="{{ values.notify_hour }}">
+        <input type="hidden" name="ntfy_url" value="{{ values.ntfy_url }}">
+        <input type="hidden" name="ntfy_topic" value="{{ values.ntfy_topic }}">
+        <input type="hidden" name="gotify_url" value="{{ values.gotify_url }}">
+        <input type="hidden" name="gotify_token" value="{{ values.gotify_token }}">
+        <input type="hidden" name="telegram_bot_token" value="{{ values.telegram_bot_token }}">
+        <input type="hidden" name="telegram_chat_id" value="{{ values.telegram_chat_id }}">
+        <input type="hidden" name="webhook_url" value="{{ values.webhook_url }}">
+        <input type="hidden" name="webhook_json_template" value="{{ values.webhook_json_template }}">
+        <input type="hidden" name="notify_on_quiet_days" value="{{ values.notify_on_quiet_days }}">
+        <input type="hidden" name="weekly_digest_enabled" value="{{ values.weekly_digest_enabled }}">
+        <input type="hidden" name="weekly_digest_day" value="{{ values.weekly_digest_day }}">
+        <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
+        <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
+        <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
+        <input type="hidden" name="budget_alert_enabled" value="{{ values.budget_alert_enabled }}">
+
+        <div class="settings-form-grid">
+          <label class="field-label"><span>Currency</span>
+            <select class="field-input" name="currency_symbol">
+              <option value="gbp" {{ 'selected' if values.currency_symbol == 'gbp' else '' }}>&pound; GBP</option>
+              <option value="usd" {{ 'selected' if values.currency_symbol == 'usd' else '' }}>$ USD</option>
+              <option value="eur" {{ 'selected' if values.currency_symbol == 'eur' else '' }}>&euro; EUR</option>
+            </select>
+          </label>
+          <label class="field-label"><span>Default landing page</span>
+            <select class="field-input" name="default_landing_page">
+              <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
+              <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
+              <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
+              <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
+            </select>
+          </label>
+        </div>
+        <p class="warn-hint">Changes the symbol shown everywhere in the app, and lets the paste-in importer and manual add form recognise prices in that currency too. The two dedicated shop parsers (Forbidden Planet, eBay) are still built around their UK pages specifically, whatever this is set to.</p>
+        <label class="notif-toggle-row">
+          <span class="toggle-switch {{ 'on' if values.auto_backup == 'yes' else '' }}" data-toggle-name="auto_backup"></span>
+          <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }} style="display:none;">
+          <span>Automatic daily backup (kept alongside the database, last 7 days retained)</span>
+        </label>
+        <button type="submit" class="submit-btn">Save settings</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card settings-card" id="categories-card">
+      <div class="settings-card-head">
+        <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>Categories</div>
+        <button type="button" class="collapse-btn" data-target="categories-body">&#9656;</button>
+      </div>
+      <div class="collapsible-body collapsed" id="categories-body">
+        <p class="warn-hint">What kinds of things you track. Turn on "Has series" for anything with numbered issues, volumes or sets.</p>
+        <div class="cat-list">
+          <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span>Has series</span><span></span></div>
+          {% for c in categories_with_counts %}
+          <div class="cat-row">
+            <span class="cat-dot" style="background:{{ c.color }};"></span>
+            <span>{{ c.name }}</span>
+            <span class="cat-count">{{ c.item_count }} item{{ "s" if c.item_count != 1 else "" }}</span>
+            <span class="series-cell">
+              <form method="post" action="/settings/categories/{{ c.id }}/series">
+                <input type="hidden" name="next" value="/settings#categories-card">
+                <button type="submit" class="toggle-switch {{ 'on' if c.has_series else '' }}" aria-pressed="{{ 'true' if c.has_series else 'false' }}" aria-label="Has series: {{ c.name }}"></button>
+              </form>
+              {{ 'Has series' if c.has_series else 'No series' }}
+            </span>
+            <form method="post" action="/settings/categories/{{ c.id }}/remove" class="cat-remove-wrap" style="text-align:right;">
+              <input type="hidden" name="next" value="/settings#categories-card">
+              {% if c.item_count %}
+              <button type="button" class="cat-remove" disabled title="Move its items to another category first">Remove</button>
+              {% elif c.id == default_cat_id %}
+              <button type="button" class="cat-remove" disabled title="This is the default category for new items">Remove</button>
+              {% else %}
+              <button type="submit" class="cat-remove">Remove</button>
+              {% endif %}
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+        <form method="post" action="/settings/categories/add" class="add-cat">
+          <input type="hidden" name="next" value="/settings#categories-card">
+          <input class="field-input" type="text" name="name" maxlength="60" required placeholder="New category, e.g. Lego">
+          <button type="submit" class="add-cat-btn">Add category</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="settings-card-head">
+        <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.61 3H4a1 1 0 0 0-1 1v5.61a2 2 0 0 0 .59 1.41l9.58 9.58a2 2 0 0 0 2.82 0l4.6-4.6a2 2 0 0 0 0-2.82Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>Shops</div>
+        <button type="button" class="collapse-btn" data-target="shops-body">&#9656;</button>
+      </div>
+      <div class="collapsible-body collapsed" id="shops-body">
+        <p class="warn-hint">Rename a shop across every item that has it &mdash; useful for fixing a typo, or merging two names that are really the same shop (renaming to a name that already exists just folds them together).</p>
+        {% if all_shops %}
+          <div id="shops-list-body">
+          {% for shop in all_shops %}
+          <form method="post" action="/settings/shops/rename" class="shops-list-row">
+            <input type="hidden" name="old_name" value="{{ shop.source }}">
+            <input type="hidden" name="next" value="/settings">
+            <span style="flex:1;">{{ shop.source }}</span>
+            <span class="shops-count">{{ shop.n }} item{{ "s" if shop.n != 1 else "" }}</span>
+            <input class="field-input" style="width:160px;" type="text" name="new_name" value="{{ shop.source }}">
+            <button type="submit" class="btn-secondary">Rename</button>
+          </form>
+          {% endfor %}
+          </div>
+          <div class="search-pagination" id="shops-pagination" style="display:none; margin-top:14px;">
+            <button type="button" class="btn-secondary" id="shops-prev-btn">&larr; Prev</button>
+            <span class="muted" style="font-size:12px;" id="shops-page-label">Page 1 of 1</span>
+            <button type="button" class="btn-secondary" id="shops-next-btn">Next &rarr;</button>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div><!-- /settings-tab-general -->
+
+{% if sync_feature_available() %}
+<div id="settings-tab-sync" style="display:none;">
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></span>Sync</div>
+      {% set sync_on = sync_enabled() %}
+      <div class="sync-switch-row">
+        <form method="post" action="/settings/sync/enabled" style="display:contents;">
+          <input type="hidden" name="enabled" value="{{ '0' if sync_on else '1' }}">
+          <input type="hidden" name="next" value="/settings">
+          <button type="submit" class="toggle-switch {{ 'on' if sync_on else '' }}" aria-pressed="{{ 'true' if sync_on else 'false' }}" aria-label="Phone app sync"></button>
+        </form>
+        <span class="sync-switch-label">Phone app sync</span>
+      </div>
+      {% if not sync_on %}
+      <p class="warn-hint">The phone app isn't connected. While this is off, the app can't sync with this server. Your sync key is kept, so turning this back on reconnects any device already set up.</p>
+      {% else %}
+      <p class="warn-hint">Lets the Android app connect straight to this server so both stay in step. Direct connection only &mdash; nothing else is in the loop, and nothing about this is ever sent anywhere but the device you connect yourself.</p>
+
+      {% if sync_api_key %}
+      <label class="field-label"><span>Sync key</span>
+        <div class="sync-key-wrap">
+          <input type="text" class="field-input mono" id="sync-key-input" value="{{ sync_api_key }}" readonly>
+          <svg class="sync-key-copy-icon" id="sync-key-copy-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span class="sync-key-copied-label" id="sync-key-copied-label">Copied!</span>
+        </div>
+      </label>
+      <p class="warn-hint">Paste this into the app's Settings &rarr; Sync screen. Click the key above to copy it.</p>
+      <form method="post" action="/settings/sync/generate-key" onsubmit="return confirm('This invalidates the current key - any device already using it will need the new one pasted in again. Continue?');">
+        <input type="hidden" name="next" value="/settings">
+        <button type="submit" class="btn-primary">Regenerate key</button>
+      </form>
+      {% else %}
+      <form method="post" action="/settings/sync/generate-key">
+        <input type="hidden" name="next" value="/settings">
+        <button type="submit" class="submit-btn">Generate sync key</button>
+      </form>
+      {% endif %}
+
+      {% if synced_devices %}
+      <p class="warn-hint" style="margin-top:16px;">Devices that have synced with this server:</p>
+      <ul class="sync-devices-list">
+        {% for dev in synced_devices %}
+        <li><span>{{ dev.client_label or "Unnamed device" }}</span><span>last synced {{ dev.last_synced_at }}</span></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div><!-- /settings-tab-sync -->
+{% endif %}
+
+<div id="settings-tab-backup" style="display:none;">
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Data backup</div>
+      <p class="warn-hint">Downloads the whole tracked database as a single file &mdash; every item, every manual tick, everything. Separate from GitHub on purpose, since GitHub never sees your real order data.</p>
+      <p class="warn-hint"><span class="mono">{{ item_count }}</span> item{{ "s" if item_count != 1 else "" }} tracked &middot; database file is <span class="mono">{{ db_size_label }}</span></p>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+        <a href="/settings/backup" class="btn-primary">Download backup</a>
+        <a href="/settings/export-all.csv" class="btn-primary">Download full spend history (CSV)</a>
+      </div>
+      <p class="warn-hint">The database backup above is for restoring everything into Ka-Ching! itself. This CSV is a plain spreadsheet of every tracked item, for opening in Excel or Google Sheets &mdash; not something Ka-Ching! can restore from.</p>
+
+      {% if past_backups %}
+      <div class="settings-card-head" style="margin-top:16px;">
+        <span class="warn-hint" style="margin:0;">Automatic backups (last {{ past_backups|length }})</span>
+        <button type="button" class="collapse-btn" data-target="past-backups-body">&#9656;</button>
+      </div>
+      <div class="collapsible-body collapsed" id="past-backups-body">
+        <ul class="past-backups-list">
+          {% for b in past_backups %}
+          <li><span>{{ b.taken_at }}</span><span>{{ b.size_label }}</span><a href="/settings/backups/{{ b.filename }}" class="btn-secondary">Download</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div style="margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">
+        <p class="warn-hint" style="color:var(--neon-pink);">&#9888; Restoring replaces everything currently tracked with whatever's in the file you upload. There's no in-app undo for this &mdash; download a fresh backup first if you want to keep what's here now.</p>
+        <form method="post" action="/settings/restore" enctype="multipart/form-data" onsubmit="return confirm('This replaces everything currently tracked with the contents of this file. This cannot be undone from within the app. Continue?');">
+          <input type="hidden" name="next" value="/settings">
+          <label class="field-label"><span>Restore from backup file</span><input class="field-input" type="file" name="backup_file" accept=".db" required></label>
+          <button type="submit" class="btn-secondary danger">Restore backup</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:14px; color:var(--neon-pink);"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Danger zone</div>
+      <p class="warn-hint">Wipes every tracked item, order, and shipping record. Your notification, budget, and other settings above are kept. There's no undo &mdash; download a backup first if there's anything here worth keeping.</p>
+      <form method="post" action="/settings/factory-reset" onsubmit="return confirm('This permanently deletes every tracked item and order. This cannot be undone. Continue?');">
+        <input type="hidden" name="next" value="/settings">
+        <label class="field-label"><span>Type RESET to confirm</span><input class="field-input" type="text" name="confirm" placeholder="RESET" required></label>
+        <button type="submit" class="btn-secondary danger">Factory reset</button>
+      </form>
+    </div>
+  </div>
+</div><!-- /settings-tab-backup -->
+
+<div id="settings-tab-about" style="display:none;">
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>About</div>
+      <p class="warn-hint">Ka-Ching! answers exactly two questions &mdash; what's due this week and what it'll cost, and what this month (and next) is forecast to come to. Nothing more: no collection cataloguing, no accounts, no cloud, nothing ever leaves this server.</p>
+      <p class="about-meta"><span class="mono">v{{ app_version }}</span> &middot; <a href="https://github.com/callum87-Lab/Ka-Ching" target="_blank" rel="noopener">View on GitHub</a></p>
+    </div>
+  </div>
+</div><!-- /settings-tab-about -->
+
+<div id="settings-tab-help" style="display:none;">
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span>Getting started</div>
+      <div class="getting-started-step"><span class="gs-num">1</span><div><b>Log your first order.</b> Paste an order-history page from Forbidden Planet or eBay into Log Orders, or add items by hand &mdash; either way, nothing's saved until you confirm the review screen.</div></div>
+      <div class="getting-started-step"><span class="gs-num">2</span><div><b>Set a monthly budget.</b> General &rarr; Budget, over on Settings. Once it's set, the ring on Dashboard tracks it automatically and warns you if you go over.</div></div>
+      <div class="getting-started-step"><span class="gs-num">3</span><div><b>Turn on notifications.</b> Alerts &rarr; Notifications, pick a provider (ntfy, Gotify, Telegram, or a webhook), send a test to confirm it works, then it'll check once a day for anything releasing tomorrow.</div></div>
+      {% if sync_enabled() %}<div class="getting-started-step"><span class="gs-num">4</span><div><b>Connect the Android app (optional).</b> Settings &rarr; Sync, generate a key, paste it into the app. From then on both stay in step automatically.</div></div>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Frequently asked</div>
+
+      <div class="day-group" id="faq-1">
+        <div class="day-group-head"><div class="day-group-label">How does the shipping estimate work?</div><span class="day-group-arrow">&#9662;</span></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">Ka-Ching! looks at your last several real shipments from that shop and averages the postage, so forecasts use a realistic figure instead of £0 until an exact one comes in from a pasted order or manual entry.</p></div>
+      </div>
+      <div class="day-group" id="faq-2">
+        <div class="day-group-head"><div class="day-group-label">What happens if I paste the same order page twice?</div><span class="day-group-arrow">&#9662;</span></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">Nothing breaks &mdash; items you've already marked paid or cancelled are left alone, everything else just refreshes to match what the retailer's currently showing. Safe to paste the same page again next month.</p></div>
+      </div>
+      <div class="day-group" id="faq-3">
+        <div class="day-group-head"><div class="day-group-label">Why is an item marked "awaiting charge"?</div><span class="day-group-arrow">&#9662;</span></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It released a while ago but hasn't been marked paid yet. Usually just a normal short delay before the retailer actually charges the card &mdash; worth a check if it's been sitting a while, but not necessarily a problem.</p></div>
+      </div>
+      <div class="day-group" id="faq-4">
+        <div class="day-group-head"><div class="day-group-label">What's a "ghost item"?</div><span class="day-group-arrow">&#9662;</span></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">An entry that came from an old parser issue and can't be matched to a real order number. Almost always a duplicate of something already tracked properly elsewhere &mdash; worth checking before removing.</p></div>
+      </div>
+      <div class="day-group" id="faq-5">
+        <div class="day-group-head"><div class="day-group-label">Does anything ever leave this server?</div><span class="day-group-arrow">&#9662;</span></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">No &mdash; no accounts, no cloud, nothing tracked here is sent anywhere except the notification service you set up yourself and the device you sync with directly.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card settings-card">
+      <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>More help</div>
+      <p class="warn-hint">For anything not covered above, the project's GitHub is the place to look.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="https://github.com/callum87-Lab/Ka-Ching" target="_blank" rel="noopener" class="btn-secondary">README / docs</a>
+        <a href="https://github.com/callum87-Lab/Ka-Ching/issues" target="_blank" rel="noopener" class="btn-secondary">Report an issue</a>
+        <a href="https://github.com/callum87-Lab/Ka-Ching/discussions" target="_blank" rel="noopener" class="btn-secondary">Discussions</a>
+      </div>
+    </div>
+  </div>
+</div><!-- /settings-tab-help -->
+
+{% endblock %}
+
+{% block extra_script %}
+(function () {
+  var settingsTabs = ['general', 'sync', 'backup', 'about', 'help'];
+  var storageKey = 'kaching_settings_tab';
+  var tabs = document.querySelectorAll('[data-settings-tab]');
+
+  function activate(target) {
+    tabs.forEach(function (t) {
+      var isMatch = t.dataset.settingsTab === target;
+      t.classList.toggle('active', isMatch);
+      t.style.color = isMatch ? 'var(--neon-blue)' : 'var(--text-dim)';
+      t.style.fontWeight = isMatch ? '600' : '400';
+    });
+    settingsTabs.forEach(function (key) {
+      var el = document.getElementById('settings-tab-' + key);
+      if (el) el.style.display = (key === target) ? '' : 'none';
+    });
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var target = tab.dataset.settingsTab;
+      activate(target);
+      try { localStorage.setItem(storageKey, target); } catch (e) {}
+    });
+  });
+
+  var remembered = null;
+  try { remembered = localStorage.getItem(storageKey); } catch (e) {}
+  // Only restore a remembered tab that's actually on the page (the Sync
+  // tab is left out entirely while phone sync is hidden).
+  if (remembered && remembered !== 'general' && settingsTabs.indexOf(remembered) !== -1
+      && document.getElementById('settings-tab-' + remembered)) {
+    activate(remembered);
+  }
+})();
+
+document.querySelectorAll('[data-toggle-name]').forEach(function (toggle) {
+  toggle.addEventListener('click', function () {
+    toggle.classList.toggle('on');
+    var checkbox = toggle.parentElement.querySelector('input[name="' + toggle.dataset.toggleName + '"]');
+    if (checkbox) checkbox.checked = toggle.classList.contains('on');
+  });
+});
+
+var syncKeyInput = document.getElementById('sync-key-input');
+var syncKeyCopyBtn = document.getElementById('sync-key-copy-btn');
+if (syncKeyInput && syncKeyCopyBtn) {
+  syncKeyCopyBtn.addEventListener('click', function () {
+    syncKeyInput.select();
+    navigator.clipboard.writeText(syncKeyInput.value).then(function () {
+      var label = document.getElementById('sync-key-copied-label');
+      label.style.display = 'inline';
+      setTimeout(function () { label.style.display = 'none'; }, 1500);
+    });
+  });
+}
+
+(function () {
+  var PAGE_SIZE = 10;
+  var body = document.getElementById('shops-list-body');
+  if (!body) return;
+  var allRows = Array.prototype.slice.call(body.querySelectorAll('.shops-list-row'));
+  var pagination = document.getElementById('shops-pagination');
+  var pageLabel = document.getElementById('shops-page-label');
+  var prevBtn = document.getElementById('shops-prev-btn');
+  var nextBtn = document.getElementById('shops-next-btn');
+  var currentPage = 1;
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(allRows.length / PAGE_SIZE));
+  }
+
+  function showPage(page) {
+    var pages = totalPages();
+    currentPage = Math.min(Math.max(1, page), pages);
+    var start = (currentPage - 1) * PAGE_SIZE;
+    allRows.forEach(function (row, i) {
+      row.style.display = (i >= start && i < start + PAGE_SIZE) ? '' : 'none';
+    });
+    pageLabel.textContent = 'Page ' + currentPage + ' of ' + pages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= pages;
+    pagination.style.display = pages > 1 ? 'flex' : 'none';
+  }
+
+  prevBtn.addEventListener('click', function () { showPage(currentPage - 1); });
+  nextBtn.addEventListener('click', function () { showPage(currentPage + 1); });
+
+  showPage(1);
+})();
+{% endblock %}

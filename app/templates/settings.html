@@ -19,7 +19,7 @@
   <div class="result-banner result-banner-error">Failed: {{ test_error }}</div>
   {% endif %}
 
-  <form method="post" action="/settings" class="item-edit-form" id="settings-form">
+  <form method="post" action="/settings" class="item-edit-form" id="settings-form"><input type="hidden" name="next" value="/classic/settings">
     <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
     <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
     <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
@@ -135,13 +135,13 @@
   </form>
 
   <div class="settings-test-actions">
-    <form method="post" action="/settings/test" class="inline-form">
+    <form method="post" action="/settings/test" class="inline-form"><input type="hidden" name="next" value="/classic/settings">
       <button type="submit" class="btn-tiny btn-test">Send test notification</button>
     </form>
-    <form method="post" action="/settings/test-digest" class="inline-form">
+    <form method="post" action="/settings/test-digest" class="inline-form"><input type="hidden" name="next" value="/classic/settings">
       <button type="submit" class="btn-tiny btn-test">Test tomorrow's digest now</button>
     </form>
-    <form method="post" action="/settings/test-weekly-digest" class="inline-form">
+    <form method="post" action="/settings/test-weekly-digest" class="inline-form"><input type="hidden" name="next" value="/classic/settings">
       <button type="submit" class="btn-tiny btn-test">Test weekly digest now</button>
     </form>
   </div>
@@ -161,7 +161,7 @@
 
   <div class="settings-test-actions">
     <a href="/settings/export-notifications.json" class="btn-tiny btn-test">Export notification config</a>
-    <form method="post" action="/settings/import-notifications" enctype="multipart/form-data" class="inline-form">
+    <form method="post" action="/settings/import-notifications" enctype="multipart/form-data" class="inline-form"><input type="hidden" name="next" value="/classic/settings">
       <input type="file" name="notification_config_file" accept=".json" required>
       <button type="submit" class="btn-tiny btn-test">Import</button>
     </form>
@@ -202,7 +202,7 @@
     Set a monthly target and the dashboard shows how close this month's
     forecast total is to it. Leave blank to hide the progress bar entirely.
   </p>
-  <form method="post" action="/settings" class="item-edit-form">
+  <form method="post" action="/settings" class="item-edit-form"><input type="hidden" name="next" value="/classic/settings">
     <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
     <input type="hidden" name="notify_hour" value="{{ values.notify_hour }}">
     <input type="hidden" name="ntfy_url" value="{{ values.ntfy_url }}">
@@ -250,7 +250,7 @@
     <button type="submit">Save settings</button>
   </form>
   <div class="settings-test-actions">
-    <form method="post" action="/settings/test-budget-alert" class="inline-form">
+    <form method="post" action="/settings/test-budget-alert" class="inline-form"><input type="hidden" name="next" value="/classic/settings">
       <button type="submit" class="btn-tiny btn-test">Test budget alert now</button>
     </form>
   </div>
@@ -260,7 +260,7 @@
   <div class="block-head">
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span>General preferences</h2>
   </div>
-  <form method="post" action="/settings" class="item-edit-form">
+  <form method="post" action="/settings" class="item-edit-form"><input type="hidden" name="next" value="/classic/settings">
     <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
     <input type="hidden" name="notify_hour" value="{{ values.notify_hour }}">
     <input type="hidden" name="ntfy_url" value="{{ values.ntfy_url }}">
@@ -462,7 +462,7 @@
       download a fresh backup first if you want to keep what's here now.
     </p>
     <form method="post" action="/settings/restore" enctype="multipart/form-data" class="item-edit-form"
-          onsubmit="return confirm('This replaces everything currently tracked with the contents of this file. This cannot be undone from within the app. Continue?');">
+          onsubmit="return confirm('This replaces everything currently tracked with the contents of this file. This cannot be undone from within the app. Continue?');"><input type="hidden" name="next" value="/classic/settings">
       <label>
         <span>Restore from backup file</span>
         <input type="file" name="backup_file" accept=".db" required>

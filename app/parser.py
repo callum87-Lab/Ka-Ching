@@ -219,12 +219,17 @@ def store_parsed_items(items, order_totals):
         cur.execute(
             """
             INSERT OR IGNORE INTO items
-                (name, order_number, placed_date, status, release_date, charge_status, price, note, imported_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (name, order_number, placed_date, status, release_date, charge_status, price, note, imported_at,
+                 category_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 it["name"], order_number, placed_date, it["status"],
                 release_date, it["charge_status"], it["price"], it["note"], now,
+                # Category only applies to brand-new items - the refresh
+                # UPDATE below deliberately never touches it, so a category
+                # changed by hand survives re-importing the same order.
+                it.get("category_id") or db.default_category_id(conn),
             ),
         )
         if cur.rowcount:

@@ -1,0 +1,527 @@
+{% extends "v2/base.html" %}
+{% block title %}Ka-Ching! &middot; Alerts{% endblock %}
+
+{% block extra_style %}
+  .logorders-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .logorders-tab { padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 700; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
+  .warn-card { grid-column: span 12; border-color: rgba(255,77,141,0.28); background: linear-gradient(180deg, rgba(255,77,141,0.05), var(--surface) 45%); }
+  .warn-card.violet { border-color: rgba(155,123,255,0.28); background: linear-gradient(180deg, rgba(155,123,255,0.06), var(--surface) 45%); }
+  .warn-card .card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+  .warn-card .card-title { display: flex; align-items: center; gap: 9px; font-size: 15.5px; font-weight: 700; }
+  .warn-card.pink .card-title, .warn-card .card-title { color: var(--neon-pink); }
+  .warn-card.violet .card-title { color: var(--neon-violet); }
+  .warn-hint { font-size: 13.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5; max-width: 72ch; }
+  .warn-action-btn { font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; display:inline-block; }
+  .result-banner { grid-column: span 12; border-radius: 12px; padding: 12px 16px; background: rgba(60,242,166,0.08); border: 1px solid rgba(60,242,166,0.3); color: var(--neon-green); font-size: 12.5px; margin-bottom: 16px; }
+  .is-hidden { display: none; }
+  .search-pagination { display: flex; align-items: center; gap: 14px; justify-content: center; }
+  .warn-action-btn.danger { color: var(--neon-pink); border-color: rgba(255,77,141,0.3); }
+
+  .dup-group { padding: 10px 0; border-top: 1px solid var(--border); }
+  .dup-group:first-of-type { border-top: none; }
+  .dup-group-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 4px; }
+  .dup-group-date { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .dup-name { font-size: 14.5px; margin-bottom: 8px; }
+
+  .warn-item-row { display: grid; grid-template-columns: 1fr 90px 16px 26px; align-items: center; gap: 12px; padding: 7px 0; border-top: 1px dashed var(--border); }
+  .warn-item-row .row-name { font-size: 14px; color: var(--text-muted); }
+  .warn-item-row:first-of-type { border-top: none; }
+  .row-name { font-size: 13.5px; }
+  .row-name .late-tag { font-size: 11.5px; color: var(--neon-pink); background: rgba(255,77,141,0.10); padding: 2px 7px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
+  .row-price { font-size: 13.5px; font-weight: 600; text-align: right; }
+  .row-check { width: 14px; height: 14px; border-radius: 4px; accent-color: var(--neon-blue); }
+  .paid-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; display: flex; align-items: center; justify-content: center; color: transparent; flex: 0 0 auto; }
+  .paid-check.checked { background: var(--neon-green); border-color: var(--neon-green); color: #06111f; box-shadow: 0 0 7px rgba(60,242,166,0.4); }
+  .paid-check svg { width: 11px; height: 11px; }
+
+  .row-menu-wrap { position: relative; display: flex; justify-content: flex-end; }
+  .row-menu-btn { width: 22px; height: 22px; border-radius: 7px; background: transparent; border: 1px solid transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .row-menu-btn:hover { background: var(--surface-raised); border-color: var(--border); }
+  .row-actions-drawer { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); min-width: 104px; }
+  .row-actions-drawer a, .row-actions-drawer button { text-align: left; background: none; border: none; color: var(--text); font-size: 13.5px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; display: block; }
+  .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: rgba(255,255,255,0.05); }
+  .row-actions-drawer .danger:hover { color: var(--neon-pink); }
+
+  .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
+  .field-input:focus { outline: none; border-color: var(--neon-blue); }
+  .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .provider-fields { background: none; border: none; padding: 0; margin: 0 0 6px; }
+  .notif-toggle-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
+  .toggle-switch { width: 32px; height: 18px; border-radius: 999px; background: rgba(255,255,255,0.08); position: relative; cursor: pointer; flex: 0 0 auto; }
+  .toggle-switch.on { background: var(--neon-blue); }
+  .toggle-switch::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition: left 0.15s ease; }
+  .toggle-switch.on::after { left: 16px; }
+  .notif-test-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .notif-log-row { display: grid; grid-template-columns: 130px 1fr 70px; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .notif-log-row:first-of-type { border-top: none; }
+  .notif-log-status { font-size: 12.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; text-align: center; }
+  .notif-log-status.ok { color: var(--neon-green); background: rgba(60,242,166,0.10); }
+  .notif-log-status.bad { color: var(--neon-pink); background: rgba(255,77,141,0.10); cursor: help; }
+  .empty-note { font-size: 13.5px; color: var(--text-dim); padding: 6px 4px; }
+
+  .plain-stat { grid-column: span 4; }
+  .plain-stat-label { font-size: 13.5px; color: var(--text-muted); margin-bottom: 4px; }
+  .plain-stat-value { font-size: 25px; font-weight: 800; }
+  .plain-stat-value.is-open { color: var(--neon-pink); }
+  .plain-stat-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
+
+  .history-card { grid-column: span 12; }
+  .history-log-row { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; font-size: 13.5px; }
+  .history-log-row .hl-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; position: relative; top: 1px; }
+  .history-log-row .hl-date { color: var(--text-dim); width: 58px; flex: 0 0 auto; white-space: nowrap; }
+  .history-log-row .hl-text { color: var(--text); }
+{% endblock %}
+
+{% block content %}
+
+{% set alert_count = (duplicate_groups|length if duplicate_groups else 0) + (ghost_items|length if ghost_items else 0) + (awaiting_charge|length if awaiting_charge else 0) %}
+<div class="page-head">
+  <h1>Alerts</h1>
+  <p>
+    {% if alert_count %}{{ awaiting_charge|length }} unpaid awaiting charge &middot; {{ duplicate_groups|length }} possible duplicate{{ "s" if duplicate_groups|length != 1 else "" }} &middot; {{ ghost_items|length }} ghost item{{ "s" if ghost_items|length != 1 else "" }}{% else %}Nothing needs your attention right now{% endif %}
+  </p>
+</div>
+
+{% if test_result == 'sent' %}
+<div class="grid"><div class="result-banner">Test sent successfully.</div></div>
+{% endif %}
+{% if test_error %}
+<div class="grid"><div class="result-banner" style="background:rgba(255,77,141,0.08); border-color:rgba(255,77,141,0.3); color:var(--neon-pink);">Test failed: {{ test_error }}</div></div>
+{% endif %}
+{% if notif_import_result == 'ok' %}
+<div class="grid"><div class="result-banner">Notification settings imported.</div></div>
+{% elif notif_import_result == 'bad_file' %}
+<div class="grid"><div class="result-banner" style="background:rgba(255,77,141,0.08); border-color:rgba(255,77,141,0.3); color:var(--neon-pink);">That file didn't look like a valid notification config export.</div></div>
+{% endif %}
+
+
+<div id="tab-alerts">
+
+<div class="grid">
+  <div class="card plain-stat">
+    <div class="plain-stat-label">Currently open</div>
+    <div class="plain-stat-value mono{{ ' is-open' if currently_open > 0 else '' }}">{{ currently_open }}</div>
+    <div class="plain-stat-sub">{{ 'needing a look' if currently_open > 0 else 'nothing needs a look' }}</div>
+  </div>
+  <div class="card plain-stat">
+    <div class="plain-stat-label">Resolved this month</div>
+    <div class="plain-stat-value mono">{{ resolved_this_month }}</div>
+    <div class="plain-stat-sub">alert{{ "s" if resolved_this_month != 1 else "" }} cleared since the 1st</div>
+  </div>
+  <div class="card plain-stat">
+    <div class="plain-stat-label">Last resolved</div>
+    {% if days_since_last_alert is none %}
+    <div class="plain-stat-value mono">&mdash;</div>
+    <div class="plain-stat-sub">nothing resolved yet</div>
+    {% elif days_since_last_alert == 0 %}
+    <div class="plain-stat-value mono">Today</div>
+    <div class="plain-stat-sub">most recent alert cleared</div>
+    {% else %}
+    <div class="plain-stat-value mono">{{ days_since_last_alert }} day{{ "s" if days_since_last_alert != 1 else "" }}</div>
+    <div class="plain-stat-sub">since an alert was last cleared</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card history-card">
+    <div class="card-title" style="margin-bottom:16px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Alert history</div>
+    {% if alert_history %}
+    <div id="history-log-body">
+      {% for e in alert_history %}
+      <div class="history-log-row"><span class="hl-dot" style="background:{{ 'var(--neon-violet)' if e.kind == 'ghost_item' else 'var(--neon-pink)' }}; box-shadow:0 0 6px {{ 'rgba(155,123,255,0.5)' if e.kind == 'ghost_item' else 'rgba(255,77,141,0.5)' }};"></span><span class="hl-date mono">{{ e.at[5:10] }}</span><span class="hl-text">{{ e.text }}</span></div>
+      {% endfor %}
+    </div>
+    <div class="search-pagination" id="history-pagination" style="display:none; margin-top:14px;">
+      <button type="button" class="warn-action-btn" id="history-prev-btn">&larr; Prev</button>
+      <span class="muted" style="font-size:12px;" id="history-page-label">Page 1 of 1</span>
+      <button type="button" class="warn-action-btn" id="history-next-btn">Next &rarr;</button>
+    </div>
+    {% else %}
+    <div class="empty-note">Nothing resolved yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if duplicate_groups %}
+<div class="grid">
+  <div class="card warn-card pink">
+    <div class="card-head">
+      <div class="card-title"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Possible duplicate orders ({{ duplicate_groups|length }})</div>
+    </div>
+    <p class="warn-hint">Two entries with the same title and release date &mdash; usually a re-import or a parser hiccup, but check before dismissing.</p>
+
+    {% for g in duplicate_groups %}
+    <div class="dup-group">
+      <div class="dup-group-head">
+        <span class="dup-group-date">{{ g.release_date_label }}</span>
+        <form method="post" action="/duplicates/dismiss">
+          <input type="hidden" name="name" value="{{ g.name }}">
+          <input type="hidden" name="release_date" value="{{ g.release_date }}">
+          <input type="hidden" name="next" value="/alerts">
+          <button type="submit" class="warn-action-btn">Not a duplicate</button>
+        </form>
+      </div>
+      <div class="dup-name">{{ g.name }}</div>
+      {% for item in g.entries %}
+      <div class="warn-item-row">
+        <span class="row-name">Order #{{ item.order_number or '—' }}</span>
+        <span class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+        <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
+        <div class="row-menu-wrap">
+          <button type="button" class="row-menu-btn" data-drawer-template="drawer-dup-{{ item.id }}">&#8942;</button>
+        </div>
+        <template id="drawer-dup-{{ item.id }}" class="drawer-template">
+          <a href="/items/{{ item.id }}/edit">Edit</a>
+          <form method="post" action="/items/{{ item.id }}/mark" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+            <input type="hidden" name="next" value="/alerts">
+            <input type="hidden" name="action" value="remove">
+            <button type="submit" class="danger">Remove</button>
+          </form>
+        </template>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if ghost_items %}
+<div class="grid">
+  <div class="card warn-card violet">
+    <div class="card-head">
+      <div class="card-title"><span class="card-icon-badge" style="background:rgba(155,123,255,0.14); color:var(--neon-violet);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Items with no order number ({{ ghost_items|length }})</div>
+    </div>
+    <p class="warn-hint">These came from a parser issue in an earlier version and can't be matched to a real order &mdash; almost always a duplicate of something already tracked properly. Check before keeping.</p>
+
+    {% for item in ghost_items %}
+    <div class="warn-item-row">
+      <span class="row-name">{{ item.name }}{% if item.release_date %} &middot; {{ item.release_date }}{% endif %}</span>
+      <span class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+      <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
+      <div class="row-menu-wrap">
+        <button type="button" class="row-menu-btn" data-drawer-template="drawer-ghost-{{ item.id }}">&#8942;</button>
+      </div>
+      <template id="drawer-ghost-{{ item.id }}" class="drawer-template">
+        <a href="/items/{{ item.id }}/edit">Edit</a>
+        <form method="post" action="/items/{{ item.id }}/mark" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+          <input type="hidden" name="next" value="/alerts">
+          <input type="hidden" name="action" value="remove">
+          <button type="submit" class="danger">Remove</button>
+        </form>
+      </template>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if awaiting_charge %}
+<div class="grid">
+  <div class="card warn-card pink">
+    <div class="card-head">
+      <div class="card-title"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg></span>Awaiting charge ({{ awaiting_charge|length }})</div>
+    </div>
+    <p class="warn-hint">These released a while ago but are still sitting unpaid and unmarked. Usually just a normal short delay before the retailer charges &mdash; worth a check if any of these are sitting here a while.</p>
+
+    {% for item in awaiting_charge %}
+    <div class="warn-item-row" style="grid-template-columns: 24px 1fr 90px 16px 26px;">
+      <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
+        <input type="hidden" name="next" value="/alerts">
+        <input type="hidden" name="action" value="paid">
+        <button type="submit" class="paid-check" title="Mark as paid"></button>
+      </form>
+      <span class="row-name">{{ item.name }}<span class="late-tag">{{ item.days_late }}d late</span></span>
+      <span class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+      <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
+      <div class="row-menu-wrap">
+        <button type="button" class="row-menu-btn" data-drawer-template="drawer-aw-{{ item.id }}">&#8942;</button>
+      </div>
+      <template id="drawer-aw-{{ item.id }}" class="drawer-template">
+        <a href="/items/{{ item.id }}/edit">Edit</a>
+        <form method="post" action="/items/{{ item.id }}/mark">
+          <input type="hidden" name="next" value="/alerts">
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit">Cancel</button>
+        </form>
+      </template>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not alert_count %}
+<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">Nothing needs your attention right now.</div></div>
+{% endif %}
+
+</div><!-- /tab-alerts -->
+
+<div id="tab-notifications" style="display:none;">
+
+  <div class="grid">
+    <div class="card" style="grid-column: span 12;">
+      <div class="card-title" style="margin-bottom: 4px;">Notification settings</div>
+      <p class="warn-hint" style="color:var(--text-dim); max-width:none;">Ka-Ching! checks once a day for anything releasing tomorrow and sends a single push through whichever service you set up below, grouped by shop. Stays silent on days with nothing due.</p>
+
+      <form method="post" action="/settings" id="notif-settings-form">
+        <input type="hidden" name="next" value="/alerts">
+        <input type="hidden" name="next" value="/alerts">
+        <!-- Non-notification settings preserved as-is so saving here doesn't reset them -->
+        <input type="hidden" name="monthly_budget" value="{{ values.monthly_budget }}">
+        <input type="hidden" name="budget_cycle" value="{{ values.budget_cycle }}">
+        <input type="hidden" name="budget_rollover" value="{{ values.budget_rollover }}">
+        <input type="hidden" name="currency_symbol" value="{{ values.currency_symbol }}">
+        <input type="hidden" name="default_landing_page" value="{{ values.default_landing_page }}">
+        <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
+
+        <div class="settings-form-grid">
+          <label class="field-label">
+            <span>Provider</span>
+            <select class="field-input" name="notify_provider" id="provider-select">
+              <option value="none" {{ 'selected' if values.notify_provider == 'none' else '' }}>None (off)</option>
+              <option value="ntfy" {{ 'selected' if values.notify_provider == 'ntfy' else '' }}>ntfy</option>
+              <option value="gotify" {{ 'selected' if values.notify_provider == 'gotify' else '' }}>Gotify</option>
+              <option value="telegram" {{ 'selected' if values.notify_provider == 'telegram' else '' }}>Telegram</option>
+              <option value="webhook" {{ 'selected' if values.notify_provider == 'webhook' else '' }}>Custom webhook</option>
+            </select>
+          </label>
+          <label class="field-label">
+            <span>Check time (24hr)</span>
+            <select class="field-input" name="notify_hour">
+              {% for h in range(24) %}
+              <option value="{{ h }}" {{ 'selected' if values.notify_hour == h|string else '' }}>{{ "%02d"|format(h) }}:00</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+
+        <div class="provider-fields {{ '' if values.notify_provider == 'ntfy' else 'is-hidden' }}" data-provider="ntfy">
+          <div class="settings-form-grid">
+            <label class="field-label"><span>ntfy server URL</span><input class="field-input" type="text" name="ntfy_url" value="{{ values.ntfy_url }}"></label>
+            <label class="field-label"><span>ntfy topic</span><input class="field-input" type="text" name="ntfy_topic" value="{{ values.ntfy_topic }}" placeholder="e.g. kaching-callum"></label>
+          </div>
+        </div>
+        <div class="provider-fields {{ '' if values.notify_provider == 'gotify' else 'is-hidden' }}" data-provider="gotify">
+          <div class="settings-form-grid">
+            <label class="field-label"><span>Gotify server URL</span><input class="field-input" type="text" name="gotify_url" value="{{ values.gotify_url }}" placeholder="https://gotify.example.com"></label>
+            <label class="field-label"><span>Gotify app token</span><input class="field-input" type="text" name="gotify_token" value="{{ values.gotify_token }}" placeholder="app token"></label>
+          </div>
+        </div>
+        <div class="provider-fields {{ '' if values.notify_provider == 'telegram' else 'is-hidden' }}" data-provider="telegram">
+          <div class="settings-form-grid">
+            <label class="field-label"><span>Telegram bot token</span><input class="field-input" type="text" name="telegram_bot_token" value="{{ values.telegram_bot_token }}" placeholder="123456:ABC-token"></label>
+            <label class="field-label"><span>Telegram chat ID</span><input class="field-input" type="text" name="telegram_chat_id" value="{{ values.telegram_chat_id }}" placeholder="e.g. 123456789"></label>
+          </div>
+        </div>
+        <div class="provider-fields {{ '' if values.notify_provider == 'webhook' else 'is-hidden' }}" data-provider="webhook">
+          <label class="field-label"><span>Webhook URL</span><input class="field-input" type="text" name="webhook_url" value="{{ values.webhook_url }}" placeholder="https://your-service.example.com/hook"></label>
+          <label class="field-label"><span>JSON payload template</span><textarea class="field-input" name="webhook_json_template" rows="2">{{ values.webhook_json_template }}</textarea></label>
+          <p class="warn-hint" style="max-width:none;">POSTs this as JSON to the URL above, with <code>{title}</code> and <code>{message}</code> swapped for the real text &mdash; works with Discord, Slack, Home Assistant, Node-RED, or any custom script that can accept a webhook.</p>
+        </div>
+
+        <label class="notif-toggle-row">
+          <span class="toggle-switch {{ 'on' if values.notify_on_quiet_days == 'yes' else '' }}" id="quiet-days-toggle"></span>
+          <input type="checkbox" name="notify_on_quiet_days" value="yes" {{ 'checked' if values.notify_on_quiet_days == 'yes' else '' }} style="display:none;">
+          <span>Also send a "nothing due tomorrow" ping on quiet days, to confirm notifications are still working</span>
+        </label>
+        <label class="notif-toggle-row">
+          <span class="toggle-switch {{ 'on' if values.weekly_digest_enabled == 'yes' else '' }}" id="weekly-digest-toggle"></span>
+          <input type="checkbox" name="weekly_digest_enabled" value="yes" {{ 'checked' if values.weekly_digest_enabled == 'yes' else '' }} style="display:none;">
+          <span>Also send a weekly overview, alongside the daily one</span>
+        </label>
+        <div class="settings-form-grid" id="weekly-digest-day-row" {{ '' if values.weekly_digest_enabled == 'yes' else 'style="display:none;"' }}>
+          <label class="field-label">
+            <span>Weekly digest day</span>
+            <select class="field-input" name="weekly_digest_day">
+              {% for i, day in [(0,'Monday'),(1,'Tuesday'),(2,'Wednesday'),(3,'Thursday'),(4,'Friday'),(5,'Saturday'),(6,'Sunday')] %}
+              <option value="{{ i }}" {{ 'selected' if values.weekly_digest_day == i|string else '' }}>{{ day }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <label class="notif-toggle-row">
+          <span class="toggle-switch {{ 'on' if values.budget_alert_enabled == 'yes' else '' }}" id="budget-alert-toggle"></span>
+          <input type="checkbox" name="budget_alert_enabled" value="yes" {{ 'checked' if values.budget_alert_enabled == 'yes' else '' }} style="display:none;">
+          <span>Also notify when I cross 80% of this month's budget</span>
+        </label>
+      </form>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
+        <form method="post" action="/settings/test"><input type="hidden" name="next" value="/alerts"><button type="submit" class="warn-action-btn">Send test notification</button></form>
+        <form method="post" action="/settings/test-digest"><input type="hidden" name="next" value="/alerts"><button type="submit" class="warn-action-btn">Test tomorrow's digest now</button></form>
+        <form method="post" action="/settings/test-weekly-digest"><input type="hidden" name="next" value="/alerts"><button type="submit" class="warn-action-btn">Test weekly digest now</button></form>
+        <form method="post" action="/settings/test-budget-alert"><input type="hidden" name="next" value="/alerts"><button type="submit" class="warn-action-btn">Test budget alert now</button></form>
+      </div>
+      <p class="warn-hint" style="max-width:none; margin-top:10px;">Save your settings first, then use the buttons above to confirm it actually works before relying on it. "Test tomorrow's digest" sends the real message you'd get tomorrow (or says "nothing releasing" if the day's quiet).</p>
+
+      <div style="height:1px; background:var(--border); margin:16px 0;"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="/settings/export-notifications.json" class="warn-action-btn">Export notification config</a>
+        <button type="button" class="warn-action-btn" id="import-notif-btn">Import notification config</button>
+        <form id="import-notif-form" method="post" action="/settings/import-notifications" enctype="multipart/form-data" style="display:none;">
+          <input type="hidden" name="next" value="/alerts">
+          <input type="file" name="notification_config_file" id="import-notif-file" accept=".json">
+        </form>
+      </div>
+      <p class="warn-hint" style="max-width:none; margin-top:10px;">Just the notification setup (provider, server details, schedule) &mdash; handy for moving to a new server.</p>
+      <button type="submit" form="notif-settings-form" class="notif-test-btn" style="margin-top:16px;">Save settings</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card" style="grid-column: span 12;">
+      <div class="card-title" style="margin-bottom: 10px;">Recent notifications (last 20)</div>
+      {% if notification_log %}
+        <div id="notiflog-body">
+        {% for n in notification_log %}
+        <div class="notif-log-row">
+          <span class="notif-log-date mono">{{ n.sent_at[:16] }}</span>
+          <span class="notif-log-title">{{ n.title }}</span>
+          <span class="notif-log-status {{ 'ok' if n.success else 'bad' }}" {% if n.error %}title="{{ n.error }}"{% endif %}>{{ "Sent" if n.success else "Failed" }}</span>
+        </div>
+        {% endfor %}
+        </div>
+        <div class="search-pagination" id="notiflog-pagination" style="display:none; margin-top:14px;">
+          <button type="button" class="warn-action-btn" id="notiflog-prev-btn">&larr; Prev</button>
+          <span class="muted" style="font-size:12px;" id="notiflog-page-label">Page 1 of 1</span>
+          <button type="button" class="warn-action-btn" id="notiflog-next-btn">Next &rarr;</button>
+        </div>
+      {% else %}
+      <div class="empty-note">No notifications sent yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div><!-- /tab-notifications -->
+
+{% endblock %}
+
+{% block extra_script %}
+(function () {
+  var storageKey = 'kaching_alerts_tab';
+  var tabs = document.querySelectorAll('[data-alerts-tab]');
+
+  function activate(target) {
+    tabs.forEach(function (t) {
+      var isMatch = t.dataset.alertsTab === target;
+      t.classList.toggle('active', isMatch);
+      t.style.color = isMatch ? 'var(--neon-blue)' : 'var(--text-dim)';
+      t.style.fontWeight = isMatch ? '600' : '400';
+    });
+    document.getElementById('tab-alerts').style.display = target === 'alerts' ? '' : 'none';
+    document.getElementById('tab-notifications').style.display = target === 'notifications' ? '' : 'none';
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var target = tab.dataset.alertsTab;
+      activate(target);
+      try { localStorage.setItem(storageKey, target); } catch (e) {}
+    });
+  });
+
+  var remembered = null;
+  try { remembered = localStorage.getItem(storageKey); } catch (e) {}
+  if (remembered === 'notifications') {
+    activate('notifications');
+  }
+})();
+
+document.getElementById('provider-select').addEventListener('change', function () {
+  var selected = this.value;
+  document.querySelectorAll('.provider-fields').forEach(function (el) {
+    el.classList.toggle('is-hidden', el.dataset.provider !== selected);
+  });
+});
+
+document.querySelectorAll('.notif-toggle-row .toggle-switch').forEach(function (toggle) {
+  toggle.addEventListener('click', function () {
+    toggle.classList.toggle('on');
+    var checkbox = toggle.parentElement.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = toggle.classList.contains('on');
+    if (toggle.id === 'weekly-digest-toggle') {
+      document.getElementById('weekly-digest-day-row').style.display = toggle.classList.contains('on') ? '' : 'none';
+    }
+  });
+});
+
+(function () {
+  var PAGE_SIZE = 10;
+  var body = document.getElementById('history-log-body');
+  if (!body) return;
+  var allRows = Array.prototype.slice.call(body.querySelectorAll('.history-log-row'));
+  var pagination = document.getElementById('history-pagination');
+  var pageLabel = document.getElementById('history-page-label');
+  var prevBtn = document.getElementById('history-prev-btn');
+  var nextBtn = document.getElementById('history-next-btn');
+  var currentPage = 1;
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(allRows.length / PAGE_SIZE));
+  }
+
+  function showPage(page) {
+    var pages = totalPages();
+    currentPage = Math.min(Math.max(1, page), pages);
+    var start = (currentPage - 1) * PAGE_SIZE;
+    allRows.forEach(function (row, i) {
+      row.style.display = (i >= start && i < start + PAGE_SIZE) ? '' : 'none';
+    });
+    pageLabel.textContent = 'Page ' + currentPage + ' of ' + pages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= pages;
+    pagination.style.display = pages > 1 ? 'flex' : 'none';
+  }
+
+  prevBtn.addEventListener('click', function () { showPage(currentPage - 1); });
+  nextBtn.addEventListener('click', function () { showPage(currentPage + 1); });
+
+  showPage(1);
+})();
+
+document.getElementById('import-notif-btn').addEventListener('click', function () {
+  document.getElementById('import-notif-file').click();
+});
+document.getElementById('import-notif-file').addEventListener('change', function () {
+  if (this.files.length) {
+    document.getElementById('import-notif-form').submit();
+  }
+});
+
+(function () {
+  var PAGE_SIZE = 10;
+  var body = document.getElementById('notiflog-body');
+  if (!body) return;
+  var allRows = Array.prototype.slice.call(body.querySelectorAll('.notif-log-row'));
+  var pagination = document.getElementById('notiflog-pagination');
+  var pageLabel = document.getElementById('notiflog-page-label');
+  var prevBtn = document.getElementById('notiflog-prev-btn');
+  var nextBtn = document.getElementById('notiflog-next-btn');
+  var currentPage = 1;
+
+  function totalPages() {
+    return Math.max(1, Math.ceil(allRows.length / PAGE_SIZE));
+  }
+
+  function showPage(page) {
+    var pages = totalPages();
+    currentPage = Math.min(Math.max(1, page), pages);
+    var start = (currentPage - 1) * PAGE_SIZE;
+    allRows.forEach(function (row, i) {
+      row.style.display = (i >= start && i < start + PAGE_SIZE) ? '' : 'none';
+    });
+    pageLabel.textContent = 'Page ' + currentPage + ' of ' + pages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= pages;
+    pagination.style.display = pages > 1 ? 'flex' : 'none';
+  }
+
+  prevBtn.addEventListener('click', function () { showPage(currentPage - 1); });
+  nextBtn.addEventListener('click', function () { showPage(currentPage + 1); });
+
+  showPage(1);
+})();
+{% endblock %}

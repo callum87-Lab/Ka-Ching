@@ -2,7 +2,7 @@
 
 # Ka-Ching!
 
-**This is not a comic collection catalogue.** It doesn't track what you own,
+**This is not a collection catalogue.** It doesn't track what you own,
 store cover art, or care about which variant is sitting on your shelf —
 there are already excellent apps for that. Ka-Ching! answers exactly two
 questions and nothing else:
@@ -10,63 +10,75 @@ questions and nothing else:
 - **What's due this week, and what will it cost?**
 - **What's my forecast for this month (and next)?**
 
-There's also an [Android companion app](https://github.com/callum87-Lab/Ka-Ching-App)
-— a genuinely separate, local-first project that optionally syncs with this
-one.
+It started life as a comic pre-order tracker, and comics are still what it's
+best at — but anything with a name, a price, a release date and a shop works
+the same way, and since v3 you can sort it all into **categories** (Comics,
+Manga, Pokémon cards, Funko Pop… or your own).
 
-> **Currency**: choose £/$/€ on the Settings page - this changes what's
-> shown everywhere in the app, and the paste-in importer and manual add
-> form both recognise prices in whichever one you pick, so this genuinely
-> works for US and European use, not just UK. The one thing that stays
-> UK-specific regardless of this setting: the two shops with *dedicated*
-> parsers, Forbidden Planet and eBay, are both built around their UK pages
-> specifically (forbiddenplanet.com, ebay.co.uk) - anywhere else, use the
-> manual add form or the generic paste-in parser, which don't care which
-> shop or currency they're reading.
+> **New in v3.0 — a completely new interface.** Dark neon redesign, a proper
+> sidebar layout, a real phone layout, categories, a reworked Insights
+> section, and a lot of smaller fixes. See [CHANGELOG.md](CHANGELOG.md) for
+> the full list, and [Upgrading from v2](#upgrading-from-v2x) before you
+> update — your data upgrades itself, nothing needs doing by hand.
 
-> **Not just comics, either.** Ka-Ching! doesn't actually check what kind of
-> thing it's tracking - a comic, a hardcover, an action figure, a manga
-> volume, whatever has a name, a price, a release date, and a shop just
-> works, the same way. That's not a deliberately-built feature so much as a
-> natural side effect of never trying to be a specialised comic-only tool -
-> confirmed in practice when a real Forbidden Planet order with hardcovers
-> and Black Series action figures mixed in with the comics imported and
-> tracked exactly the same as everything else, no special handling needed.
+> **About the Android app:** the [Ka-Ching! Android app](https://github.com/callum87-Lab/Ka-Ching-App)
+> is **dormant for now**. It was built against the old interface, and rather
+> than ship it half-matched to v3, it's on hold until it can be properly
+> reworked with the new look and fully re-tested against this release. To
+> make sure nothing can sync against a server it hasn't been checked with,
+> **phone sync is switched off and hidden by default in v3** — see
+> [The Android app](#the-android-app-dormant) below. The web app is complete
+> on its own and works fully on a phone browser.
+
+> **Currency**: choose £/$/€ in Settings - this changes what's shown
+> everywhere, and the paste-in importer and manual add form both recognise
+> prices in whichever one you pick, so this genuinely works for US and
+> European use, not just UK. The one thing that stays UK-specific: the shops
+> with *dedicated* parsers (Forbidden Planet, eBay) are built around their
+> UK pages specifically - anywhere else, use Manual Entry or the generic
+> paste-in parser, which don't care which shop or currency they're reading.
 
 ## Gallery
 
 Click any screenshot to view it full-size.
 
 <table>
-<tr>
-<th>Dashboard</th>
-<th>Calendar</th>
-</tr>
+<tr><th>Dashboard</th><th>Orders</th></tr>
 <tr>
 <td><a href="screenshots/dashboard.png"><img src="screenshots/dashboard.png" width="400"></a></td>
+<td><a href="screenshots/orders.png"><img src="screenshots/orders.png" width="400"></a></td>
+</tr>
+<tr><th>Calendar</th><th>Log orders</th></tr>
+<tr>
 <td><a href="screenshots/calendar.png"><img src="screenshots/calendar.png" width="400"></a></td>
-</tr>
-<tr>
-<th>Log Orders — paste-in importing</th>
-<th>Search</th>
-</tr>
-<tr>
 <td><a href="screenshots/log-orders.png"><img src="screenshots/log-orders.png" width="400"></a></td>
-<td><a href="screenshots/search.png"><img src="screenshots/search.png" width="400"></a></td>
 </tr>
-<tr>
-<th>Insights</th>
-<th>Insights (continued)</th>
-</tr>
+<tr><th>Insights</th><th>Price creep</th></tr>
 <tr>
 <td><a href="screenshots/insights.png"><img src="screenshots/insights.png" width="400"></a></td>
 <td><a href="screenshots/insights-2.png"><img src="screenshots/insights-2.png" width="400"></a></td>
 </tr>
+<tr><th>Spend by shop</th><th>Search</th></tr>
 <tr>
-<th>Settings</th>
+<td><a href="screenshots/spend-by-shop.png"><img src="screenshots/spend-by-shop.png" width="400"></a></td>
+<td><a href="screenshots/search.png"><img src="screenshots/search.png" width="400"></a></td>
 </tr>
+<tr><th>Alerts</th><th>Settings</th></tr>
 <tr>
+<td><a href="screenshots/alerts.png"><img src="screenshots/alerts.png" width="400"></a></td>
 <td><a href="screenshots/settings.png"><img src="screenshots/settings.png" width="400"></a></td>
+</tr>
+</table>
+
+**On a phone:**
+
+<table>
+<tr><th>Dashboard</th><th>Menu</th><th>Calendar</th><th>Price creep</th></tr>
+<tr>
+<td><a href="screenshots/phone-dashboard.png"><img src="screenshots/phone-dashboard.png" width="190"></a></td>
+<td><a href="screenshots/phone-menu.png"><img src="screenshots/phone-menu.png" width="190"></a></td>
+<td><a href="screenshots/phone-calendar.png"><img src="screenshots/phone-calendar.png" width="190"></a></td>
+<td><a href="screenshots/phone-insights.png"><img src="screenshots/phone-insights.png" width="190"></a></td>
 </tr>
 </table>
 
@@ -77,90 +89,188 @@ Click any screenshot to view it full-size.
 
 Ka-Ching! runs entirely on your own server, under your own control. There's
 no account to create, no cloud service sitting in the middle, no analytics,
-and nothing phones home anywhere — the only network calls it ever makes are
-ones you explicitly set up yourself (a notification push through
-ntfy/Gotify/Telegram, if and when you choose to configure one).
+no external fonts or scripts, and nothing phones home anywhere — the only
+network calls it ever makes are ones you explicitly set up yourself (a
+notification push through ntfy/Gotify/Telegram/a webhook, if and when you
+choose to configure one).
 
 Everything you paste in — every order, every price, every shop — lives in
 one SQLite file on your own machine, and nowhere else. This project doesn't
 want your data, doesn't have your data, and there's no mechanism by which it
-ever could. `Download backup` on the Settings page gives you the whole
+ever could. **Settings → Data backup → Download backup** gives you the whole
 database as a single file whenever you want it — genuinely yours, not
 locked into anything.
 
-The logo is a real image (`app/static/img/logo.png`), not CSS text — doubles
-as the browser tab favicon too. Swap that file for anything the same rough
-proportions to change it.
+## A tour of the interface
 
-## How it works
+A sidebar on the left (a slide-out menu on phones) takes you everywhere.
+Sections with more than one view — Orders, Insights, Alerts, Settings —
+show their sub-pages under their sidebar entry, and as a row of pills under
+the page title on a phone.
 
-You paste your retailer's order history page (Forbidden Planet etc.) into the
-Import page every so often. A parser pulls out item name, release date,
-price, and charge status, and ignores everything else (addresses, card
-numbers, pagination). Already-seen items are skipped automatically, so it's
-safe to re-paste the same page next month — nothing gets double-counted.
+The **budget box** at the bottom of the sidebar stays in view however far
+you scroll. Choose what it shows in Settings → Budget: spent of budget,
+left/over, percentage used, a daily allowance, spent + still due, or hide
+it. It turns pink once you're over.
 
-The dashboard then shows:
+Toggles, tabs and ranges you pick (chart ranges, series toggles, sort
+orders, the Orders tab, Insights category chips…) are **remembered in your
+browser** between visits. Page numbers and search filters deliberately
+aren't.
 
-- A **still-due** total up top for the current month — this is the number that
-  actually matters day to day
-- **Spent so far** and the **forecast total** alongside it, so you can see
-  spent / remaining / total at a glance
-- **This year so far** — spent vs. tracked total across every issue this year
+### Dashboard
+
+- **Still due** and **budget** rings for the current month — the number
+  that actually matters day to day, plus how close you are to your budget
+  (and by how much you're over, if you are)
+- **This year so far** and **all time** totals
 - **This week**, grouped by likely shipment
-- **This month**, broken down shipment by shipment, browsable to any month
-- A **spend trend** chart with Week / Month / 6M tabs — each bar is a time
-  bucket (a week, a month), never a single day: Week shows several weeks of
-  totals, Month restores the original view (a handful of months either side
-  of now), and 6M shows just the next 6 months forecast.
+- An **Alerts** card (anything awaiting charge, duplicates, ghost items)
+- **Biggest still to come** — the single highest-value item not yet
+  released, and the total size of everything still on order
+- **Spend trend** with Week / Month / 6M ranges and Total / Items /
+  Shipping toggles; hover (or tap) any point for the breakdown
+- A note when a re-import moved an item's release date: which item, old
+  date, new date
 
-Shipping is no longer a flat guess. If you paste in a Forbidden Planet
-**order detail page** (the page for one specific order, not the order-history
-list — its Order Summary shows a "Postage" breakdown with the exact cost of
-each shipment), Ka-Ching! recognises it as Forbidden Planet and shows every
-item on the same editable review screen as any other import - name, price,
-and shop pre-filled - alongside the exact shipping figure(s), which get
-saved automatically once confirmed. Dispatched items get marked paid
-automatically; a "Charged" status (payment taken, not yet dispatched) gets
-marked paid too, without falsely claiming it's shipped. This page type
-never shows a release date for anything still pending though (just its
-current status), so that field is left blank for you to fill in if you want
-it. Once there's enough real shipping data, it's used for your real
-average. Multiple order-detail pages can be pasted concatenated together in
-one go. Without any of this, shipping falls back to an approximation from
-the order-history list (declared total minus item costs, split across
-shipments), and only falls back further to a flat guess if neither has
-enough data yet. A note under the hero shows which one it's currently
-using.
+### Orders
+
+Every item month by month, grouped **by shipment** (release date and shop),
+with **All** and **Unpaid & cancelled** tabs, a shop filter, and
+**Recently cancelled** with Undo.
 
 Every item has a small circle next to it — tap it to mark that item paid.
 Its cost moves from "still due" into "spent" immediately (it stays visible,
-just dimmed and ticked). Tap the circle again to undo it. There's also a
-small &times; next to the price to cancel an item, and a **Remove** button
-next to that.
+just dimmed and ticked). Tap it again to undo. The "&#8942;" menu on each row
+holds **Cancel** and **Remove**:
 
-These do different things. **Cancel** means "this was a real order and it's
-been cancelled" — it's reversible (an Undo button appears in "Recently
-cancelled"), and matches what re-importing would show once Forbidden Planet
-itself marks it cancelled. **Remove** is a permanent delete, for bad data
-rather than a real-world event — a duplicate line item that shouldn't exist,
-or a parsing artifact — and asks for confirmation since there's no undo.
+- **Cancel** means "this was a real order and it's been cancelled" — it's
+  reversible (Undo in Recently cancelled), and matches what re-importing
+  would show once the shop itself marks it cancelled.
+- **Remove** is a permanent delete, for bad data rather than a real-world
+  event — a duplicate line that shouldn't exist, or a parsing artifact —
+  and asks for confirmation since there's no undo.
 
-The "still due" number at the top always reflects the real current month.
-The "by shipment" list below it is separately browsable — use the &larr; / &rarr;
-arrows either side of the month name to look ahead or back, and "Today" to
-jump straight back to the current month. Handy for checking a release date
-actually moved after a Forbidden Planet notification, without waiting for it
-to become "this month."
+A small checkbox on every row enables **bulk select**: a toolbar appears
+with Mark paid, Cancel and Remove for everything selected at once.
 
 Re-pasting your order history later won't undo a manual tick — once you've
-marked something, that overrides whatever the retailer's page says about it,
-until you hit Undo.
+marked something, that overrides whatever the retailer's page says about
+it, until you hit Undo. Actions return you to exactly where you were: same
+section, same month, same filters.
+
+### Calendar
+
+A month grid where release days show that day's total and item count,
+shaded by how much is due (on a phone, just the day and a dot). **Tap a
+day** to show only that day's releases in the list underneath; tap it again
+(or "Show whole month") to go back. There's a mini calendar, a spend-by-shop
+breakdown for the month, a year-long **activity heatmap**, and the full
+releases list with the same pay circles and menus as Orders.
+
+**Download .ics** exports every upcoming (non-cancelled) release as a
+calendar file, one event per release day rather than one per variant, so
+importing into Google Calendar, Apple Calendar or Outlook doesn't flood it
+with near-duplicates. **Subscribe (live)** gives calendar apps that support
+it an updating feed instead of a one-off file.
+
+### Search
+
+Find anything you've ever tracked — titles, order numbers and shop names —
+filterable by shop, paid status, date range and price range, with sort
+options (including "recently added", handy right after a big import), quick
+This Month / This Year buttons, "Most expensive" / "Cheapest" shortcuts, and
+a running spent / still-due total for whatever's filtered. Clicking an order
+number isolates every other item from that order. **Download CSV** exports
+exactly what's filtered.
+
+### Log orders
+
+Two tabs:
+
+- **Paste Invoice** — paste an order page and review what was found before
+  anything's saved (see [How importing works](#how-importing-actually-works-now)).
+  Quick shop hints sit above the paste box, and you can pick the category
+  for everything in the paste (and change individual items on the review
+  screen).
+- **Manual Entry** — set the release date and shop once, then add every item
+  from that same order as its own row (name, category, price) before
+  submitting. Optional order number, shipping cost (feeds that shop's exact
+  shipping figure) and tracking number. The shop field remembers the shop
+  you used last.
+
+Click any item's name anywhere to **edit** it later — including **Delay this
+item** (+30/+60/+90 days in one tap, logged like any other edit). Tracking
+numbers are links: clicking one copies it and opens PostTrack.com's
+tracking page.
+
+### Insights
+
+Four pages:
+
+- **Overview** — spend overview, per-issue figures (priciest item, average
+  issue), price distribution, shipping and patterns (busiest release day,
+  money saved by cancelling, shipping vs cover price, by shop), a
+  **cumulative spend** card for the current month (spent so far, how far
+  over/under budget, what's still due, and one bar per release day — tap or
+  hover a day for its items), **spend by category** (all time / this year),
+  pre-order vs released, the 10 most recent releases and a 12-month trend.
+- **Spend by shop** — a share-of-spend donut (all time / last 90 days),
+  shop spend over 6 or 12 months with per-shop toggles, a per-shop
+  comparison table, and every shop's all-time total. eBay sellers are
+  grouped into one row — click it to expand each seller.
+- **Price creep** — which series are getting pricier. It's based on
+  **cover price**: the cheapest copy you bought of each issue number stands
+  in for that issue's standard cover, so a £12.99 variant next to a £3.30
+  cover no longer looks like a 300% price rise. Variants are shown
+  separately as **"Variants cost extra"** — the average mark-up you pay for
+  them over the standard cover. (If you only ever bought a variant of a
+  particular issue, that variant counts as its cover.)
+- **Top titles** — your priciest items, and the series you've spent the most
+  on, with a full series comparison.
+
+Price creep and Top titles have **category chips** at the top: tap a
+category to include or leave it out. Categories marked "has series" start
+switched on.
+
+### Alerts
+
+- **Current** — anything **awaiting charge** (released but still unpaid and
+  unmarked), **possible duplicate orders**, **items with no order number**,
+  plus open / resolved-this-month / last-resolved counts and an alert
+  history.
+- **Notifications** — set up daily/weekly pushes and the budget alert (see
+  [Notifications](#notifications)).
+
+### Settings
+
+- **General** — currency, budget (and cycle, rollover, and what the sidebar
+  budget box shows), default landing page, **categories** and **shops**
+  (rename or merge a shop across every item in one go; shipping estimates
+  carry over).
+- **Data backup** — download / restore a backup, automatic daily backups
+  (last 7 kept), full spend-history CSV, notification settings export /
+  import, and a factory reset (type-to-confirm; wipes tracked items only).
+- **About** and **Help** — a getting-started guide and FAQ.
+
+## Categories
+
+Every item has a category. A starter list is created automatically
+(Comics, Manga, Omnibus / collected editions, Pokémon cards, Pokémon sealed
+products, Magic: The Gathering, Funko Pop, DVD / Blu-ray, Books, Vinyl,
+Coins, Gold / silver, Other), and you can add your own anywhere a category
+is picked — just type a new name. Each gets its own colour automatically. In
+Settings → Categories you can set whether a category **has series**
+(numbered issues worth tracking for price creep), or remove one that isn't
+in use (the default category can't be removed).
+
+Existing items become **Comics** when you upgrade. Category is included in
+backups and both CSV exports.
 
 ### Duplicate order detection
 
 If the same comic, same release date, ends up tracked under two different
-order numbers, a warning shows up on the dashboard — this is almost always an
+order numbers, a warning shows up on the **Alerts** page (and the Alerts card on the Dashboard) — this is almost always an
 accidental double-order rather than two genuinely different things releasing
 the same day (this is exactly how Ka-Ching! caught a real duplicate order
 during testing). Each entry gets its own &times; (cancel) and **Remove**
@@ -172,17 +282,6 @@ the same item shows up twice under the *same* order number — a genuine
 double-line-item, not a double-order — it won't trigger this warning, since
 there's nothing to "cancel" on Forbidden Planet's side. Use **Remove**
 directly on the extra line instead.
-
-### A note on "ghost" duplicates with no order number
-
-An earlier version of the parser could, in rare cases with very large pastes,
-lose track of which order it was currently reading partway through (usually
-a page-break mangling an "Order#" line) and record an item with no order
-number attached at all. Those orphaned rows never matched the duplicate
-detector (which compares *different* order numbers) and never got cleaned up
-by re-importing (a missing order number can't be matched against anything).
-If you were tracking a comic and it looked like you owned it twice with only
-one order to show for it, this was almost certainly why.
 
 ## How importing actually works now
 
@@ -268,17 +367,31 @@ Then visit `http://<server-ip>:8091`.
 Data lives in `./data/kaching.db` (SQLite) — back it up like you would any
 other stack config.
 
-### Upgrading from an earlier version
+### Upgrading from v2.x
 
-If you already had Ka-Ching! (née Pull Cost) running before, just replace the
-code and rebuild — your existing tracked comics aren't touched. The database
-upgrades itself automatically the first time it starts back up (new columns
-and tables get added as needed), and everything you'd already imported stays
-exactly as it was.
+Replace the code and rebuild, same as always:
 
 ```bash
+git pull
 docker compose up -d --build
 ```
+
+What happens:
+
+- **Your data upgrades itself** the first time v3 starts: categories are
+  added and every existing item becomes **Comics**. Nothing you've tracked
+  is changed or lost. (Taking a backup first — Settings → Download backup —
+  is still a good habit.)
+- **The new interface is at the normal addresses** (`/`, `/orders`,
+  `/calendar`…). Your bookmarks keep working.
+- **The old interface is still available at `/classic/`** for this release
+  only, as a fallback while you get used to the new one. It'll be removed in
+  the next release.
+- **Phone sync is off** — see [The Android app](#the-android-app-dormant).
+- Some remembered choices (which sections were expanded) reset once.
+
+Restoring a backup taken from an older version also works: it's upgraded
+straight away when restored, with no restart needed.
 
 ### Configuration
 
@@ -287,19 +400,21 @@ Environment variables, set in `docker-compose.yml`:
 - `SHIPPING_ESTIMATE` — flat cost added per distinct release date within a
   month (default `4.00`). Change this to match what your retailer actually
   charges you per parcel.
+- `KACHING_PHONE_SYNC` — off by default. Set to `1` to bring back the Sync
+  settings and the `/api/sync` endpoint for the Android app. Only do this if
+  you know what you're doing — see [The Android app](#the-android-app-dormant).
 - `DEBUG_TOOLS_ENABLED` — off by default. Set to `true` to turn on a
   developer diagnostic view at `/debug/shipping-groups?source=<shop
   name>&key=<your sync key>`, listing every shipment for a given shop with
   its real-vs-estimated status - built for tracking down a shipping-total
-  mismatch, not something most people will need. Requires the same key
-  shown in Settings → Sync even when enabled.
+  mismatch, not something most people will need.
 
 ## Importing your order history
 
 1. Open your retailer's order history page (log in first).
 2. Select all the text on the page (or as many pages as you want) and copy it.
-3. Paste the whole thing into the textarea on the **Import** page here and
-   hit Import.
+3. Paste the whole thing into **Log orders → Paste Invoice** and hit
+   Import.
 4. Repeat monthly, or whenever you place new pre-orders — duplicates are
    silently skipped.
 
@@ -328,28 +443,26 @@ doesn't get picked up, paste an example and it can be adjusted.
 
 ## More than one shop
 
-Ka-Ching! only knows how to *read* Forbidden Planet's pages — it can't parse
-any other retailer's site. For anything else, use **Log Orders** in the nav
-(which also has the paste-in Import box further down the same page). Set the
-release date and shop once, then add every comic from that same order as its
-own row (name + price) before submitting — one shipment, one form, rather
-than repeating the whole form per comic. Click any item's name on the
-dashboard to edit those same details later, one at a time.
+Ka-Ching! can read Forbidden Planet, eBay and Whatnot pages directly, and
+has a generic parser for most small-shop checkouts. For anything else, use
+**Log orders → Manual Entry**.
 
-**eBay purchases from different sellers share one filter tab.** Each seller
-still gets its own colour and label within the grouped item lists (so you can
-tell "Sad Lemon Comics" apart from "Bearsgames" at a glance), but the shop
-filter row shows a single combined "eBay" tab rather than one per seller,
-which got unwieldy fast. Since eBay orders are typically already paid and
-delivered, filtering to eBay on the dashboard's forward-looking views (This
-Week, This Month) will usually turn up nothing due — a note there points to
-Search instead, which covers your full purchase history across all time.
+**eBay purchases from different sellers share one shop filter.** Each seller
+still gets its own colour and label within the item lists, but filters show
+a single combined "eBay" option rather than one per seller, which got
+unwieldy fast. Since eBay orders are typically already paid and delivered,
+filtering to eBay on the forward-looking views (This week, this month) will
+usually turn up nothing due — Search covers your full purchase history.
+
+Once more than one shop is being tracked, a shop filter appears on Orders and
+Calendar (a dropdown on phones), and any day with releases from more than one
+place shows each shop labelled separately in its own colour.
 
 ## Notifications
 
-The **Settings** page sets up a daily check — once a day, Ka-Ching! looks at
+**Alerts → Notifications** sets up a daily check — once a day, Ka-Ching! looks at
 what's releasing tomorrow and sends a single push through whichever service
-you configure, grouped by shop, e.g. *"Tomorrow: 3 comics, £11.48 — Forbidden
+you configure, grouped by shop, e.g. *"Tomorrow: 3 items, £11.48 — Forbidden
 Planet: 2 items, £8.49 · Cocktails and Comics: 1 item, £2.99."* Stays
 completely silent on quiet days — no pointless daily pings when nothing's due.
 
@@ -384,146 +497,40 @@ This all runs inside the container itself — no cron job to set up, no
 external scheduler. It just needs the container running once a day at the
 time you pick.
 
-## A few smaller extras
+## Using it on a phone
 
-- **Collapsible sections** — This Week and By Shipment can be collapsed on
-  the dashboard; Calendar's daily release list is a per-day accordion that
-  auto-expands the nearest upcoming date, and tapping a day in the grid
-  jumps straight to (and opens) its details below.
-- **Action menu** — cancel and remove tuck behind a small "&#8942;" toggle
-  per row, on every screen size, rather than always sitting there taking
-  up space and inviting an accidental tap. The bulk-select checkbox stays
-  visible outside it though, so selecting several items doesn't mean
-  opening each row's menu just to reach it. Click anywhere outside an open
-  menu (or open a different one) and it closes on its own.
-- **Log Orders** (renamed from "+ Add") — Paste Invoice / Manual Entry tabs,
-  optional order number and shipping cost fields on the manual form (feeds
-  straight into that shop's exact shipping figure), quick-select shop
-  hints above the paste box, and the manual form's shop field remembers
-  whichever shop you actually used last, rather than always defaulting to
-  the same one.
-- **Search** — find any comic you've ever tracked, filterable by shop, paid
-  status, a custom date range, or a min/max price range, with sort options
-  (including a "recently added" one, handy right after a big import) and a
-  running total (spent / still due) for whatever's currently filtered, not
-  locked to the current week or month like the dashboard. Matches order
-  numbers and shop names too, not just comic titles; This Month/This Year
-  quick date buttons, plus one-click "Most expensive"/"Cheapest" shortcuts;
-  clicking an order number in a result isolates every other item from that
-  same order.
-- **Live calendar subscription** — "Subscribe (live)" alongside the .ics
-  download, for calendar apps that support an updating feed rather than a
-  one-off file.
-- **More Settings**: currency selection (£/$/€, changes the display and
-  what the importer recognises everywhere), notification quiet-days toggle
-  (stay silent or send a health-check ping), budget cycle
-  (monthly/weekly/28-day) with optional rollover of unused budget, default
-  landing page preference, automatic daily backups (last 7 kept), and a
-  factory reset (type-to-confirm, wipes tracked items only - settings are
-  kept).
-- **Mobile bottom nav bar** — single row, thumb-reach, instead of wrapping
-  onto two lines.
-- **Tracking number** — optional field on the manual add/edit forms, and
-  auto-filled from eBay imports (it's already sitting right there in the
-  order text). The number itself is a link - clicking it copies the number
-  and opens PostTrack.com's tracking page in one go, so it's usually
-  already sitting on the clipboard the moment you land there.
-- **Release date change tracking** — when a re-import shows a different
-  release date for something already tracked (Forbidden Planet does this
-  often), a note appears on your next dashboard visit: which comic, old
-  date, new date.
-- **Insights page** — most expensive month ever, priciest single issue
-  tracked, total issues tracked, average spend per month and per issue,
-  pre-order vs released split, shipping as a percentage of cover price,
-  next month's forecast so far, average shipping per month, the busiest
-  release day of the week, the biggest and cheapest single shipping charge
-  ever actually captured, money saved by cancelling, top 3 most expensive
-  titles, a price distribution chart (how many tracked items fall into
-  each price bracket - a real signal for drifting toward pricier variants
-  without noticing), a cumulative spend curve for the current month (day
-  by day, showing where spending actually clusters rather than one flat
-  monthly figure), a 12-month rolling spend trend, and spend by shop
-  across all time, each shop's real shipping worked in the same
-  exact-first way as everywhere else. eBay sellers are grouped into one
-  row (same as everywhere else in the app) - click it to expand and see
-  each seller's own individual total.
-- **Shop filter on the Calendar page** — same filter tabs as the dashboard,
-  carried through month navigation so switching months doesn't reset it.
-- **Monthly budget bar** — set a target on the Settings page and the
-  dashboard shows a progress bar for how close this month's forecast total
-  is to it, colour-shifting from green to amber to pink as you approach or
-  pass it. Leave it blank to hide the bar entirely.
-- **CSV export** — a "Download CSV" button on the Search page exports
-  whatever's currently filtered (same name/shop/status/date-range filters)
-  as a spreadsheet-ready file.
-- **All-time totals** — alongside "this year so far" on the dashboard,
-  there's now a lifetime total across everything ever tracked.
-- **Data backup and restore** — a "Download backup" button on the Settings
-  page gives you the whole database as a single file, separate from GitHub
-  (which never sees your real order data). A matching "Restore backup"
-  upload puts it back — it checks the file is genuinely a Ka-Ching database
-  before touching anything, and automatically keeps a safety copy of
-  whatever was live just before a restore (sitting in `/data` as
-  `kaching.db.before-restore-<timestamp>`, not shown in the UI, but there
-  if a restore ever needs undoing manually). Database size and item count
-  show on the same Settings page, next to the backup button. A separate
-  "Download full spend history (CSV)" button exports everything ever
-  tracked as a plain spreadsheet, for opening elsewhere rather than
-  restoring into Ka-Ching! itself; notification setup can also be exported
-  and re-imported on its own, handy when moving to a new server without
-  needing a full database backup for just that.
-- **Install to home screen** — Ka-Ching! can be added to your phone's home
-  screen like a normal app (look for "Add to Home Screen" or an install
-  icon in your browser). Still the same container underneath, just opens
-  full-screen with its own icon instead of a browser tab.
-- **Awaiting charge** — a dashboard warning for anything whose release date
-  has already passed but is still sitting unpaid and unmarked. Usually just
-  a normal short delay before the retailer charges, but worth a look if
-  something's been sitting there a while.
-- **Delay this item** — on an item's edit screen, one tap (+30/+60/+90
-  days) pushes its release date back for the common case of a
-  manufacturer delay, rather than opening a date picker. The change is
-  logged the same way a manual edit is, so there's a real record of what
-  moved and when.
-- **Rename a shop** — in Settings, rename a shop across every item that
-  has it in one go. Useful for fixing a typo, or merging two names that
-  are really the same shop (renaming to a name that already exists just
-  folds them together). Shipping estimates already calibrated for that
-  shop carry over to the new name rather than starting from scratch.
-- **Biggest still to come** — a dashboard card showing the single
-  highest-value item not yet released alongside its due date, and the
-  total size of everything still on order (item count and combined
-  price) - a "how big is my pipeline right now" figure that's
-  forward-looking, distinct from Insights' own all-time totals.
-- **Your place is kept** — marking something paid, cancelling, removing an
-  item, or browsing to a different month all return you to exactly where
-  you were - same section, same month, same search filters - rather than
-  bouncing back to the top of the page or today's date every time.
-- **Bulk select** — a small checkbox on every item (dashboard and search)
-  lets you select several at once; a toolbar appears with Mark paid,
-  Cancel, and Remove, applying to everything selected in one go instead of
-  one click-confirm-reload cycle per item.
-- **Chart tabs switch instantly** — Week/Month/6M all load at once (hidden
-  until picked), so switching between them happens right in the browser
-  with no reload and no lost scroll position. Your last-picked range is
-  also remembered between visits.
-- **Spend trend chart** — a smooth gradient area for total spend (comics +
-  shipping, matching the hero's own figures exactly), with a second thin
-  bar strip beneath showing how many comics released each period. Total,
-  Comics, and Shipping can each be switched on or off independently and
-  overlaid on the same chart via three toggle switches beneath it, each
-  in its own colour, so you can compare how much of a period's spend was
-  shipping versus the comics themselves without leaving the chart. Hover
-  any point for the exact breakdown - comics, shipping, total, and item
-  count. Hand-built in plain SVG, so it works with no internet connection
-  and no external library, same as everything else here.
+Every page has a proper phone layout: the sidebar becomes a slide-out menu
+(☰), cards stack one per row, section tabs become a pill row under the page
+title, shop filters become a dropdown, charts keep readable labels, and wide
+tables become one tidy block per row instead of scrolling sideways.
 
-Once more than one shop is being tracked, a small filter row appears above
-"This week" (All shops / each shop by name), and any day with releases from
-more than one place shows each shop labelled separately with its own colour,
-rather than one undifferentiated pile — so a Wednesday with both a
-Forbidden Planet delivery and a Cocktails & Comics order due shows clearly
-which is which.
+**Install to home screen** — Ka-Ching! can be added to your phone's home
+screen like a normal app (look for "Add to Home Screen" or an install icon
+in your browser). Same container underneath, just full-screen with its own
+icon instead of a browser tab.
+
+## The Android app (dormant)
+
+There's a separate [Ka-Ching! Android app](https://github.com/callum87-Lab/Ka-Ching-App) —
+a genuinely separate, local-first project with its own database and parsers,
+which could optionally sync with this server.
+
+**It's dormant for now.** It was built to match the v2 interface, and v3
+changed a lot. Rather than leave it half-matched, it's on hold until it can
+be properly reworked with the new look and re-tested end to end against
+this release. Until then:
+
+- **Sync is switched off and hidden** in v3: no Sync settings, no "last
+  synced" indicators, and the server refuses sync requests. Your existing
+  sync key isn't deleted, so nothing needs re-pairing later.
+- The server side of sync has already been made category-aware and safe for
+  older app versions (an app that doesn't know about categories can never
+  clear one), so it'll be ready when the app is.
+
+If you really want to keep using the current app build in the meantime, set
+`KACHING_PHONE_SYNC=1` in `docker-compose.yml`, rebuild, and switch **Phone
+app sync** on in Settings → Sync. That combination isn't tested or supported
+until the app's update is released.
 
 ## If something looks wrong
 
@@ -542,31 +549,11 @@ Look for lines starting `MARK request`, `MARK result`, `IMPORT REFRESH`,
 what happened to a given item and when, rather than needing to reconstruct it
 from memory afterwards.
 
-There's also a standing check on the dashboard for items tagged Forbidden
-Planet with no order number at all — always a parser artifact from an
+There's also a standing check on the **Alerts** page for items tagged
+Forbidden Planet with no order number at all ("ghost items") — always a parser artifact from an
 earlier version, never legitimate, since every real Forbidden Planet item
-comes with an order number attached. If any show up under "Items with no
-order number", they're almost certainly duplicates of something already
+comes with an order number attached. If any show up there, they're almost certainly duplicates of something already
 tracked properly; check before removing.
-
-## Calendar view and export
-
-The **Calendar** tab shows a compact month grid — release days are
-highlighted with that day's total and issue count, and shaded by how much
-is actually due that day (a genuinely expensive day stands out at a glance,
-not just which days have something releasing at all), kept deliberately
-simple since a full title list doesn't fit a calendar cell without turning
-into a mess. Full detail (every item, with the same tap-to-pay circles and
-cancel &times; as the dashboard) lives in the "releases" list underneath
-the grid. Navigate month to month the same way as the dashboard's shipment
-view.
-
-The **Download .ics** button exports every upcoming (non-cancelled) release
-as a calendar file, one event per release day rather than one per variant, so
-importing it into Google Calendar, Apple Calendar, or Outlook doesn't flood
-your calendar with near-duplicate entries. Only upcoming releases are
-included, not your whole history, so it stays useful as a "what's coming out"
-reminder rather than a log of everything you've ever ordered.
 
 ## Optional: a weekly/monthly nudge via ntfy
 

@@ -1,0 +1,481 @@
+{% extends "v2/base.html" %}
+{% block title %}Ka-Ching! &middot; Dashboard{% endblock %}
+
+{% block extra_style %}
+  .ringpair-card { grid-column: span 6; display: flex; align-items: stretch; }
+  .ringpair-half { flex: 1; text-align: center; }
+  .ringpair-divider { width: 1px; background: var(--border); margin: 0 20px; }
+  .ring-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto; }
+  .ring-wrap svg { width: 100px; height: 100px; }
+  .ring-label { font-size: 14.5px; color: var(--text-muted); margin: 6px 0 2px; }
+  .ring-sub { font-size: 13px; color: var(--text-dim); }
+  .ring-detail { font-size: 13px; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .ring-detail .dim { color: var(--text-dim); }
+  .ring-detail.warn { color: var(--neon-pink); font-weight: 600; }
+
+  .yearpair-card { grid-column: span 6; display: flex; align-items: stretch; }
+  .yearpair-half { flex: 1; }
+  .yearpair-divider { width: 1px; background: var(--border); margin: 0 20px; }
+  .plain-stat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .plain-stat-head .card-icon-badge { width: 22px; height: 22px; }
+  .plain-stat-head .card-icon-badge svg { width: 12px; height: 12px; }
+  .plain-stat-head .card-icon-badge.violet { color: var(--neon-violet); background: rgba(155,123,255,0.1); border-color: rgba(155,123,255,0.3); }
+  .plain-stat-label { font-size: 14.5px; color: var(--text-muted); }
+  .plain-stat-value { font-size: 25px; font-weight: 800; }
+  .plain-stat-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+  .plain-stat-chip { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--neon-violet); background: rgba(155,123,255,0.12); border: 1px solid rgba(155,123,255,0.3); padding: 3px 10px; border-radius: 999px; }
+  .plain-stat-bar-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 12px; }
+  .plain-stat-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-blue), #7fe8ff); }
+  .plain-stat-bar-legend { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+  .plain-stat-bar-legend .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-blue); display: inline-block; margin-right: 5px; }
+  .plain-stat-bar-legend b { color: var(--text); font-weight: 700; }
+
+  .stillorder-card {
+    grid-column: span 6;
+    background: radial-gradient(circle at 100% 0%, rgba(47,216,255,0.30) 0%, transparent 55%), linear-gradient(160deg, #0a2540 0%, #0c1830 55%, var(--surface) 100%);
+    border: 1px solid rgba(47,216,255,0.35);
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .stillorder-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a8e0ff; margin-bottom: 6px; }
+  .stillorder-title { font-size: 18px; font-weight: 700; color: #fff; }
+  .stillorder-sub { font-size: 14px; color: #a8e0ff; }
+  .stillorder-price { font-size: 27px; font-weight: 800; color: var(--neon-green); margin-top: 14px; }
+  .stillorder-divider { height: 1px; background: rgba(255,255,255,0.12); margin: 14px 0; }
+  .stillorder-onorder-label { font-size: 13px; color: #a8e0ff; margin-bottom: 6px; }
+  .stillorder-onorder-row { display: flex; align-items: baseline; justify-content: space-between; }
+  .stillorder-onorder-count { font-size: 14.5px; color: #fff; font-weight: 600; }
+  .stillorder-onorder-total { font-size: 20.5px; color: #fff; font-weight: 800; }
+  .stillorder-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .stillorder-countdown { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #fff; }
+  .stillorder-countdown span { font-size: 8.5px; font-weight: 600; color: #a8e0ff; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .yearreview-card { grid-column: span 6; }
+  .yr-compare { display: flex; align-items: center; margin-bottom: 14px; }
+  .yr-compare-col { flex: 1; }
+  .yr-compare-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .yr-compare-value { font-size: 22px; font-weight: 800; }
+  .yr-compare-value.dim { color: var(--text-muted); font-size: 18px; }
+  .yr-compare-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+  .yr-compare-divider { width: 1px; height: 40px; background: var(--border); margin: 0 20px; }
+  .yr-compare-bar-track { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 8px; }
+  .yr-compare-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-blue), var(--neon-violet)); }
+  .yr-compare-bar-label { font-size: 11.5px; color: var(--text-dim); }
+  .yr-compare-bar-label b { color: var(--text); }
+  .stillorder-empty { color: #a8e0ff; font-size: 14px; }
+
+  .alerts-card { grid-column: span 6; }
+  .alert-line { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .alert-line:first-of-type { border-top: none; padding-top: 4px; }
+  .alert-line .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--neon-pink); flex: 0 0 auto; box-shadow: 0 0 6px rgba(255,77,141,0.5); }
+  .alert-line .txt { flex: 1; color: var(--text); }
+  .alert-line .txt b { font-family: var(--font-mono); }
+  .alert-line .arrow { color: var(--text-dim); font-size: 14.5px; }
+  .alerts-empty { font-size: 13.5px; color: var(--text-dim); padding: 4px 0; }
+  .alerts-viewall { display: block; text-align: center; margin-top: 10px; font-size: 13px; color: var(--neon-blue); font-weight: 600; }
+
+  .syncbackup-card { grid-column: span 6; }
+  .syncbackup-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
+  .syncbackup-row:first-of-type { border-top: none; padding-top: 0; }
+  .syncbackup-row .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); margin-top: 6px; flex: 0 0 auto; }
+  .syncbackup-text { font-size: 14.5px; color: var(--text); }
+  .syncbackup-sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+  .thisweek-card { grid-column: span 12; }
+  .thisweek-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .thisweek-label { font-size: 14.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .thisweek-total { margin-left: auto; font-size: 15px; font-weight: 700; color: var(--neon-blue); }
+  .thisweek-chevron { color: var(--text-dim); font-size: 13px; transition: transform 0.15s ease; }
+  .thisweek-chevron.open { transform: rotate(180deg); }
+  .thisweek-body { max-height: 0; overflow: hidden; transition: max-height 0.2s ease; }
+  .thisweek-body.open { max-height: 600px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .tw-item-row { display: grid; grid-template-columns: 22px 1fr 80px 24px; align-items: center; gap: 12px; padding: 7px 0; font-size: 13.5px; border-top: 1px dashed var(--border); }
+  .tw-item-row:first-of-type { border-top: none; }
+  .tw-item-name { color: var(--text); }
+  .tw-item-date { font-size: 12.5px; color: var(--text-dim); }
+  .tw-item-price { font-weight: 600; text-align: right; }
+  .tw-row-menu { position: relative; display: flex; justify-content: flex-end; }
+  .tw-menu-btn { width: 22px; height: 22px; border-radius: 7px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .tw-menu-btn:hover { background: var(--surface-raised); }
+  .thisweek-viewall { display: block; text-align: center; margin-top: 12px; font-size: 14px; color: var(--neon-blue); font-weight: 600; text-decoration: none; }
+
+  .chart-card { grid-column: span 12; }
+  .range-tabs { display: flex; gap: 6px; }
+  .range-tab { padding: 6px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; background: transparent; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; }
+  .chart[data-chart-range] { display: none; }
+  .chart[data-chart-range].chart-active { display: block; }
+  .chart-multi.hide-total .trend-series-total,
+  .chart-multi.hide-comics .trend-series-comics,
+  .chart-multi.hide-shipping .trend-series-shipping { display: none; }
+
+  .mini-paid-circle { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; flex: 0 0 auto; cursor: pointer; padding: 0; }
+  .mini-paid-circle.checked { background: var(--neon-green); border-color: var(--neon-green); }
+  .row-actions-drawer { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); min-width: 104px; }
+  .row-actions-drawer a, .row-actions-drawer button { text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; display: block; }
+  .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: rgba(255,255,255,0.05); }
+  .row-actions-drawer .danger:hover { color: var(--neon-pink); }
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <h1>{{ current_month_label }}</h1>
+  <p>Shipping estimated at {{ currency() }}{{ "%.2f"|format(shipping_estimate) }} per parcel</p>
+</div>
+
+{% if date_changes_flash %}
+<div class="grid">
+  <div class="card" style="grid-column: span 12; border-color: rgba(155,123,255,0.35); background: linear-gradient(160deg, rgba(155,123,255,0.10) 0%, transparent 60%), var(--surface);">
+    <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge" style="background:rgba(155,123,255,0.14); color:var(--neon-violet);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Release date{{ "s" if date_changes_flash|length != 1 else "" }} changed since your last import</div>
+    {% for c in date_changes_flash %}
+    <div style="display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:8px 0; border-top:1px solid var(--border); font-size:13.5px;"><span style="flex:1; color:var(--text);">{{ c.name }}</span><span class="mono" style="color:var(--text-muted);">{{ c.old_label }} &rarr; {{ c.new_label }}</span></div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid">
+  <div class="card ringpair-card">
+    <div class="ringpair-half">
+      {{ still_due_ring_svg|safe }}
+      <div class="ring-label">Still due &middot; {{ current_month_label }}</div>
+      <div class="ring-sub mono">{{ currency() }}{{ "%.2f"|format(hero_remaining_total) }} of {{ currency() }}{{ "%.2f"|format(hero_grand_total) }}</div>
+      <div class="ring-detail">{{ currency() }}{{ "%.2f"|format(hero_grand_total - hero_remaining_total) }} spent so far <span class="dim">this month</span></div>
+    </div>
+    <div class="ringpair-divider"></div>
+    <div class="ringpair-half">
+      {% if budget_ring_svg %}
+      {{ budget_ring_svg|safe }}
+      <div class="ring-label">Budget</div>
+      <div class="ring-sub mono">{{ currency() }}{{ "%.2f"|format(cycle_spend) }} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }}</div>
+      {% if cycle_spend > monthly_budget %}
+      <div class="ring-detail warn">{{ currency() }}{{ "%.2f"|format(cycle_spend - monthly_budget) }} over budget</div>
+      {% else %}
+      <div class="ring-detail">{{ budget_bar_pct }}% of {{ budget_cycle_label }}'s budget</div>
+      {% endif %}
+      {% else %}
+      <div class="ring-label" style="margin-top:38px;">No budget set</div>
+      <div class="ring-sub"><a href="/settings" style="color:var(--neon-blue);">Set one in Settings</a></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card yearpair-card">
+    <div class="yearpair-half">
+      <div class="plain-stat-head"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="plain-stat-label">{{ year_stats.year }} so far</span></div>
+      <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</div>
+      <div class="plain-stat-sub">{{ year_stats.count }} issue{{ "s" if year_stats.count != 1 else "" }} tracked this year</div>
+      {% if year_stats.total > 0 %}
+      <div class="plain-stat-bar-track"><div class="plain-stat-bar-fill" style="width:{{ (year_stats.spent / year_stats.total * 100)|round(1) }}%;"></div></div>
+      <div class="plain-stat-bar-legend">
+        <span><span class="dot"></span>Spent <b class="mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</b></span>
+        <span class="dim">of <b class="mono">{{ currency() }}{{ "%.2f"|format(year_stats.total) }}</b> tracked</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="yearpair-divider"></div>
+    <div class="yearpair-half">
+      <div class="plain-stat-head"><span class="card-icon-badge violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="plain-stat-label">All time</span></div>
+      <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(all_time_stats.spent) }}</div>
+      <div class="plain-stat-sub">{{ all_time_stats.count }} issue{{ "s" if all_time_stats.count != 1 else "" }} tracked, all time</div>
+      <div class="plain-stat-chip">{{ currency() }}{{ "%.2f"|format(all_time_stats.total) }} tracked total</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card thisweek-card">
+    <div class="thisweek-head" onclick="document.getElementById('thisweek-body').classList.toggle('open'); this.querySelector('.thisweek-chevron').classList.toggle('open');">
+      <span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+      <span class="thisweek-label">This week</span>
+      <span class="thisweek-total mono">{{ currency() }}{{ "%.2f"|format(week_remaining) }} left of {{ currency() }}{{ "%.2f"|format(week_total) }}</span>
+      <span class="thisweek-chevron open">&#9662;</span>
+    </div>
+    <div class="thisweek-body open" id="thisweek-body">
+      {% set ns = namespace(shown=0) %}
+      {% for group in week_groups %}
+        {% for sg in group.source_groups %}
+          {% for item in sg.entries %}
+            {% if ns.shown < 6 %}
+            {% set ns.shown = ns.shown + 1 %}
+            <div class="tw-item-row">
+              <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
+                <input type="hidden" name="next" value="/">
+                <input type="hidden" name="action" value="{{ 'undo' if item.charge_status == 'charged' else 'paid' }}">
+                <button type="submit" class="mini-paid-circle {{ 'checked' if item.charge_status == 'charged' else '' }}" title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
+              </form>
+              <div class="tw-item-name">{{ item.name }}<div class="tw-item-date">{{ group.date_label }}</div></div>
+              <div class="tw-item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+              <div class="tw-row-menu">
+                <button type="button" class="tw-menu-btn" data-drawer-template="tw-drawer-{{ item.id }}">&#8942;</button>
+              </div>
+              <template id="tw-drawer-{{ item.id }}" class="drawer-template">
+                <a href="/items/{{ item.id }}/edit">Edit</a>
+                <form method="post" action="/items/{{ item.id }}/mark">
+                  <input type="hidden" name="next" value="/">
+                  <input type="hidden" name="action" value="cancel">
+                  <button type="submit">Cancel</button>
+                </form>
+                <form method="post" action="/items/{{ item.id }}/mark" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+                  <input type="hidden" name="next" value="/">
+                  <input type="hidden" name="action" value="remove">
+                  <button type="submit" class="danger">Remove</button>
+                </form>
+              </template>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      {% endfor %}
+      {% if ns.shown == 0 %}
+      <div class="alerts-empty">Nothing due this week.</div>
+      {% endif %}
+      <a class="thisweek-viewall" href="/orders">View all in Orders &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card alerts-card">
+    <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/></svg></span>Alerts</div>
+    {% if awaiting_charge %}
+    <a class="alert-line" href="/alerts">
+      <span class="dot"></span>
+      <span class="txt"><b>{{ awaiting_charge|length }}</b> unpaid, awaiting charge</span>
+      <span class="arrow">&rsaquo;</span>
+    </a>
+    {% endif %}
+    {% if duplicate_groups %}
+    <a class="alert-line" href="/alerts">
+      <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px rgba(155,123,255,0.5);"></span>
+      <span class="txt"><b>{{ duplicate_groups|length }}</b> possible duplicate{{ "s" if duplicate_groups|length != 1 else "" }}</span>
+      <span class="arrow">&rsaquo;</span>
+    </a>
+    {% endif %}
+    {% if ghost_items %}
+    <a class="alert-line" href="/alerts">
+      <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px rgba(155,123,255,0.5);"></span>
+      <span class="txt"><b>{{ ghost_items|length }}</b> ghost item{{ "s" if ghost_items|length != 1 else "" }}</span>
+      <span class="arrow">&rsaquo;</span>
+    </a>
+    {% endif %}
+    {% if not awaiting_charge and not duplicate_groups and not ghost_items %}
+    <div class="alerts-empty">Nothing needs your attention right now.</div>
+    {% endif %}
+    <a class="alerts-viewall" href="/alerts">View all in Alerts &rarr;</a>
+  </div>
+
+  {% set sync_on = sync_enabled() %}
+  <div class="card syncbackup-card">
+    <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></span>{{ 'Sync & backup' if sync_on else 'Backup' }}</div>
+    {% if sync_on and most_recent_sync %}
+    <div class="syncbackup-row">
+      <span class="sync-dot"></span>
+      <div class="syncbackup-text">Last synced<div class="syncbackup-sub">{{ most_recent_sync.label }} &middot; {{ most_recent_sync.client_label }}</div></div>
+    </div>
+    {% endif %}
+    {% if most_recent_backup %}
+    <div class="syncbackup-row">
+      <span class="sync-dot" style="background:var(--neon-green); box-shadow:0 0 6px var(--neon-green);"></span>
+      <div class="syncbackup-text">Last backup<div class="syncbackup-sub">{{ most_recent_backup.label }} &middot; {{ most_recent_backup.size_label }}</div></div>
+    </div>
+    {% endif %}
+    {% if not (sync_on and most_recent_sync) and not most_recent_backup %}
+    <div class="alerts-empty">{{ 'No sync or backup activity yet.' if sync_on else 'No backups yet.' }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card yearreview-card">
+    <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>{{ year_stats.year }} so far</div>
+    <div class="yr-compare">
+      <div class="yr-compare-col">
+        <div class="yr-compare-label">This year</div>
+        <div class="yr-compare-value mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</div>
+        <div class="yr-compare-sub">{{ year_stats.count }} issues tracked</div>
+      </div>
+      <div class="yr-compare-divider"></div>
+      <div class="yr-compare-col">
+        <div class="yr-compare-label">All time</div>
+        <div class="yr-compare-value mono dim">{{ currency() }}{{ "%.2f"|format(all_time_stats.spent) }}</div>
+        <div class="yr-compare-sub">{{ all_time_stats.count }} issues tracked</div>
+      </div>
+    </div>
+    {% if all_time_stats.spent > 0 %}
+    <div class="yr-compare-bar-track"><div class="yr-compare-bar-fill" style="width:{{ (year_stats.spent / all_time_stats.spent * 100)|round(1) }}%;"></div></div>
+    <div class="yr-compare-bar-label">{{ year_stats.year }} is <b>{{ (year_stats.spent / all_time_stats.spent * 100)|round|int }}%</b> of everything tracked, all time</div>
+    {% endif %}
+  </div>
+
+  <div class="card stillorder-card">
+    {% if biggest_still_to_come %}
+    <div class="stillorder-top">
+      <div>
+        <div class="stillorder-eyebrow">Biggest still to come <span class="dim">&middot; due {{ biggest_still_to_come.due_label }}</span></div>
+        <div class="stillorder-title">{{ biggest_still_to_come.name }}</div>
+        <div class="stillorder-sub">{{ biggest_still_to_come.source }}</div>
+      </div>
+      {% if biggest_still_to_come.days_until_due is not none and biggest_still_to_come.days_until_due >= 0 %}
+      <div class="stillorder-countdown">{{ biggest_still_to_come.days_until_due }}<span>days</span></div>
+      {% endif %}
+    </div>
+    <div class="stillorder-price mono">{{ currency() }}{{ "%.2f"|format(biggest_still_to_come.price) }}</div>
+    <div class="stillorder-divider"></div>
+    <div class="stillorder-onorder-label">Still on order, not yet released</div>
+    <div class="stillorder-onorder-row">
+      <span class="stillorder-onorder-count mono">{{ still_to_come_count }} item{{ "s" if still_to_come_count != 1 else "" }}</span>
+      <span class="stillorder-onorder-total mono">{{ currency() }}{{ "%.2f"|format(still_to_come_total) }}</span>
+    </div>
+    {% else %}
+    <div class="stillorder-eyebrow">Biggest still to come</div>
+    <div class="stillorder-empty">Nothing on order right now.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card chart-card">
+    <div class="card-head">
+      <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Spend trend</div>
+      <div class="range-tabs" id="chart-tabs">
+        {% for key, label in range_tabs %}
+        <button type="button" class="range-tab {{ 'active' if key == active_chart_range else '' }}" data-range="{{ key }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="chart-multi hide-comics hide-shipping" id="chart-multi">
+      {% for key, svg in chart_svg_all.items() %}
+      <div class="chart {{ 'chart-active' if key == active_chart_range else '' }}" data-chart-range="{{ key }}">
+        {{ svg|safe }}
+      </div>
+      {% endfor %}
+      <div class="trend-toggles">
+        <label class="trend-toggle-row trend-toggle-total trend-toggle-checked"><span class="toggle"><input type="checkbox" data-series="total" checked><span class="toggle-track"></span></span><span class="trend-toggle-label">Total</span></label>
+        <label class="trend-toggle-row trend-toggle-comics"><span class="toggle"><input type="checkbox" data-series="comics"><span class="toggle-track"></span></span><span class="trend-toggle-label">Items</span></label>
+        <label class="trend-toggle-row trend-toggle-shipping"><span class="toggle"><input type="checkbox" data-series="shipping"><span class="toggle-track"></span></span><span class="trend-toggle-label">Shipping</span></label>
+      </div>
+    </div>
+    <div class="trend-tooltip" id="trend-tooltip" style="display:none;">
+      <div class="trend-tooltip-label"></div>
+      <div class="trend-tooltip-row"><span>Items</span><span class="trend-tooltip-comics mono"></span></div>
+      <div class="trend-tooltip-row"><span>Shipping</span><span class="trend-tooltip-shipping mono"></span></div>
+      <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
+      <div class="trend-tooltip-count"></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_script %}
+(function () {
+  var tabsContainer = document.getElementById('chart-tabs');
+  if (!tabsContainer) return;
+
+  function showRange(range) {
+    document.querySelectorAll('.chart[data-chart-range]').forEach(function (el) {
+      el.classList.toggle('chart-active', el.dataset.chartRange === range);
+    });
+    tabsContainer.querySelectorAll('.range-tab').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.range === range);
+    });
+  }
+  tabsContainer.addEventListener('click', function (e) {
+    var btn = e.target.closest('.range-tab');
+    if (!btn) return;
+    showRange(btn.dataset.range);
+    KC.pref.set('dashboard.trend.range', btn.dataset.range);
+  });
+  // Remembered range - unless the URL asked for one explicitly.
+  if (!new URLSearchParams(window.location.search).has('chart_range')) {
+    var savedRange = KC.pref.get('dashboard.trend.range', null);
+    if (savedRange && tabsContainer.querySelector('.range-tab[data-range="' + CSS.escape(savedRange) + '"]')) {
+      showRange(savedRange);
+    }
+  }
+
+  var tooltip = document.getElementById('trend-tooltip');
+  document.querySelectorAll('.trend-svg').forEach(function (svg) {
+    var dot = svg.querySelector('.trend-dot');
+    var guide = svg.querySelector('.trend-guide');
+    svg.querySelectorAll('.trend-hit').forEach(function (hit) {
+      hit.addEventListener('mouseenter', function () { showTooltip(hit, dot, guide); });
+      hit.addEventListener('mousemove', function (e) { positionTooltip(e); });
+      hit.addEventListener('mouseleave', function () {
+        tooltip.style.display = 'none';
+        dot.style.display = 'none';
+        guide.style.display = 'none';
+      });
+    });
+  });
+
+  function showTooltip(hit, dot, guide) {
+    var d = hit.dataset;
+    tooltip.querySelector('.trend-tooltip-label').textContent = d.label;
+    tooltip.querySelector('.trend-tooltip-comics').textContent = '{{ currency() }}' + d.comics;
+    tooltip.querySelector('.trend-tooltip-shipping').textContent = '{{ currency() }}' + d.shipping;
+    tooltip.querySelector('.trend-tooltip-total .mono').textContent = '{{ currency() }}' + d.total;
+    tooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' item' : ' items') + ' this period';
+    tooltip.style.display = 'block';
+    var cx = parseFloat(d.cx), cy = parseFloat(d.cy);
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.style.display = '';
+    guide.setAttribute('x1', cx); guide.setAttribute('x2', cx); guide.style.display = '';
+  }
+  function positionTooltip(e) {
+    var rect = document.querySelector('.main').getBoundingClientRect();
+    var cursorX = e.clientX - rect.left;
+    var cursorY = e.clientY - rect.top;
+    var tw = tooltip.offsetWidth || 220;
+    var x = (cursorX + 14 + tw > rect.width) ? cursorX - 14 - tw : cursorX + 14;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = (cursorY - 10) + 'px';
+  }
+
+  var chartMulti = document.getElementById('chart-multi');
+  if (chartMulti) {
+    var savedSeries = KC.pref.get('dashboard.trend.series', {});
+    chartMulti.querySelectorAll('.trend-toggle-row input[data-series]').forEach(function (input) {
+      if (savedSeries && typeof savedSeries[input.dataset.series] === 'boolean') input.checked = savedSeries[input.dataset.series];
+      applySeriesState(input);
+      input.addEventListener('change', function () {
+        applySeriesState(input);
+        var state = KC.pref.get('dashboard.trend.series', {}) || {};
+        state[input.dataset.series] = input.checked;
+        KC.pref.set('dashboard.trend.series', state);
+      });
+    });
+  }
+  function applySeriesState(input) {
+    chartMulti.classList.toggle('hide-' + input.dataset.series, !input.checked);
+  }
+})();
+
+document.querySelectorAll('.tw-menu-btn').forEach(function (btn) {
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var openNow = btn.dataset.open === '1';
+    document.querySelectorAll('.row-actions-drawer').forEach(function (d) { d.remove(); });
+    document.querySelectorAll('.tw-menu-btn').forEach(function (b) { b.dataset.open = '0'; });
+    if (openNow) return;
+    var tpl = document.getElementById(btn.dataset.drawerTemplate);
+    if (!tpl) return;
+    var rect = btn.getBoundingClientRect();
+    var drawer = document.createElement('div');
+    drawer.className = 'row-actions-drawer';
+    drawer.innerHTML = tpl.innerHTML;
+    document.body.appendChild(drawer);
+    var dw = drawer.offsetWidth;
+    var left = rect.right - dw;
+    if (left < 8) left = 8;
+    var top = rect.bottom + 4;
+    if (top + drawer.offsetHeight > window.innerHeight - 8) top = rect.top - drawer.offsetHeight - 4;
+    drawer.style.left = left + 'px';
+    drawer.style.top = top + 'px';
+    btn.dataset.open = '1';
+  });
+});
+document.addEventListener('click', function () {
+  document.querySelectorAll('.row-actions-drawer').forEach(function (d) { d.remove(); });
+  document.querySelectorAll('.tw-menu-btn').forEach(function (b) { b.dataset.open = '0'; });
+});
+{% endblock %}

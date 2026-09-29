@@ -18,7 +18,7 @@
     <h2><span class="block-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>Search</h2>
   </div>
 
-  <form method="get" action="/search" class="search-filters">
+  <form method="get" action="/classic/search" class="search-filters">
     <input type="text" name="q" value="{{ q }}" placeholder="Search by comic name..." class="search-name-input">
 
     <div class="search-filter-row">
@@ -91,7 +91,7 @@
 
   <script>
   document.getElementById('search-clear-btn').addEventListener('click', function () {
-    window.location.href = '/search';
+    window.location.href = '/classic/search';
   });
   document.querySelectorAll('.date-preset-btn[data-preset]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -168,7 +168,7 @@
             <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="bulk-select" title="Select for bulk action">
             <button type="button" class="actions-drawer-toggle" aria-label="More actions">&#8942;</button>
             <div class="actions-drawer">
-            <a href="/items/{{ item.id }}/edit" class="btn-tiny item-edit-btn">Edit</a>
+            <a href="/classic/items/{{ item.id }}/edit" class="btn-tiny item-edit-btn">Edit</a>
             <form method="post" action="/items/{{ item.id }}/mark" class="cancel-form">
               <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
               <input type="hidden" name="action" value="cancel">
@@ -187,7 +187,7 @@
             <span class="muted search-meta">{{ item.release_date_label }}
               &middot; <span style="color: {{ item.source_color }};">{{ item.source }}</span>
               {% if item.order_number %}
-              &middot; <a href="/search?q={{ item.order_number }}" class="search-order-link">order #{{ item.order_number }}</a>
+              &middot; <a href="/classic/search?q={{ item.order_number }}" class="search-order-link">order #{{ item.order_number }}</a>
               {% endif %}
             </span>
             {% if item.note %}
@@ -201,11 +201,11 @@
     {% if total_pages > 1 %}
     <div class="search-pagination">
       {% if current_page > 1 %}
-      <a class="btn-tiny" href="/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page - 1 }}">&larr; Prev</a>
+      <a class="btn-tiny" href="/classic/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page - 1 }}">&larr; Prev</a>
       {% endif %}
       <span class="muted search-pagination-label">Page {{ current_page }} of {{ total_pages }}</span>
       {% if current_page < total_pages %}
-      <a class="btn-tiny" href="/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page + 1 }}">Next &rarr;</a>
+      <a class="btn-tiny" href="/classic/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page + 1 }}">Next &rarr;</a>
       {% endif %}
     </div>
     {% endif %}
