@@ -7,7 +7,7 @@ fixes. Your data upgrades itself on first start; nothing needs doing by hand.
 
 ### The Android app is dormant
 
-The [Android app](https://github.com/callum87-Lab/Ka-Ching-App) is on hold
+The Android app (its repository is now private) is on hold
 until it can be reworked to match this release and fully re-tested. **Phone
 sync is off and hidden by default** — set `KACHING_PHONE_SYNC=1` to bring it
 back (unsupported until the app update ships). Your sync key is kept.

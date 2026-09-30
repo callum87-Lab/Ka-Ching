@@ -21,8 +21,8 @@ Manga, Pokémon cards, Funko Pop… or your own).
 > the full list, and [Upgrading from v2](#upgrading-from-v2x) before you
 > update — your data upgrades itself, nothing needs doing by hand.
 
-> **About the Android app:** the [Ka-Ching! Android app](https://github.com/callum87-Lab/Ka-Ching-App)
-> is **dormant for now**. It was built against the old interface, and rather
+> **About the Android app:** the Ka-Ching! Android app is **dormant for
+> now**, and its repository is private until it's back. It was built against the old interface, and rather
 > than ship it half-matched to v3, it's on hold until it can be properly
 > reworked with the new look and fully re-tested against this release. To
 > make sure nothing can sync against a server it hasn't been checked with,
@@ -511,7 +511,8 @@ icon instead of a browser tab.
 
 ## The Android app (dormant)
 
-There's a separate [Ka-Ching! Android app](https://github.com/callum87-Lab/Ka-Ching-App) —
+There's a separate Ka-Ching! Android app (its repository is private while
+it's dormant) —
 a genuinely separate, local-first project with its own database and parsers,
 which could optionally sync with this server.
 
