@@ -12,6 +12,13 @@
   *Everything*, *I don't pre-order* and *Just the essentials* presets.
 - Layout and order are saved on the server, so every device matches.
 
+### Wide landscape monitors
+- Settings → Layout → **On wide screens** (1,900px+ only; phones, tablets,
+  laptops and portrait screens are unaffected): **Standard** (centred),
+  **Three columns** (three cards to a row, full width) or **Side panel** (a
+  sticky "At a glance" column on every page: this week, alerts, biggest
+  still to come).
+
 ### Budget by category
 - Optional **category limits** per budget cycle (Settings → General).
 - New **Budget by category** Dashboard card: one bar split into category

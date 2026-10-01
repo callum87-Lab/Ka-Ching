@@ -78,6 +78,11 @@
   .day-group:not(.expanded) .day-group-arrow { transform: rotate(-90deg); }
   .day-group-body { margin-top: 10px; }
   .day-group:not(.expanded) .day-group-body { display: none; }
+  .wide-head { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; margin: 14px 0 4px; }
+  .wide-choices .layout-preset { cursor: pointer; font-family: inherit; }
+  /* every option box in a row the same height, whatever its text */
+  .layout-presets { align-items: stretch; }
+  .layout-preset { height: 100%; min-height: 72px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .layout-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 6px 0 18px; }
   .layout-preset { text-align: left; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
   .layout-preset:hover { border-color: var(--border-strong); box-shadow: 0 0 16px rgba(47,216,255,0.35); }
@@ -374,6 +379,16 @@
     <div class="card settings-card" id="layout-card">
       <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Layout</div>
       <p class="warn-hint">Choose which cards show on each page. Changes apply straight away &mdash; you can also use &#9881; Customise on each page.</p>
+      {% set _wl = wide_layout() %}
+      <div class="wide-head">On wide screens</div>
+      <p class="warn-hint" style="margin-top:2px;">Only for <b style="color:var(--text);">wide landscape monitors</b> (about 1,900 pixels across or more). Phones, tablets, laptops and portrait screens always use the normal layout, whichever you pick here.</p>
+      <form method="post" action="/settings/wide-layout" class="layout-presets wide-choices">
+        <input type="hidden" name="next" value="/settings#layout">
+        <button type="submit" name="layout" value="standard" class="layout-preset{{ ' sel' if _wl == 'standard' else '' }}"><b>Standard</b><span>The normal layout, centred on the screen</span></button>
+        <button type="submit" name="layout" value="columns" class="layout-preset{{ ' sel' if _wl == 'columns' else '' }}"><b>Three columns</b><span>Uses the full width: cards sit three to a row</span></button>
+        <button type="submit" name="layout" value="panel" class="layout-preset{{ ' sel' if _wl == 'panel' else '' }}"><b>Side panel</b><span>An "At a glance" column on the right of every page &mdash; this week, alerts, biggest still to come</span></button>
+      </form>
+      <div class="wide-head" style="margin-top:22px;">Cards on each page</div>
       <div class="layout-presets">
         <button type="button" class="layout-preset" data-preset="all"><b>Everything</b><span>Every card on every page</span></button>
         <button type="button" class="layout-preset" data-preset="nopre"><b>I don't pre-order</b><span>Hides still-due, this week and on-order cards</span></button>
@@ -658,7 +673,7 @@ document.querySelectorAll('[data-catlimit-showall]').forEach(function (a) {
     var h = hiddenList().sort().join(), m = { all: '' };
     m.nopre = Array.prototype.filter.call(toggles, function (t) { return t.dataset.preorder === 'yes'; }).map(function (t) { return t.dataset.layoutCard; }).sort().join();
     m.essential = Array.prototype.filter.call(toggles, function (t) { return t.dataset.essential !== 'yes'; }).map(function (t) { return t.dataset.layoutCard; }).sort().join();
-    document.querySelectorAll('.layout-preset').forEach(function (b) { b.classList.toggle('sel', m[b.dataset.preset] === h); });
+    document.querySelectorAll('.layout-preset[data-preset]').forEach(function (b) { b.classList.toggle('sel', m[b.dataset.preset] === h); });
   }
   function counts() {
     document.querySelectorAll('[data-layout-panel]').forEach(function (panel) {
@@ -676,7 +691,7 @@ document.querySelectorAll('[data-catlimit-showall]').forEach(function (a) {
   }
   function set(t, on) { t.classList.toggle('on', on); t.setAttribute('aria-pressed', on ? 'true' : 'false'); }
   toggles.forEach(function (t) { t.addEventListener('click', function () { set(t, !t.classList.contains('on')); save(); }); });
-  document.querySelectorAll('.layout-preset').forEach(function (b) {
+  document.querySelectorAll('.layout-preset[data-preset]').forEach(function (b) {
     b.addEventListener('click', function () {
       var p = b.dataset.preset;
       toggles.forEach(function (t) {

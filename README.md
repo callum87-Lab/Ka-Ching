@@ -16,7 +16,7 @@ the same way, and since v3 you can sort it all into **categories** (Comics,
 Manga, Pokémon cards, Funko Pop… or your own).
 
 > **New in v3.1:** customise every page (show, hide and drag cards into
-> your own order), a budget split by category with optional per-category
+> your own order), layouts for wide landscape monitors, a budget split by category with optional per-category
 > limits, an optional login, a `/` search shortcut, and a lot of polish.
 > See [CHANGELOG.md](CHANGELOG.md). The old interface at `/classic/` has now
 > been removed as planned — old links simply open the same page in the
@@ -141,6 +141,13 @@ the server, so it's the same on every device. **Settings → Layout** lists
 every card on every page, with one-tap presets: *Everything*, *I don't
 pre-order* (hides the still-due and on-order cards) and *Just the
 essentials*.
+
+**Wide landscape monitors** (about 1,900px across or more) get a choice in
+Settings → Layout: **Standard** (the normal layout, centred), **Three
+columns** (cards sit three to a row and use the full width) or **Side
+panel** (an "At a glance" column on the right of every page with this
+week, alerts and the biggest thing still to come). Phones, tablets, laptops
+and portrait screens always use the normal layout.
 
 On a computer, press **/** anywhere to jump into the search box (Esc to
 leave it). Every expand/collapse section has a round chevron button, and on
@@ -294,7 +301,8 @@ switched on start switched on.
   3 kept, each downloadable), full spend-history CSV, notification settings
   export / import, and a factory reset (type-to-confirm; wipes tracked items
   only).
-- **Layout** — which cards show on each page (see above).
+- **Layout** — which cards show on each page, and the wide-screen layout
+  (see above).
 - **Security** — the optional login (see [Signing in](#signing-in-optional)).
 - **About** and **Help** — a getting-started guide and FAQ.
 

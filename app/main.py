@@ -1527,6 +1527,76 @@ CARD_LAYOUT = [
 ]
 CARD_IDS = {c["id"] for pg in CARD_LAYOUT for c in pg["cards"]}
 
+# Wide landscape screens (1900px+) only. "columns" lays cards out three to
+# a row using these widths (out of 12); "panel" adds the At a glance column.
+WIDE_LAYOUTS = ("standard", "columns", "panel")
+WIDE_SPANS = {
+    "dash.rings": 4, "dash.year": 4, "dash.alerts": 4, "dash.week": 8, "dash.backup": 4,
+    "dash.catbudget": 12, "dash.stillorder": 12, "dash.trend": 12,
+    "cal.mini": 3, "cal.big": 9, "cal.heatmap": 12, "cal.list": 12,
+    "ov.ratio": 4, "ov.releases": 8, "ov.spend": 8, "ov.issue": 4, "ov.dist": 4, "ov.ship": 4,
+    "ov.cum": 4, "ov.cat": 12, "ov.trend": 12,
+    "shop.stats": 12, "shop.donut": 4, "shop.breakdown": 8, "shop.compare": 12, "shop.overtime": 12,
+    "creep.stats": 12, "creep.hero": 4, "creep.dist": 8, "creep.table": 12, "creep.chart": 12,
+    "titles.stats": 12, "titles.hero": 4, "titles.priciest": 8, "titles.series": 12, "titles.compare": 12,
+}
+# Default order in three columns where it differs from the normal one
+WIDE_ORDER = {
+    "/": ["dash.rings", "dash.year", "dash.alerts", "dash.week", "dash.backup",
+          "dash.catbudget", "dash.stillorder", "dash.trend"],
+}
+
+
+def _wide_layout():
+    conn = db.get_db()
+    v = notifications.get_setting(conn.cursor(), "wide_layout", "standard")
+    conn.close()
+    return v if v in WIDE_LAYOUTS else "standard"
+
+
+def _glance():
+    """Data for the wide-screen 'At a glance' panel: this week, alerts and
+    the biggest thing still to come."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    today = date.today()
+    week_items = fetch_items_between(cur, today, today + timedelta(days=6))
+    week_items.sort(key=lambda i: (i["release_date"] or i["placed_date"] or "", i["name"]))
+    alerts = [
+        ("awaiting", len(find_awaiting_charge(cur, today)), "unpaid, awaiting charge", "var(--neon-pink)"),
+        ("dupes", len(find_duplicate_groups(cur)), "possible duplicates", "var(--neon-orange, #ff9d5c)"),
+        ("ghost", len(find_ghost_items(cur)), "with no order number", "var(--neon-violet)"),
+        ("undated", len(find_undated_items(cur)), "with no release date", "var(--neon-blue)"),
+        ("over", len(find_category_overages(cur, today)), "categor{} over a limit", "var(--neon-pink)"),
+    ]
+    cur.execute(
+        "SELECT * FROM items WHERE status != 'cancelled' AND release_date IS NOT NULL AND date(release_date) >= date(?)",
+        (today.isoformat(),),
+    )
+    upcoming = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    big = max(upcoming, key=lambda i: i["price"], default=None)
+    if big:
+        rd = date.fromisoformat(big["release_date"])
+        big = {"name": big["name"], "price": big["price"], "source": big["source"],
+               "due": rd.strftime("%-d %b"), "days": (rd - today).days}
+    return {
+        "week": [{"name": i["name"], "price": i["price"],
+                  "day": date.fromisoformat((i["release_date"] or i["placed_date"])[:10]).strftime("%a %-d")} for i in week_items[:6]],
+        "week_more": max(0, len(week_items) - 6),
+        "week_total": round(sum(i["price"] for i in week_items), 2),
+        "alerts": [{"key": k, "count": n, "label": (lbl.format("y" if n == 1 else "ies") if "{}" in lbl else lbl), "color": c}
+                   for k, n, lbl, c in alerts if n],
+        "big": big,
+        "upcoming_count": len(upcoming),
+        "upcoming_total": round(sum(i["price"] for i in upcoming), 2),
+    }
+
+
+templates.env.globals["wide_layout"] = _wide_layout
+templates.env.globals["glance"] = _glance
+templates.env.globals["wide_layout_json"] = lambda: json.dumps({"spans": WIDE_SPANS, "order": WIDE_ORDER})
+
 
 def _hidden_cards():
     conn = db.get_db()
@@ -1700,6 +1770,16 @@ def turn_login_off(current: str = Form("")):
     response = RedirectResponse(url=back + "?security=off", status_code=303)
     response.delete_cookie(LOGIN_COOKIE, path="/")
     return response
+
+
+@app.post("/settings/wide-layout")
+def save_wide_layout(layout: str = Form("standard"), next: str = Form("/settings#layout")):
+    conn = db.get_db()
+    notifications.set_setting(conn.cursor(), "wide_layout", layout if layout in WIDE_LAYOUTS else "standard")
+    conn.commit()
+    conn.close()
+    back = next if (next.startswith("/") and not next.startswith("//")) else "/settings"
+    return RedirectResponse(url=back, status_code=303)
 
 
 @app.get("/sw.js")
