@@ -3,6 +3,7 @@ import calendar
 import contextvars
 import csv
 import hashlib
+import hmac
 import io
 import json
 import logging
@@ -10,6 +11,7 @@ import math
 import os
 import re
 import secrets
+import statistics
 import shutil
 import sqlite3
 from datetime import date, datetime, timedelta, timezone
@@ -32,7 +34,7 @@ logger = logging.getLogger("kaching")
 app = FastAPI(title="Ka-Ching!")
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
-APP_VERSION = "3.0.0"
+APP_VERSION = "3.1.0"
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=os.path.join(APP_DIR, "static")), name="static")
 
@@ -68,6 +70,145 @@ async def currency_context_middleware(request: Request, call_next):
 
 
 templates.env.globals["currency"] = lambda: _currency_ctx.get()
+
+
+# ---------------------------------------------------------------------------
+# Optional login. Off unless a password is set in Settings -> Security, or
+# KACHING_PASSWORD is set in docker-compose (which then always applies and
+# can't be switched off from the web UI - it doubles as the recovery route).
+# Passwords are stored as salted PBKDF2 hashes (Python standard library).
+# A sign-in is a signed cookie; changing the password signs everyone out.
+# ---------------------------------------------------------------------------
+LOGIN_COOKIE = "kc_session"
+LOGIN_REMEMBER_DAYS = 30
+LOGIN_MAX_FAILS = 5
+LOGIN_LOCK_SECONDS = 60
+_login_fails = {}   # client ip -> [timestamps of recent failed attempts]
+
+
+def _env_password():
+    return os.environ.get("KACHING_PASSWORD", "").strip() or None
+
+
+def _hash_password(password, salt=None, iterations=240000):
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations).hex()
+    return f"pbkdf2_sha256${iterations}${salt}${digest}"
+
+
+def _check_password_hash(password, stored):
+    try:
+        _, iterations, salt, digest = stored.split("$")
+        return hmac.compare_digest(_hash_password(password, salt, int(iterations)).split("$")[3], digest)
+    except (ValueError, AttributeError):
+        return False
+
+
+def _login_settings():
+    conn = db.get_db()
+    cur = conn.cursor()
+    stored = notifications.get_setting(cur, "login_password_hash", "") or ""
+    secret = notifications.get_setting(cur, "login_secret", "") or ""
+    version = notifications.get_setting(cur, "login_version", "1") or "1"
+    if not secret:
+        secret = secrets.token_hex(32)
+        notifications.set_setting(cur, "login_secret", secret)
+        conn.commit()
+    conn.close()
+    return stored, secret, version
+
+
+def login_enabled():
+    if _env_password():
+        return True
+    stored, _, _ = _login_settings()
+    return bool(stored)
+
+
+def _password_ok(password):
+    env = _env_password()
+    if env:
+        return hmac.compare_digest(password.encode("utf-8"), env.encode("utf-8"))
+    stored, _, _ = _login_settings()
+    return bool(stored) and _check_password_hash(password, stored)
+
+
+def _session_value(remember):
+    _, secret, version = _login_settings()
+    expiry = int(datetime.now(timezone.utc).timestamp()) + LOGIN_REMEMBER_DAYS * 86400 if remember else 0
+    body = f"{expiry}.{version}"
+    sig = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
+    return f"{body}.{sig}"
+
+
+def _session_valid(value):
+    try:
+        expiry, version, sig = (value or "").split(".")
+    except ValueError:
+        return False
+    _, secret, current = _login_settings()
+    good = hmac.new(secret.encode(), f"{expiry}.{version}".encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, good) or version != current:
+        return False
+    return int(expiry) == 0 or int(expiry) > int(datetime.now(timezone.utc).timestamp())
+
+
+def _set_session_cookie(response, remember):
+    kwargs = {"httponly": True, "samesite": "lax", "path": "/"}
+    if remember:
+        kwargs["max_age"] = LOGIN_REMEMBER_DAYS * 86400
+    response.set_cookie(LOGIN_COOKIE, _session_value(remember), **kwargs)
+
+
+def _calendar_feed_key():
+    """Private key added to the calendar subscription link while login is
+    on - calendar apps can't sign in, so the link itself carries access."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    key = notifications.get_setting(cur, "calendar_feed_key", "") or ""
+    if not key:
+        key = secrets.token_urlsafe(24)
+        notifications.set_setting(cur, "calendar_feed_key", key)
+        conn.commit()
+    conn.close()
+    return key
+
+
+_LOGIN_OPEN_PATHS = ("/login", "/logout", "/static/", "/sw.js", "/api/sync")
+
+
+@app.middleware("http")
+async def login_middleware(request: Request, call_next):
+    path = request.url.path
+    if any(path == p or (p.endswith("/") and path.startswith(p)) for p in _LOGIN_OPEN_PATHS):
+        return await call_next(request)
+    if not login_enabled():
+        return await call_next(request)
+    if _session_valid(request.cookies.get(LOGIN_COOKIE)):
+        return await call_next(request)
+    if path == "/calendar/export.ics" and request.query_params.get("key") and hmac.compare_digest(
+            request.query_params.get("key"), _calendar_feed_key()):
+        return await call_next(request)
+    if request.method == "GET" and "text/html" in request.headers.get("accept", ""):
+        target = path + (("?" + request.url.query) if request.url.query else "")
+        return RedirectResponse(url="/login?next=" + quote(target, safe=""), status_code=303)
+    return PlainTextResponse("Sign in required", status_code=401)
+
+
+def _client_ip(request):
+    return request.client.host if request.client else "?"
+
+
+def _locked_out(ip):
+    now = datetime.now().timestamp()
+    recent = [t for t in _login_fails.get(ip, []) if now - t < LOGIN_LOCK_SECONDS]
+    _login_fails[ip] = recent
+    return len(recent) >= LOGIN_MAX_FAILS
+
+
+templates.env.globals["login_enabled"] = login_enabled
+templates.env.globals["login_env_managed"] = lambda: bool(_env_password())
+templates.env.globals["calendar_feed_key"] = lambda: _calendar_feed_key() if login_enabled() else None
 
 DEFAULT_SHIPPING_ESTIMATE = float(os.environ.get("SHIPPING_ESTIMATE", "4.00"))
 MIN_SHIPPING_SAMPLES = 3
@@ -125,6 +266,11 @@ async def _daily_notification_loop():
             logger.info("NOTIFY SCHEDULER: daily check ran, result=%s", result)
 
             budget_result = await asyncio.to_thread(check_budget_threshold)
+            try:
+                cat_result = await asyncio.to_thread(check_category_limits)
+                logger.info("NOTIFY SCHEDULER: category limit check ran, result=%s", cat_result)
+            except Exception:
+                logger.exception("NOTIFY SCHEDULER: category limit check failed")
             if budget_result is not None:
                 logger.info("NOTIFY SCHEDULER: budget alert check ran, result=%s", budget_result)
         except Exception:
@@ -437,6 +583,144 @@ def compute_shipping_for_groups(cur, groups):
 
 
 BUDGET_ALERT_THRESHOLD_PCT = 80
+
+
+def _category_limits(cur):
+    """{category_id: limit} for categories that have a spending limit."""
+    try:
+        raw = json.loads(notifications.get_setting(cur, "category_limits", "{}") or "{}")
+    except (ValueError, TypeError):
+        return {}
+    out = {}
+    for k, v in raw.items():
+        try:
+            amount = float(v)
+        except (TypeError, ValueError):
+            continue
+        if amount > 0:
+            out[int(k)] = round(amount, 2)
+    return out
+
+
+def _category_limits_now():
+    conn = db.get_db()
+    try:
+        return _category_limits(conn.cursor())
+    finally:
+        conn.close()
+
+
+def _category_cycle_spend(cur, today: date):
+    """This budget cycle's spend per category, counted exactly the way the
+    overall budget counts it, so the categories always add up to the
+    budget figure. Shipping belongs to a parcel, not a category, so each
+    parcel's shipping is shared across its items' categories by price.
+    Returns (cycle_key, {category_id: {"items", "ship", "total", "due"}})."""
+    cycle = notifications.get_setting(cur, "budget_cycle", "monthly")
+    default_id = db.default_category_id(cur.connection)
+    known = {r[0] for r in cur.execute("SELECT id FROM categories").fetchall()}
+
+    def cat_of(it):
+        cid = it.get("category_id")
+        return cid if cid in known else default_id
+
+    spend = {}
+
+    def add(cid, items=0.0, ship=0.0, due=0.0):
+        row = spend.setdefault(cid, {"items": 0.0, "ship": 0.0, "total": 0.0, "due": 0.0})
+        row["items"] += items; row["ship"] += ship; row["total"] += items + ship; row["due"] += due
+
+    if cycle == "weekly":
+        cycle_key = today.strftime("%G-W%V")
+        for it in fetch_items_between(cur, today, today + timedelta(days=6)):
+            future = (it["release_date"] or it["placed_date"]) > today.isoformat()
+            add(cat_of(it), items=it["price"], due=it["price"] if future else 0.0)
+    elif cycle == "28day":
+        cycle_key = "28day"
+        start = today - timedelta(days=27)
+        cur.execute(
+            "SELECT * FROM items WHERE status != 'cancelled' AND date(release_date) BETWEEN date(?) AND date(?)",
+            (start.isoformat(), today.isoformat()),
+        )
+        for it in [dict(r) for r in cur.fetchall()]:
+            add(cat_of(it), items=it["price"])
+    else:
+        cycle_key = today.strftime("%Y-%m")
+        month_start, month_end = month_bounds(today)
+        for group in group_by_date(fetch_items_between(cur, month_start, month_end)):
+            group_ship, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, [group])
+            entries = [e for sg in group["source_groups"] for e in sg["entries"]]
+            subtotal = sum(e["price"] for e in entries) or 0
+            future = group["date"] > today.isoformat()
+            for e in entries:
+                share = (e["price"] / subtotal) * group_ship if subtotal else group_ship / max(1, len(entries))
+                add(cat_of(e), items=e["price"], ship=share, due=(e["price"] + share) if future else 0.0)
+    for row in spend.values():
+        for k in row:
+            row[k] = round(row[k], 2)
+    return cycle_key, spend
+
+
+def _category_budget_rows(cur, today: date):
+    """Rows for the 'Budget by category' card and the over-limit alerts:
+    every category with spend this cycle or a limit, biggest first."""
+    _, spend = _category_cycle_spend(cur, today)
+    limits = _category_limits(cur)
+    cats = {r["id"]: dict(r) for r in cur.execute("SELECT id, name, color FROM categories ORDER BY sort_order, id").fetchall()}
+    rows = []
+    for cid in set(spend) | set(limits):
+        if cid not in cats:
+            continue
+        sp = spend.get(cid, {"total": 0.0, "due": 0.0})
+        lim = limits.get(cid)
+        rows.append({
+            "id": cid, "name": cats[cid]["name"], "color": cats[cid]["color"],
+            "total": sp["total"], "due": sp.get("due", 0.0), "limit": lim,
+            "over": round(sp["total"] - lim, 2) if lim and sp["total"] > lim else 0,
+        })
+    rows.sort(key=lambda r: (-r["total"], r["name"]))
+    return rows
+
+
+def find_category_overages(cur, today: date):
+    return [r for r in _category_budget_rows(cur, today) if r["over"] > 0]
+
+
+def check_category_limits():
+    """Daily: one push per category per budget cycle when it goes over its
+    limit, if budget alerts are switched on."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    if notifications.get_setting(cur, "budget_alert_enabled", "no") != "yes":
+        conn.close()
+        return None
+    today = date.today()
+    cycle_key, _ = _category_cycle_spend(cur, today)
+    try:
+        sent = json.loads(notifications.get_setting(cur, "_catlimit_sent", "{}") or "{}")
+    except (ValueError, TypeError):
+        sent = {}
+    currency_symbol = {"gbp": "\u00a3", "usd": "$", "eur": "\u20ac"}.get(notifications.get_setting(cur, "currency_symbol", "gbp"), "\u00a3")
+    results = []
+    for r in find_category_overages(cur, today):
+        key = str(r["id"])
+        last = sent.get(key, "")
+        if cycle_key == "28day":
+            recent = last and (today - date.fromisoformat(last)).days < 28
+        else:
+            recent = last == cycle_key
+        if recent:
+            continue
+        title = f"{r['name']} is over its limit"
+        message = f"{currency_symbol}{r['total']:.2f} of {currency_symbol}{r['limit']:.2f} this cycle ({currency_symbol}{r['over']:.2f} over)."
+        result = notifications.send_via_configured_provider(cur, title, message)
+        if result[0]:
+            sent[key] = today.isoformat() if cycle_key == "28day" else cycle_key
+        results.append((r["name"], result))
+    notifications.set_setting(cur, "_catlimit_sent", json.dumps(sent))
+    conn.commit()
+    conn.close()
+    return results or None
 
 
 def check_budget_threshold(force: bool = False):
@@ -875,6 +1159,57 @@ def find_ghost_items(cur):
     return [dict(r) for r in cur.fetchall()]
 
 
+def find_undated_items(cur):
+    """Items with neither a release date nor a placed date. They can't be
+    placed on the calendar or in any month, so they'd otherwise sit
+    unnoticed (some Forbidden Planet imports arrive like this)."""
+    cur.execute(
+        """
+        SELECT * FROM items
+        WHERE status != 'cancelled' AND release_date IS NULL AND placed_date IS NULL
+        ORDER BY name
+        """
+    )
+    return [dict(r) for r in cur.fetchall()]
+
+
+RESTORE_COPIES_KEPT = 3
+
+
+def _restore_copies():
+    """The safety copies a restore leaves next to the database, newest first."""
+    folder = os.path.dirname(db.DB_PATH) or "."
+    base = os.path.basename(db.DB_PATH)
+    out = []
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return out
+    for fname in names:
+        if not fname.startswith(base + ".before-restore-"):
+            continue
+        stamp = fname.rsplit("-", 1)[-1]
+        full = os.path.join(folder, fname)
+        try:
+            size_bytes = os.path.getsize(full)
+            taken_at = datetime.strptime(stamp, "%Y%m%d%H%M%S").strftime("%d %b %Y, %H:%M")
+        except (OSError, ValueError):
+            continue
+        size_label = f"{size_bytes / 1024 / 1024:.2f} MB" if size_bytes >= 1024 * 1024 else f"{size_bytes / 1024:.1f} KB"
+        out.append({"filename": fname, "path": full, "stamp": stamp, "taken_at": taken_at, "size_label": size_label})
+    out.sort(key=lambda c: c["stamp"], reverse=True)
+    return out
+
+
+def _prune_restore_copies():
+    for old in _restore_copies()[RESTORE_COPIES_KEPT:]:
+        try:
+            os.remove(old["path"])
+            logger.info("BACKUP RESTORE: removed old safety copy %s", old["filename"])
+        except OSError:
+            pass
+
+
 def find_awaiting_charge(cur, today: date):
     """Items whose release date has already passed but are still sitting
     unpaid and unmarked - worth a look, since the retailer usually charges
@@ -905,7 +1240,7 @@ def _topbar_alert_count():
     conn = db.get_db()
     cur = conn.cursor()
     today = date.today()
-    count = len(find_duplicate_groups(cur)) + len(find_ghost_items(cur)) + len(find_awaiting_charge(cur, today))
+    count = len(find_duplicate_groups(cur)) + len(find_ghost_items(cur)) + len(find_awaiting_charge(cur, today)) + len(find_undated_items(cur)) + len(find_category_overages(cur, today))
     conn.close()
     return count
 
@@ -1138,6 +1473,262 @@ templates.env.globals["topbar_most_recent_sync"] = _topbar_most_recent_sync
 templates.env.globals["sync_enabled"] = _sync_enabled
 
 
+# Cards that can be hidden (Customise on each page, Settings -> Layout).
+# "preorder" marks the cards the "I don't pre-order" preset switches off.
+CARD_LAYOUT = [
+    {"page": "Dashboard", "path": "/", "cards": [
+        {"id": "dash.rings", "name": "Still due & budget", "desc": "This month's still-due and budget rings", "preorder": True},
+        {"id": "dash.year", "name": "Your spending", "desc": "This year and all time, and this year's share", "essential": True},
+        {"id": "dash.catbudget", "name": "Budget by category", "desc": "This cycle's spend split by category, with any limits"},
+        {"id": "dash.week", "name": "This week", "desc": "What's due in the next 7 days, by shipment", "preorder": True},
+        {"id": "dash.alerts", "name": "Alerts", "desc": "Awaiting charge, duplicates, ghost items", "essential": True},
+        {"id": "dash.backup", "name": "Backup", "desc": "When the last backup was taken"},
+        {"id": "dash.stillorder", "name": "Biggest still to come", "desc": "Priciest item not yet released, and your total still on order", "preorder": True},
+        {"id": "dash.trend", "name": "Spend trend", "desc": "Week / Month / 6M chart", "essential": True},
+    ]},
+    {"page": "Calendar", "path": "/calendar", "cards": [
+        {"id": "cal.mini", "name": "Mini calendar & spend by shop", "desc": "Small month view and this month's shop split"},
+        {"id": "cal.big", "name": "Month calendar", "desc": "The big calendar grid", "essential": True},
+        {"id": "cal.heatmap", "name": "Activity", "desc": "Year-long spend heatmap"},
+        {"id": "cal.list", "name": "Releases list", "desc": "Everything releasing this month", "essential": True},
+    ]},
+    {"page": "Insights \u00b7 Overview", "path": "/insights", "cards": [
+        {"id": "ov.ratio", "name": "Pre-order vs released", "desc": "How much is still on order", "preorder": True},
+        {"id": "ov.releases", "name": "10 releases", "desc": "Recent, priciest and cheapest"},
+        {"id": "ov.spend", "name": "Spend overview", "desc": "Monthly spend at a glance", "essential": True},
+        {"id": "ov.issue", "name": "Per issue", "desc": "Priciest item and average issue"},
+        {"id": "ov.dist", "name": "Price distribution", "desc": "Items by price bracket"},
+        {"id": "ov.ship", "name": "Shipping and patterns", "desc": "Busiest day, savings, shipping vs cover"},
+        {"id": "ov.cum", "name": "Cumulative spend", "desc": "This month against your budget"},
+        {"id": "ov.cat", "name": "Spend by category", "desc": "All time / this year"},
+        {"id": "ov.trend", "name": "12-month spend trend", "desc": "Items and shipping over the last year", "essential": True},
+    ]},
+    {"page": "Insights \u00b7 Spend by shop", "path": "/insights/spend-by-shop", "cards": [
+        {"id": "shop.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
+        {"id": "shop.donut", "name": "Share of spend", "desc": "Donut, all time / last 90 days", "essential": True},
+        {"id": "shop.breakdown", "name": "By shop, all time", "desc": "Every shop's total, sellers expandable"},
+        {"id": "shop.compare", "name": "Shop comparison", "desc": "Side-by-side table"},
+        {"id": "shop.overtime", "name": "Spend by shop over time", "desc": "6 / 12 month chart"},
+    ]},
+    {"page": "Insights \u00b7 Price creep", "path": "/insights/price-creep", "cards": [
+        {"id": "creep.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
+        {"id": "creep.hero", "name": "Biggest jumper", "desc": "The series with the steepest rise"},
+        {"id": "creep.dist", "name": "Increase distribution", "desc": "Series by size of increase"},
+        {"id": "creep.table", "name": "All tracked series", "desc": "Ranked table", "essential": True},
+        {"id": "creep.chart", "name": "Extra spend from creep", "desc": "Running total chart"},
+    ]},
+    {"page": "Insights \u00b7 Top titles", "path": "/insights/top-titles", "cards": [
+        {"id": "titles.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
+        {"id": "titles.hero", "name": "Priciest issue tracked", "desc": "Your single priciest item"},
+        {"id": "titles.priciest", "name": "Priciest issues, all time", "desc": "Top items by price", "essential": True},
+        {"id": "titles.series", "name": "Top series by total spend", "desc": "Series ranked by spend"},
+        {"id": "titles.compare", "name": "All series, compared", "desc": "Full comparison table"},
+    ]},
+]
+CARD_IDS = {c["id"] for pg in CARD_LAYOUT for c in pg["cards"]}
+
+
+def _hidden_cards():
+    conn = db.get_db()
+    raw = notifications.get_setting(conn.cursor(), "hidden_cards", "[]")
+    conn.close()
+    try:
+        return [c for c in json.loads(raw) if c in CARD_IDS]
+    except (ValueError, TypeError):
+        return []
+
+
+def _card_order():
+    """Saved card order per page: {page path: [card ids]}."""
+    conn = db.get_db()
+    raw = notifications.get_setting(conn.cursor(), "card_order", "{}")
+    conn.close()
+    try:
+        data = json.loads(raw)
+    except (ValueError, TypeError):
+        return {}
+    paths = {pg["path"] for pg in CARD_LAYOUT}
+    return {k: [c for c in v if c in CARD_IDS] for k, v in data.items() if k in paths and isinstance(v, list)}
+
+
+templates.env.globals["hidden_cards"] = _hidden_cards
+templates.env.globals["card_order"] = _card_order
+templates.env.globals["card_layout"] = lambda: CARD_LAYOUT
+
+
+@app.get("/settings/restore-copies/{filename}")
+def download_restore_copy(filename: str):
+    for c in _restore_copies():
+        if c["filename"] == filename:
+            return FileResponse(c["path"], filename=f"kaching-before-restore-{c['stamp']}.db", media_type="application/octet-stream")
+    raise HTTPException(status_code=404, detail="No such copy")
+
+
+@app.post("/settings/auto-backup/on")
+def turn_on_auto_backup(next: str = Form("/")):
+    conn = db.get_db()
+    notifications.set_setting(conn.cursor(), "auto_backup", "yes")
+    conn.commit()
+    conn.close()
+    back = next if (next.startswith("/") and not next.startswith("//")) else "/"
+    return RedirectResponse(url=back, status_code=303)
+
+
+@app.post("/settings/card-order")
+async def save_card_order(request: Request):
+    """Save one page's card order. Body: {"path": "/", "order": [ids]}.
+    An empty order puts that page back to its default order."""
+    try:
+        body = await request.json()
+        path = body.get("path")
+        order = [c for c in body.get("order", []) if isinstance(c, str) and c in CARD_IDS]
+    except Exception:
+        raise HTTPException(status_code=400, detail="Expected {\"path\": ..., \"order\": [...]}")
+    if path not in {pg["path"] for pg in CARD_LAYOUT}:
+        raise HTTPException(status_code=400, detail="Unknown page")
+    current = _card_order()
+    if order:
+        current[path] = order
+    else:
+        current.pop(path, None)
+    conn = db.get_db()
+    notifications.set_setting(conn.cursor(), "card_order", json.dumps(current))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "order": current.get(path, [])}
+
+
+@app.post("/settings/category-limits")
+async def save_category_limits(request: Request):
+    form = await request.form()
+    limits = {}
+    for k, v in form.items():
+        if not k.startswith("limit_"):
+            continue
+        try:
+            cid = int(k[6:])
+            amount = float(str(v).strip()) if str(v).strip() else 0
+        except ValueError:
+            continue
+        if amount > 0:
+            limits[str(cid)] = round(amount, 2)
+    conn = db.get_db()
+    notifications.set_setting(conn.cursor(), "category_limits", json.dumps(limits))
+    conn.commit()
+    conn.close()
+    back = form.get("next") or "/settings"
+    back = back if (back.startswith("/") and not back.startswith("//")) else "/settings"
+    return RedirectResponse(url=f"{back}?limits_saved=1#category-limits", status_code=303)
+
+
+def _safe_next(value, default="/"):
+    return value if (value and value.startswith("/") and not value.startswith("//") and not value.startswith("/login")) else default
+
+
+@app.get("/login")
+def login_page(request: Request, next: str = "/", error: str | None = None):
+    if not login_enabled():
+        return RedirectResponse(url=_safe_next(next), status_code=303)
+    locked = _locked_out(_client_ip(request))
+    return templates.TemplateResponse("v2/login.html", {"request": request, "next": _safe_next(next), "error": error, "locked": locked})
+
+
+@app.post("/login")
+def login_submit(request: Request, password: str = Form(""), remember: str = Form(""), next: str = Form("/")):
+    ip = _client_ip(request)
+    target = _safe_next(next)
+    if _locked_out(ip):
+        return RedirectResponse(url="/login?next=" + quote(target, safe="") + "&error=locked", status_code=303)
+    if not _password_ok(password):
+        _login_fails.setdefault(ip, []).append(datetime.now().timestamp())
+        logger.warning("LOGIN: failed attempt from %s", ip)
+        err = "locked" if _locked_out(ip) else "wrong"
+        return RedirectResponse(url="/login?next=" + quote(target, safe="") + "&error=" + err, status_code=303)
+    _login_fails.pop(ip, None)
+    logger.info("LOGIN: signed in from %s (remember=%s)", ip, bool(remember))
+    response = RedirectResponse(url=target, status_code=303)
+    _set_session_cookie(response, bool(remember))
+    return response
+
+
+@app.get("/logout")
+def logout():
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie(LOGIN_COOKIE, path="/")
+    return response
+
+
+@app.post("/settings/security/password")
+def set_login_password(request: Request, current: str = Form(""), password: str = Form(""), confirm: str = Form("")):
+    """Turn the login on, or change its password. Changing it signs every
+    other device out; this browser stays signed in."""
+    back = "/settings"
+    stored, _, version = _login_settings()
+    # Signed in with the docker-compose master password: that's the recovery
+    # route, so the Settings password can be replaced without the old one.
+    if stored and not _env_password() and not _check_password_hash(current, stored):
+        return RedirectResponse(url=back + "?security=wrong-current", status_code=303)
+    if len(password) < 6:
+        return RedirectResponse(url=back + "?security=too-short", status_code=303)
+    if password != confirm:
+        return RedirectResponse(url=back + "?security=mismatch", status_code=303)
+    conn = db.get_db()
+    cur = conn.cursor()
+    notifications.set_setting(cur, "login_password_hash", _hash_password(password))
+    notifications.set_setting(cur, "login_version", str(int(version) + 1))
+    conn.commit()
+    conn.close()
+    logger.info("LOGIN: password %s", "changed" if stored else "set, login turned on")
+    response = RedirectResponse(url=back + ("?security=changed" if stored else "?security=on"), status_code=303)
+    _set_session_cookie(response, True)
+    return response
+
+
+@app.post("/settings/security/off")
+def turn_login_off(current: str = Form("")):
+    back = "/settings"
+    stored, _, version = _login_settings()
+    if stored and not _env_password() and not _check_password_hash(current, stored):
+        return RedirectResponse(url=back + "?security=wrong-current", status_code=303)
+    conn = db.get_db()
+    cur = conn.cursor()
+    notifications.set_setting(cur, "login_password_hash", "")
+    notifications.set_setting(cur, "login_version", str(int(version) + 1))
+    conn.commit()
+    conn.close()
+    logger.info("LOGIN: turned off")
+    response = RedirectResponse(url=back + "?security=off", status_code=303)
+    response.delete_cookie(LOGIN_COOKIE, path="/")
+    return response
+
+
+@app.get("/sw.js")
+def service_worker():
+    """The same no-caching worker as /static/sw.js, but served from the root
+    so its scope covers every page - which phones need before they'll offer
+    a proper 'install app'."""
+    path = os.path.join(os.path.dirname(__file__), "static", "sw.js")
+    with open(path, encoding="utf-8") as f:
+        body = f.read()
+    return Response(body, media_type="application/javascript", headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"})
+
+
+@app.post("/settings/layout")
+async def save_layout(request: Request):
+    """Replace the set of hidden cards. Body: {"hidden": [card ids]}.
+    Unknown ids are ignored, so an old page can never store junk."""
+    try:
+        body = await request.json()
+        hidden = sorted({c for c in body.get("hidden", []) if isinstance(c, str) and c in CARD_IDS})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Expected {\"hidden\": [...]}")
+    conn = db.get_db()
+    notifications.set_setting(conn.cursor(), "hidden_cards", json.dumps(hidden))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "hidden": hidden}
+
+
 def _sidebar_budget_display():
     conn = db.get_db()
     value = notifications.get_setting(conn.cursor(), "sidebar_budget_display", "spent_of")
@@ -1274,7 +1865,9 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
 
     month_start = today.replace(day=1).isoformat()
     resolved_this_month = sum(1 for e in alert_events if e["at"] >= month_start)
-    currently_open = len(duplicate_groups) + len(ghost_items) + len(awaiting_charge)
+    undated_items = find_undated_items(cur)
+    category_overages = find_category_overages(cur, today)
+    currently_open = len(duplicate_groups) + len(ghost_items) + len(awaiting_charge) + len(undated_items) + len(category_overages)
     if alert_events:
         last_event_date = date.fromisoformat(alert_events[0]["at"][:10])
         days_since_last_alert = (today - last_event_date).days
@@ -1291,6 +1884,8 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
         "values": values,
         "alert_history": alert_history,
         "resolved_this_month": resolved_this_month,
+        "category_overages": category_overages,
+        "undated_items": undated_items,
         "currently_open": currently_open,
         "days_since_last_alert": days_since_last_alert,
         "test_result": test_result,
@@ -1299,13 +1894,6 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
     })
 
 
-@app.get("/classic")
-@app.get("/classic/")
-def dashboard(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None):
-    ctx = _build_dashboard_context(request, month, chart_range, source, apply_landing_redirect=False)
-    if isinstance(ctx, RedirectResponse):
-        return ctx
-    return templates.TemplateResponse("dashboard.html", ctx)
 
 
 def _build_dashboard_context(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None, apply_landing_redirect: bool = True):
@@ -1477,10 +2065,22 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
     chart_svg_all = {key: render_trend_svg(data, key) for key, data in chart_data_all.items()}
 
     year_stats = get_year_to_date(cur, today)
+    cur.execute(
+        "SELECT substr(release_date, 1, 7) AS m, SUM(price) AS t FROM items "
+        "WHERE status != 'cancelled' AND release_date LIKE ? AND release_date <= ? "
+        "GROUP BY m ORDER BY t DESC LIMIT 1",
+        (f"{today.year}-%", today.isoformat()),
+    )
+    _pm = cur.fetchone()
+    year_top_month = datetime.strptime(_pm["m"], "%Y-%m").strftime("%B") if _pm and _pm["m"] else None
     all_time_stats = get_all_time_stats(cur)
 
     duplicate_groups = find_duplicate_groups(cur)
     ghost_items = find_ghost_items(cur)
+    undated_items = find_undated_items(cur)
+    auto_backup_on = notifications.get_setting(cur, "auto_backup", "no") == "yes"
+    category_budget = _category_budget_rows(cur, today)
+    category_budget_total = round(sum(r["total"] for r in category_budget), 2)
     awaiting_charge = find_awaiting_charge(cur, today)
     all_sources = get_all_sources(cur)
     filter_tab_sources = get_filter_tab_sources(cur)
@@ -1552,6 +2152,10 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
         "cycle_spend": cycle_spend,
         "date_changes_flash": date_changes_flash,
         "most_recent_sync": most_recent_sync,
+        "undated_items": undated_items,
+        "auto_backup_on": auto_backup_on,
+        "category_budget": category_budget,
+        "category_budget_total": category_budget_total,
         "most_recent_backup": most_recent_backup,
         "hero_spent_count": hero_spent_count,
         "next_month_total": next_month_total,
@@ -1574,6 +2178,7 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
         "shipping_samples": shipping_samples,
         "shipping_orders_checked": shipping_orders_checked,
         "year_stats": year_stats,
+        "year_top_month": year_top_month,
         "all_time_stats": all_time_stats,
         "duplicate_groups": duplicate_groups,
         "ghost_items": ghost_items,
@@ -1597,6 +2202,15 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
 # same queries, same numbers - just rendered into the new template set
 # living in templates/v2/. Nothing here changes what "/" or any other
 # existing route does.
+
+@app.get("/classic")
+@app.get("/classic/{rest:path}")
+def classic_redirect(request: Request, rest: str = ""):
+    """The old interface was kept at /classic/ for v3.0 only and is gone in
+    v3.1; old links land on the same page in the current interface."""
+    q = request.url.query
+    return RedirectResponse(url="/" + rest + ("?" + q if q else ""), status_code=301)
+
 
 @app.get("/v2")
 @app.get("/v2/")
@@ -1887,21 +2501,6 @@ def _parse_item_form_date(raw: str, fallback: date) -> str:
         return fallback.isoformat()
 
 
-@app.get("/classic/items/new")
-def new_items_form(request: Request):
-    conn = db.get_db()
-    cur = conn.cursor()
-    all_sources = get_all_sources(cur)
-    cur.execute("SELECT source FROM items ORDER BY imported_at DESC LIMIT 1")
-    last_row = cur.fetchone()
-    last_used_source = last_row["source"] if last_row else DEFAULT_SOURCE
-    conn.close()
-    return templates.TemplateResponse("add_items.html", {
-        "request": request,
-        "all_sources": all_sources,
-        "last_used_source": last_used_source,
-        "result": None,
-    })
 
 
 @app.get("/items/new")
@@ -1989,30 +2588,6 @@ async def create_items(request: Request):
     return RedirectResponse(url=next_url, status_code=303)
 
 
-@app.get("/classic/items/{item_id}/edit")
-def edit_item_form(request: Request, item_id: int):
-    conn = db.get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM items WHERE id = ?", (item_id,))
-    item = cur.fetchone()
-    all_sources = get_all_sources(cur)
-    cur.execute(
-        "SELECT * FROM item_history WHERE item_id = ? ORDER BY id DESC LIMIT 20",
-        (item_id,),
-    )
-    edit_history = [dict(r) for r in cur.fetchall()]
-    conn.close()
-    if not item:
-        return RedirectResponse(url="/", status_code=303)
-    return templates.TemplateResponse("item_form.html", {
-        "request": request,
-        "item": dict(item),
-        "form_action": f"/items/{item_id}/edit",
-        "all_sources": all_sources,
-        "heading": "Edit item",
-        "submit_label": "Save changes",
-        "edit_history": edit_history,
-    })
 
 
 @app.get("/items/{item_id}/edit")
@@ -2299,10 +2874,6 @@ def debug_shipping_groups(request: Request, source: str = DEFAULT_SOURCE, key: s
     return PlainTextResponse("\n".join(lines))
 
 
-@app.get("/classic/insights")
-def insights_page(request: Request):
-    ctx = _build_insights_context(request)
-    return templates.TemplateResponse("insights.html", ctx)
 
 
 def _insights_category_chips(cats_param):
@@ -2431,7 +3002,7 @@ def _build_insights_context(request: Request, category_ids=None):
             continue
         series_key = m.group(1).strip()
         sort_key = it["release_date"] or it["placed_date"] or ""
-        series_groups.setdefault(series_key, []).append({"sort_key": sort_key, "price": it["price"], "name": it["name"], "release_date": it["release_date"]})
+        series_groups.setdefault(series_key, []).append({"sort_key": sort_key, "price": it["price"], "name": it["name"], "release_date": it["release_date"], "category_id": it.get("category_id")})
 
     # Real per-series stats for EVERY series with 2+ tracked issues (not
     # just the ones that got pricier) - powers the stat cards, the
@@ -3045,6 +3616,10 @@ def _build_insights_context(request: Request, category_ids=None):
         _bs = _topbar_budget_status()
         if _bs:
             cm_budget = _bs["monthly_budget"]
+    _cm_cats = []
+    if notifications.get_setting(cur, "budget_cycle", "monthly") == "monthly":
+        _cm_cats = [{"name": r["name"], "color": r["color"], "spent": round(r["total"] - r["due"], 2), "due": r["due"]}
+                    for r in _category_budget_rows(cur, today) if r["total"] > 0]
     cumulative_month_json = json.dumps({
         "ym": today.strftime("%Y-%m"),
         "month_name": today.strftime("%B"),
@@ -3052,6 +3627,7 @@ def _build_insights_context(request: Request, category_ids=None):
         "today": today.day,
         "days": cm_days,
         "budget": cm_budget,
+        "cats": _cm_cats,
     })
 
     # Price distribution: fixed £10 buckets up to £50, then a single
@@ -3177,6 +3753,11 @@ def _cover_price_creep(ctx):
     separately (how much extra they cost on average) instead of making
     the trend spike. Returns overrides for the page's context; the old UI
     keeps its original first-copy/latest-copy figures untouched."""
+    # Category colour for each series' dot (its most common category)
+    _conn = db.get_db()
+    _cats = {r["id"]: {"name": r["name"], "color": r["color"]} for r in _conn.execute("SELECT id, name, color FROM categories").fetchall()}
+    _default = db.default_category_id(_conn)
+    _conn.close()
     series_rows = []
     for st in ctx["all_series_stats"]:
         by_issue = {}
@@ -3196,7 +3777,14 @@ def _cover_price_creep(ctx):
             # A second copy at the cover price is a duplicate, not a variant
             premiums.extend(c["price"] - cover for c in copies[1:] if c["price"] - cover > 0.005)
         first, latest = issues[0]["cover"], issues[-1]["cover"]
+        _counts = {}
+        for e in st["entries"]:
+            cid = e.get("category_id") if e.get("category_id") in _cats else _default
+            _counts[cid] = _counts.get(cid, 0) + 1
+        _cat = _cats.get(max(_counts, key=_counts.get)) if _counts else None
         series_rows.append({
+            "category_name": _cat["name"] if _cat else "",
+            "category_color": _cat["color"] if _cat else "#7c89ad",
             "series": st["series"],
             "issue_count": len(issues),
             "first_price": first,
@@ -3246,7 +3834,9 @@ def _cover_price_creep(ctx):
     return {
         "all_series_stats": series_rows,
         "creep_series_tracked": tracked,
-        "creep_avg_increase": round(sum(r["change_pct"] for r in series_rows) / tracked, 1) if tracked else 0,
+        # Median, not mean: one odd series (e.g. only a pricey variant bought
+        # for its first issue) can't drag the typical figure off course.
+        "creep_avg_increase": round(statistics.median(r["change_pct"] for r in series_rows), 1) if tracked else 0,
         "creep_biggest_jumper": max(series_rows, key=lambda r: r["change_pct"], default=None),
         "creep_buckets": buckets,
         "creep_total_extra": round(total_extra, 2),
@@ -3281,22 +3871,6 @@ def insights_top_titles_v2(request: Request):
     return templates.TemplateResponse("v2/insights_toptitles.html", ctx)
 
 
-@app.get("/classic/search")
-def search_items(
-    request: Request,
-    q: str | None = None,
-    source: str | None = None,
-    status: str | None = None,
-    start_date: str | None = None,
-    end_date: str | None = None,
-    sort: str | None = None,
-    min_price: str | None = None,
-    max_price: str | None = None,
-    has_tracking: str | None = None,
-    page: int = 1,
-):
-    ctx = _build_search_context(request, q, source, status, start_date, end_date, sort, min_price, max_price, has_tracking, page)
-    return templates.TemplateResponse("search.html", ctx)
 
 
 def _build_search_context(
@@ -3495,10 +4069,6 @@ def export_search_csv(
 
 # --- Calendar -----------------------------------------------------------------
 
-@app.get("/classic/calendar")
-def calendar_view(request: Request, month: str | None = None, source: str | None = None):
-    ctx = _build_calendar_context(request, month, source)
-    return templates.TemplateResponse("calendar.html", ctx)
 
 
 def _build_calendar_context(request: Request, month: str | None = None, source: str | None = None):
@@ -3532,6 +4102,7 @@ def _build_calendar_context(request: Request, month: str | None = None, source: 
     for group in day_groups:
         day_shipping, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, [group])
         day_totals[group["date"]] = round(group["subtotal"] + day_shipping, 2)
+        group["shipping"] = round(day_shipping, 2)
     max_day_total = max(day_totals.values(), default=0) or 1
 
     # Spend-by-shop legend (this viewed month) - same items already fetched
@@ -3760,7 +4331,7 @@ def import_preview(request: Request, order_text: str = Form(...), shop_hint: str
     conn.commit()
     conn.close()
 
-    template_name = "v2/importpreview.html" if v2 else "import_preview.html"
+    template_name = "v2/importpreview.html"
     return templates.TemplateResponse(template_name, {
         "request": request,
         "preview": preview,
@@ -3936,18 +4507,6 @@ async def import_confirm(request: Request):
 
 # --- Settings / notifications -------------------------------------------------
 
-@app.get("/classic/settings")
-def settings_form(
-    request: Request,
-    test_result: str | None = None,
-    test_error: str | None = None,
-    restore_result: str | None = None,
-    restore_count: int | None = None,
-    reset_result: str | None = None,
-    notif_import_result: str | None = None,
-):
-    ctx = _build_settings_context(request, test_result, test_error, restore_result, restore_count, reset_result, notif_import_result)
-    return templates.TemplateResponse("settings.html", ctx)
 
 
 def _build_settings_context(
@@ -4015,6 +4574,8 @@ def _build_settings_context(
         "all_shops": all_shops,
         "notification_log": notification_log,
         "past_backups": past_backups,
+        "restore_copies": _restore_copies(),
+        "category_limits": _category_limits_now(),
     }
 
 
@@ -4398,6 +4959,7 @@ async def restore_backup(backup_file: UploadFile = File(...), next: str | None =
         safety_path = f"{db.DB_PATH}.before-restore-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         _snapshot_db(safety_path)
         logger.info("BACKUP RESTORE: saved safety copy of current database to %s", safety_path)
+        _prune_restore_copies()
 
     # Copy the backup in through SQLite rather than swapping the file on
     # disk. Swapping the file leaves the live database's WAL/shm files

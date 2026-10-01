@@ -1,5 +1,58 @@
 # Changelog
 
+## v3.1.0 — make it yours
+
+### Customise every page
+- **⚙ Customise** on Dashboard, Calendar and the four Insights pages: show or
+  hide any card from a strip across its top (nothing on the card is
+  covered), and **drag cards into your own order** with the ⠿ handle (mouse
+  or touch; holding near the screen edge scrolls). Half-width cards pair up;
+  a lone one widens to fill the row. **Reset order** per page.
+- **Settings → Layout**: every card on every page in one place, with
+  *Everything*, *I don't pre-order* and *Just the essentials* presets.
+- Layout and order are saved on the server, so every device matches.
+
+### Budget by category
+- Optional **category limits** per budget cycle (Settings → General).
+- New **Budget by category** Dashboard card: one bar split into category
+  colours, limits in the legend, pink when a category's over.
+- Insights → Cumulative spend's budget bar splits by category too.
+- Over-limit categories show in Alerts, with a push (once per category per
+  cycle) if budget alerts are on. Shipping is shared across a parcel's
+  categories by price, so categories always add up to the budget figure.
+
+### Optional login
+- **Settings → Security**: turn a login on, change the password, or turn it
+  off. Stored hashed; "keep me signed in for 30 days"; Sign out in the
+  sidebar; five wrong tries lock sign-in for a minute.
+- Optional `KACHING_PASSWORD` in docker-compose: a master password that keeps
+  the login on and is the recovery route if you forget yours.
+- Calendar subscriptions keep working through a private link while the login
+  is on.
+
+### Smaller things
+- **/** jumps to search from anywhere (desktop).
+- **Alerts** now flags items with **no release date** (with a *Set date*
+  button) and categories over their limit.
+- **Before-restore copies** are listed in Settings → Data backup (newest 3
+  kept, older ones tidied up automatically).
+- Dashboard: "Year so far" and "Year in review" merged into one **Your
+  spending** card; **This week** says "Nothing due" instead of £0.00 of
+  £0.00; the **Backup** card offers to turn daily backups on when they're off.
+- Calendar: each day in the releases list shows items + shipping, matching
+  the calendar's figure.
+- Price creep: **Typical increase** is now the median, and each series has a
+  category-coloured dot.
+- "Has series" is now **Numbered issues**, with a hint saying what it does.
+- Every pill-shaped button and tab is the same size everywhere, and every
+  expand/collapse arrow is now a clear round chevron button.
+- Better "Install app" support on phones (the app's worker now covers every
+  page).
+
+### Removed
+- The old interface at **/classic/**, as announced in v3.0. Old /classic/
+  links open the same page in the current interface.
+
 ## v3.0.0 — new interface
 
 A complete redesign of the web interface, plus categories and a lot of

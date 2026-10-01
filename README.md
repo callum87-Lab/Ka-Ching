@@ -15,6 +15,13 @@ best at — but anything with a name, a price, a release date and a shop works
 the same way, and since v3 you can sort it all into **categories** (Comics,
 Manga, Pokémon cards, Funko Pop… or your own).
 
+> **New in v3.1:** customise every page (show, hide and drag cards into
+> your own order), a budget split by category with optional per-category
+> limits, an optional login, a `/` search shortcut, and a lot of polish.
+> See [CHANGELOG.md](CHANGELOG.md). The old interface at `/classic/` has now
+> been removed as planned — old links simply open the same page in the
+> current one.
+
 > **New in v3.0 — a completely new interface.** Dark neon redesign, a proper
 > sidebar layout, a real phone layout, categories, a reworked Insights
 > section, and a lot of smaller fixes. See [CHANGELOG.md](CHANGELOG.md) for
@@ -62,6 +69,11 @@ Click any screenshot to view it full-size.
 <tr>
 <td><a href="screenshots/spend-by-shop.png"><img src="screenshots/spend-by-shop.png" width="400"></a></td>
 <td><a href="screenshots/search.png"><img src="screenshots/search.png" width="400"></a></td>
+</tr>
+<tr><th>Customise mode</th><th>Settings → Layout</th></tr>
+<tr>
+<td><a href="screenshots/customise.png"><img src="screenshots/customise.png" width="400"></a></td>
+<td><a href="screenshots/layout.png"><img src="screenshots/layout.png" width="400"></a></td>
 </tr>
 <tr><th>Alerts</th><th>Settings</th></tr>
 <tr>
@@ -118,14 +130,37 @@ orders, the Orders tab, Insights category chips…) are **remembered in your
 browser** between visits. Page numbers and search filters deliberately
 aren't.
 
+**Make each page your own.** Dashboard, Calendar and the four Insights
+pages have a **⚙ Customise** button by the page title. Each card then gets
+a strip across its top with its name, a Showing/Hidden switch, and a **⠿**
+handle — drag a card to put it where you want it (press and hold the handle
+on a phone; hold a card near the top or bottom of the screen to scroll).
+Half-width cards pair up side by side; one left on its own widens to fill
+the row. **Reset order** puts a page back to normal. Your layout is saved on
+the server, so it's the same on every device. **Settings → Layout** lists
+every card on every page, with one-tap presets: *Everything*, *I don't
+pre-order* (hides the still-due and on-order cards) and *Just the
+essentials*.
+
+On a computer, press **/** anywhere to jump into the search box (Esc to
+leave it). Every expand/collapse section has a round chevron button, and on
+Settings you can click anywhere on a section's heading to open it.
+
 ### Dashboard
 
 - **Still due** and **budget** rings for the current month — the number
   that actually matters day to day, plus how close you are to your budget
   (and by how much you're over, if you are)
-- **This year so far** and **all time** totals
-- **This week**, grouped by likely shipment
-- An **Alerts** card (anything awaiting charge, duplicates, ghost items)
+- **Your spending** — this year and all time side by side, what share of
+  everything this year is, and this year's priciest month so far
+- **Budget by category** — this cycle's spend as one bar split into category
+  colours, with any category limits (see [Categories](#categories)); shown
+  once you've spent in two or more categories or set a limit
+- **This week**, grouped by likely shipment ("Nothing due" when it's quiet)
+- An **Alerts** card (anything awaiting charge, duplicates, ghost items,
+  items with no release date, categories over their limit)
+- **Backup** — when the last backup was taken; if automatic backups are off
+  it says so, with a one-tap **Turn on daily backups** button
 - **Biggest still to come** — the single highest-value item not yet
   released, and the total size of everything still on order
 - **Spend trend** with Week / Month / 6M ranges and Total / Items /
@@ -162,7 +197,9 @@ section, same month, same filters.
 ### Calendar
 
 A month grid where release days show that day's total and item count,
-shaded by how much is due (on a phone, just the day and a dot). **Tap a
+shaded by how much is due, including estimated shipping (on a phone, just
+the day and a dot). Each day in the releases list shows the same figure,
+broken down as items + shipping, so the two always agree. **Tap a
 day** to show only that day's releases in the list underneath; tap it again
 (or "Show whole month") to go back. There's a mini calendar, a spend-by-shop
 breakdown for the month, a year-long **activity heatmap**, and the full
@@ -225,32 +262,40 @@ Four pages:
   cover no longer looks like a 300% price rise. Variants are shown
   separately as **"Variants cost extra"** — the average mark-up you pay for
   them over the standard cover. (If you only ever bought a variant of a
-  particular issue, that variant counts as its cover.)
+  particular issue, that variant counts as its cover.) The **Typical
+  increase** tile is the median across your series, so one odd series can't
+  drag it off course, and each series has a dot in its category's colour.
 - **Top titles** — your priciest items, and the series you've spent the most
   on, with a full series comparison.
 
 Price creep and Top titles have **category chips** at the top: tap a
-category to include or leave it out. Categories marked "has series" start
-switched on.
+category to include or leave it out. Categories with **Numbered issues**
+switched on start switched on.
 
 ### Alerts
 
 - **Current** — anything **awaiting charge** (released but still unpaid and
   unmarked), **possible duplicate orders**, **items with no order number**,
-  plus open / resolved-this-month / last-resolved counts and an alert
-  history.
+  **items with no release date** (with a *Set date* button — they can't
+  appear on the calendar or in any month until they have one), **categories
+  over their limit**, plus open / resolved-this-month / last-resolved counts
+  and an alert history.
 - **Notifications** — set up daily/weekly pushes and the budget alert (see
   [Notifications](#notifications)).
 
 ### Settings
 
 - **General** — currency, budget (and cycle, rollover, and what the sidebar
-  budget box shows), default landing page, **categories** and **shops**
-  (rename or merge a shop across every item in one go; shipping estimates
-  carry over).
+  budget box shows), default landing page, **category limits**,
+  **categories** and **shops** (rename or merge a shop across every item in
+  one go; shipping estimates carry over).
 - **Data backup** — download / restore a backup, automatic daily backups
-  (last 7 kept), full spend-history CSV, notification settings export /
-  import, and a factory reset (type-to-confirm; wipes tracked items only).
+  (last 7 kept), the **before-restore copies** a restore saves first (newest
+  3 kept, each downloadable), full spend-history CSV, notification settings
+  export / import, and a factory reset (type-to-confirm; wipes tracked items
+  only).
+- **Layout** — which cards show on each page (see above).
+- **Security** — the optional login (see [Signing in](#signing-in-optional)).
 - **About** and **Help** — a getting-started guide and FAQ.
 
 ## Categories
@@ -260,9 +305,21 @@ Every item has a category. A starter list is created automatically
 products, Magic: The Gathering, Funko Pop, DVD / Blu-ray, Books, Vinyl,
 Coins, Gold / silver, Other), and you can add your own anywhere a category
 is picked — just type a new name. Each gets its own colour automatically. In
-Settings → Categories you can set whether a category **has series**
-(numbered issues worth tracking for price creep), or remove one that isn't
-in use (the default category can't be removed).
+Settings → Categories you can switch on **Numbered issues** for anything
+sold as #1, #2, #3… (comics, manga volumes) so Price creep and Top titles
+track price rises per series, or remove a category that isn't in use (the
+default category can't be removed).
+
+**Category limits** (Settings → General) give any category an optional
+spending limit per budget cycle — e.g. £60 on comics, £40 on cards. The
+list shows the categories you switch on, anything with items, and anything
+with a limit already (the rest are under *Show all*). The Dashboard's
+**Budget by category** card shows each category's share of the budget, a
+category goes pink when it's over its limit, and it shows in Alerts — with a
+push notification (once per category per cycle) if budget alerts are on.
+Limits follow your budget cycle and count spend exactly the way the overall
+budget does; a parcel's shipping is shared across its items' categories by
+price.
 
 Existing items become **Comics** when you upgrade. Category is included in
 backups and both CSV exports.
@@ -367,6 +424,13 @@ Then visit `http://<server-ip>:8091`.
 Data lives in `./data/kaching.db` (SQLite) — back it up like you would any
 other stack config.
 
+### Upgrading from v3.0
+
+`git pull` and `docker compose up -d --build`, as always. Nothing needs
+doing by hand: your data and settings carry straight over. The old
+interface at `/classic/` is gone, as announced in v3.0 — any `/classic/…`
+link now opens the same page in the current interface.
+
 ### Upgrading from v2.x
 
 Replace the code and rebuild, same as always:
@@ -384,9 +448,8 @@ What happens:
   is still a good habit.)
 - **The new interface is at the normal addresses** (`/`, `/orders`,
   `/calendar`…). Your bookmarks keep working.
-- **The old interface is still available at `/classic/`** for this release
-  only, as a fallback while you get used to the new one. It'll be removed in
-  the next release.
+- The old v2 interface isn't included any more (v3.0 kept it at `/classic/`
+  for one release); old `/classic/` links open the same page in the new one.
 - **Phone sync is off** — see [The Android app](#the-android-app-dormant).
 - Some remembered choices (which sections were expanded) reset once.
 
@@ -400,6 +463,10 @@ Environment variables, set in `docker-compose.yml`:
 - `SHIPPING_ESTIMATE` — flat cost added per distinct release date within a
   month (default `4.00`). Change this to match what your retailer actually
   charges you per parcel.
+- `KACHING_PASSWORD` — optional master password for the login. When set,
+  the login is always on with this password and can't be switched off from
+  the web UI; it's also the way back in if you forget the password set in
+  Settings → Security (see [Signing in](#signing-in-optional)).
 - `KACHING_PHONE_SYNC` — off by default. Set to `1` to bring back the Sync
   settings and the `/api/sync` endpoint for the Android app. Only do this if
   you know what you're doing — see [The Android app](#the-android-app-dormant).
@@ -408,6 +475,26 @@ Environment variables, set in `docker-compose.yml`:
   name>&key=<your sync key>`, listing every shipment for a given shop with
   its real-vs-estimated status - built for tracking down a shipping-total
   mismatch, not something most people will need.
+
+## Signing in (optional)
+
+Ka-Ching! has no login by default — fine on a home network. If it can ever
+be reached from outside yours, switch one on in **Settings → Security**:
+pick a password (stored hashed, never as plain text) and every page, export
+and action then asks for it. The sign-in page can keep you signed in for 30
+days on that device; without it you stay signed in until the browser
+closes. **Sign out** is in the sidebar, changing the password signs every
+other device out, and five wrong attempts lock sign-in for a minute.
+
+While the login is on, the Calendar's **Subscribe (live)** link carries a
+private key (calendar apps can't type passwords) — re-add it in your
+calendar app after switching the login on.
+
+**Forgotten the password?** Add `KACHING_PASSWORD=something` under
+`environment:` in `docker-compose.yml` and rebuild. That password always
+works and the login can't be switched off while it's set. Sign in with it,
+set a new password in Settings → Security, then remove the line and rebuild
+again — your new password takes over.
 
 ## Importing your order history
 

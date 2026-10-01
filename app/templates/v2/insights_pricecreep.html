@@ -39,6 +39,7 @@
   .trend-pill.trend-flat { color: var(--text-dim); background: rgba(255,255,255,0.06); }
   .trend-pill.trend-down { color: var(--neon-green); background: rgba(60,242,166,0.10); }
   .creep-table .nowrap { white-space: nowrap; }
+  .cat-dot-inline { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 9px; vertical-align: 1px; box-shadow: 0 0 6px var(--c); }
   .prem { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 12.5px; }
   .prem-track { width: 90px; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); flex: 0 0 90px; }
   .prem-fill { height: 6px; border-radius: 4px; background: linear-gradient(90deg, var(--neon-violet), var(--neon-pink)); }
@@ -71,17 +72,17 @@
 
 {% if all_series_stats %}
 <div class="grid">
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="creep.stats">
     <div class="plain-stat-label">Series tracked</div>
     <div class="plain-stat-value mono">{{ creep_series_tracked }}</div>
     <div class="plain-stat-sub">with 2+ issues logged</div>
   </div>
-  <div class="card plain-stat">
-    <div class="plain-stat-label">Average increase</div>
+  <div class="card plain-stat" data-card="creep.stats">
+    <div class="plain-stat-label">Typical increase</div>
     <div class="plain-stat-value mono">{{ '+' if creep_avg_increase >= 0 else '' }}{{ creep_avg_increase }}%</div>
-    <div class="plain-stat-sub">across all tracked series</div>
+    <div class="plain-stat-sub">median of {{ creep_series_tracked }} series</div>
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="creep.stats">
     <div class="plain-stat-label">Biggest jumper</div>
     {% if creep_biggest_jumper %}
     <div class="plain-stat-value mono" style="color:var(--neon-pink);">+{{ creep_biggest_jumper.change_pct }}%</div>
@@ -90,7 +91,7 @@
     <div class="plain-stat-value">&mdash;</div>
     {% endif %}
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="creep.stats">
     <div class="plain-stat-label">Extra spend from creep</div>
     <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(creep_total_extra) }}</div>
     <div class="plain-stat-sub">this year, vs first-tracked prices</div>
@@ -99,7 +100,7 @@
 
 {% if creep_biggest_jumper %}
 <div class="grid">
-  <div class="card creep-hero">
+  <div class="card creep-hero" data-card="creep.hero">
     <div>
       <div class="creep-hero-eyebrow">Biggest jumper</div>
       <div class="creep-hero-title">{{ creep_biggest_jumper.series }}</div>
@@ -114,7 +115,7 @@
     <div class="creep-hero-note">Up <b>+{{ creep_biggest_jumper.change_pct }}%</b> since your first tracked issue &mdash; the sharpest climb of anything you follow.</div>
   </div>
 
-  <div class="card dist-card">
+  <div class="card dist-card" data-card="creep.dist">
     <div class="card-title" style="margin-bottom:14px;">Increase distribution</div>
     <div class="dist-chart">
       {% for b in creep_buckets %}
@@ -131,7 +132,7 @@
 {% endif %}
 
 <div class="grid">
-  <div class="card" style="grid-column: span 12;">
+  <div class="card" data-card="creep.table" style="grid-column: span 12;">
     <div class="card-head">
       <div class="card-title">All tracked series, ranked by increase</div>
       <div class="range-tabs" id="creep-sort-tabs" style="display:flex; gap:6px;">
@@ -144,7 +145,7 @@
       <tbody id="creep-table-body">
         {% for s in all_series_stats|sort(attribute='change_pct', reverse=true) %}
         <tr data-change="{{ s.change_pct }}" data-issues="{{ s.issue_count }}">
-          <td>{{ s.series }}</td>
+          <td><span class="cat-dot-inline" style="--c:{{ s.category_color }}; background:{{ s.category_color }};" title="{{ s.category_name }}" aria-label="{{ s.category_name }}"></span>{{ s.series }}</td>
           <td class="num mono">{{ s.issue_count }}</td>
           <td class="mono nowrap"><span class="{{ 'muted' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "%.2f"|format(s.first_price) }}</span> &rarr; <span style="{{ 'color:var(--neon-pink);' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "%.2f"|format(s.latest_price) }}</span></td>
           <td class="num">
@@ -171,7 +172,7 @@
 </div>
 
 <div class="grid">
-  <div class="card creep-chart-card">
+  <div class="card creep-chart-card" data-card="creep.chart">
     <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Extra spend from creep</div>
     <p style="margin:0 0 14px; font-size:13px; color:var(--text-dim);">Running total of (latest price &minus; first tracked price) &times; issues bought since, per month</p>
     <div class="creep-chart-wrap">

@@ -13,7 +13,8 @@
   .ring-detail .dim { color: var(--text-dim); }
   .ring-detail.warn { color: var(--neon-pink); font-weight: 600; }
 
-  .yearpair-card { grid-column: span 6; display: flex; align-items: stretch; }
+  .yearpair-card { grid-column: span 6; display: flex; flex-wrap: wrap; align-items: stretch; }
+  .yearpair-foot { flex: 0 0 100%; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
   .yearpair-half { flex: 1; }
   .yearpair-divider { width: 1px; background: var(--border); margin: 0 20px; }
   .plain-stat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -31,7 +32,7 @@
   .plain-stat-bar-legend b { color: var(--text); font-weight: 700; }
 
   .stillorder-card {
-    grid-column: span 6;
+    grid-column: span 12;
     background: radial-gradient(circle at 100% 0%, rgba(47,216,255,0.30) 0%, transparent 55%), linear-gradient(160deg, #0a2540 0%, #0c1830 55%, var(--surface) 100%);
     border: 1px solid rgba(47,216,255,0.35);
     display: flex; flex-direction: column; justify-content: space-between;
@@ -61,6 +62,7 @@
   .yr-compare-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-blue), var(--neon-violet)); }
   .yr-compare-bar-label { font-size: 11.5px; color: var(--text-dim); }
   .yr-compare-bar-label b { color: var(--text); }
+  .thisweek-total.thisweek-none { font-family: inherit; color: var(--text-dim); font-weight: 600; font-size: 13px; }
   .stillorder-empty { color: #a8e0ff; font-size: 14px; }
 
   .alerts-card { grid-column: span 6; }
@@ -113,6 +115,21 @@
   .row-actions-drawer a, .row-actions-drawer button { text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; display: block; }
   .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: rgba(255,255,255,0.05); }
   .row-actions-drawer .danger:hover { color: var(--neon-pink); }
+  .backup-off .submit-btn { border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; cursor: pointer; }
+  .catbudget-card { grid-column: span 12; }
+  .catbudget-bar { position: relative; display: flex; height: 14px; border-radius: 999px; background: rgba(255,255,255,0.05); margin: 14px 0 12px; overflow: visible; }
+  .catbudget-bar i { display: block; height: 100%; }
+  .catbudget-bar i:first-child { border-radius: 999px 0 0 999px; }
+  .catbudget-bar i:last-of-type { border-radius: 0 999px 999px 0; }
+  .catbudget-bar i:only-of-type { border-radius: 999px; }
+  .catbudget-mark { position: absolute; top: -5px; width: 2px; height: 24px; margin-left: -1px; background: var(--neon-pink); border-radius: 2px; }
+  .catbudget-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--text-muted); }
+  .catbudget-item { display: inline-flex; align-items: center; gap: 7px; }
+  .catbudget-item .cat-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .catbudget-item b { color: var(--text); font-weight: 600; }
+  .catbudget-item.over b, .catbudget-item.over .catbudget-lim { color: var(--neon-pink); }
+  .catbudget-foot { margin-top: 10px; font-size: 12.5px; color: var(--text-dim); }
+  .catbudget-foot a { color: var(--neon-blue); text-decoration: none; }
 {% endblock %}
 
 {% block content %}
@@ -134,7 +151,7 @@
 {% endif %}
 
 <div class="grid">
-  <div class="card ringpair-card">
+  <div class="card ringpair-card" data-card="dash.rings">
     <div class="ringpair-half">
       {{ still_due_ring_svg|safe }}
       <div class="ring-label">Still due &middot; {{ current_month_label }}</div>
@@ -159,7 +176,7 @@
     </div>
   </div>
 
-  <div class="card yearpair-card">
+  <div class="card yearpair-card" data-card="dash.year">
     <div class="yearpair-half">
       <div class="plain-stat-head"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="plain-stat-label">{{ year_stats.year }} so far</span></div>
       <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</div>
@@ -179,15 +196,41 @@
       <div class="plain-stat-sub">{{ all_time_stats.count }} issue{{ "s" if all_time_stats.count != 1 else "" }} tracked, all time</div>
       <div class="plain-stat-chip">{{ currency() }}{{ "%.2f"|format(all_time_stats.total) }} tracked total</div>
     </div>
+    {% if all_time_stats.spent > 0 %}
+    <div class="yearpair-foot">
+      <div class="yr-compare-bar-track"><div class="yr-compare-bar-fill" style="width:{{ (year_stats.spent / all_time_stats.spent * 100)|round(1) }}%;"></div></div>
+      <div class="yr-compare-bar-label">{{ year_stats.year }} is <b>{{ (year_stats.spent / all_time_stats.spent * 100)|round|int }}%</b> of everything tracked, all time{% if year_top_month %} &middot; priciest month so far: <b>{{ year_top_month }}</b>{% endif %}</div>
+    </div>
+    {% endif %}
   </div>
 </div>
 
+{% set _has_limit = category_budget|selectattr('limit')|list %}
+{% if category_budget|length >= 2 or _has_limit %}
 <div class="grid">
-  <div class="card thisweek-card">
+  <div class="card catbudget-card" data-card="dash.catbudget">
+    <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h12"/></svg></span>Budget by category &middot; <span class="muted" style="font-weight:600;">{{ budget_cycle_label if budget_cycle_label is defined else 'this cycle' }}</span></div>
+    {% set _scale = [category_budget_total, monthly_budget or 0]|max %}
+    <div class="catbudget-bar">
+      {% for r in category_budget %}{% if r.total > 0 %}<i style="width:{{ (r.total / _scale * 100) if _scale else 0 }}%; background:{{ r.color }};" title="{{ r.name }} {{ currency() }}{{ '%.2f'|format(r.total) }}"></i>{% endif %}{% endfor %}
+      {% if monthly_budget %}<span class="catbudget-mark" style="left:{{ (monthly_budget / _scale * 100) if _scale else 0 }}%;" title="Budget"></span>{% endif %}
+    </div>
+    <div class="catbudget-legend">
+      {% for r in category_budget %}
+      <span class="catbudget-item{{ ' over' if r.over else '' }}"><span class="cat-dot" style="background:{{ r.color }};"></span>{{ r.name }} <b class="mono">{{ currency() }}{{ "%.2f"|format(r.total) }}</b>{% if r.limit %}<span class="catbudget-lim"> / {{ currency() }}{{ "%.2f"|format(r.limit) }}{% if r.over %} &middot; {{ currency() }}{{ "%.2f"|format(r.over) }} over{% endif %}</span>{% endif %}</span>
+      {% endfor %}
+    </div>
+    <div class="catbudget-foot">{{ currency() }}{{ "%.2f"|format(category_budget_total) }}{% if monthly_budget %} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }} overall{% endif %} &middot; <a href="/settings#category-limits">Set limits</a></div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid">
+  <div class="card thisweek-card" data-card="dash.week">
     <div class="thisweek-head" onclick="document.getElementById('thisweek-body').classList.toggle('open'); this.querySelector('.thisweek-chevron').classList.toggle('open');">
       <span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
       <span class="thisweek-label">This week</span>
-      <span class="thisweek-total mono">{{ currency() }}{{ "%.2f"|format(week_remaining) }} left of {{ currency() }}{{ "%.2f"|format(week_total) }}</span>
+      {% if week_total > 0 %}<span class="thisweek-total mono">{{ currency() }}{{ "%.2f"|format(week_remaining) }} left of {{ currency() }}{{ "%.2f"|format(week_total) }}</span>{% else %}<span class="thisweek-total thisweek-none">Nothing due</span>{% endif %}
       <span class="thisweek-chevron open">&#9662;</span>
     </div>
     <div class="thisweek-body open" id="thisweek-body">
@@ -235,7 +278,7 @@
 </div>
 
 <div class="grid">
-  <div class="card alerts-card">
+  <div class="card alerts-card" data-card="dash.alerts">
     <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/></svg></span>Alerts</div>
     {% if awaiting_charge %}
     <a class="alert-line" href="/alerts">
@@ -258,14 +301,28 @@
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}
-    {% if not awaiting_charge and not duplicate_groups and not ghost_items %}
+    {% if undated_items %}
+    <a class="alert-line" href="/alerts#undated">
+      <span class="dot" style="background:var(--neon-blue); box-shadow:0 0 6px rgba(47,216,255,0.5);"></span>
+      <span class="txt"><b>{{ undated_items|length }}</b> with no release date</span>
+      <span class="arrow">&rsaquo;</span>
+    </a>
+    {% endif %}
+    {% for r in category_budget if r.over %}
+    <a class="alert-line" href="/alerts#category-limits">
+      <span class="dot" style="background:var(--neon-pink); box-shadow:0 0 6px rgba(255,77,141,0.6);"></span>
+      <span class="txt"><b>{{ r.name }}</b> {{ currency() }}{{ "%.2f"|format(r.over) }} over its limit</span>
+      <span class="arrow">&rsaquo;</span>
+    </a>
+    {% endfor %}
+    {% if not awaiting_charge and not duplicate_groups and not ghost_items and not undated_items and not (category_budget|selectattr('over')|list) %}
     <div class="alerts-empty">Nothing needs your attention right now.</div>
     {% endif %}
     <a class="alerts-viewall" href="/alerts">View all in Alerts &rarr;</a>
   </div>
 
   {% set sync_on = sync_enabled() %}
-  <div class="card syncbackup-card">
+  <div class="card syncbackup-card" data-card="dash.backup">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></span>{{ 'Sync & backup' if sync_on else 'Backup' }}</div>
     {% if sync_on and most_recent_sync %}
     <div class="syncbackup-row">
@@ -279,35 +336,25 @@
       <div class="syncbackup-text">Last backup<div class="syncbackup-sub">{{ most_recent_backup.label }} &middot; {{ most_recent_backup.size_label }}</div></div>
     </div>
     {% endif %}
-    {% if not (sync_on and most_recent_sync) and not most_recent_backup %}
-    <div class="alerts-empty">{{ 'No sync or backup activity yet.' if sync_on else 'No backups yet.' }}</div>
+    {% if not auto_backup_on %}
+    <div class="backup-off">
+      <div class="syncbackup-sub" style="margin-bottom:12px;">Automatic backups are <b style="color:var(--text);">off</b> &mdash; a daily copy of your data, last 7 kept.</div>
+      <form method="post" action="/settings/auto-backup/on">
+        <input type="hidden" name="next" value="/">
+        <button type="submit" class="submit-btn">Turn on daily backups</button>
+      </form>
+    </div>
+    {% elif not most_recent_backup %}
+    <div class="syncbackup-row">
+      <span class="sync-dot" style="background:var(--neon-green); box-shadow:0 0 6px var(--neon-green);"></span>
+      <div class="syncbackup-text">Automatic backups on<div class="syncbackup-sub">First backup tonight at 03:00</div></div>
+    </div>
     {% endif %}
   </div>
 </div>
 
 <div class="grid">
-  <div class="card yearreview-card">
-    <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>{{ year_stats.year }} so far</div>
-    <div class="yr-compare">
-      <div class="yr-compare-col">
-        <div class="yr-compare-label">This year</div>
-        <div class="yr-compare-value mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</div>
-        <div class="yr-compare-sub">{{ year_stats.count }} issues tracked</div>
-      </div>
-      <div class="yr-compare-divider"></div>
-      <div class="yr-compare-col">
-        <div class="yr-compare-label">All time</div>
-        <div class="yr-compare-value mono dim">{{ currency() }}{{ "%.2f"|format(all_time_stats.spent) }}</div>
-        <div class="yr-compare-sub">{{ all_time_stats.count }} issues tracked</div>
-      </div>
-    </div>
-    {% if all_time_stats.spent > 0 %}
-    <div class="yr-compare-bar-track"><div class="yr-compare-bar-fill" style="width:{{ (year_stats.spent / all_time_stats.spent * 100)|round(1) }}%;"></div></div>
-    <div class="yr-compare-bar-label">{{ year_stats.year }} is <b>{{ (year_stats.spent / all_time_stats.spent * 100)|round|int }}%</b> of everything tracked, all time</div>
-    {% endif %}
-  </div>
-
-  <div class="card stillorder-card">
+  <div class="card stillorder-card" data-card="dash.stillorder">
     {% if biggest_still_to_come %}
     <div class="stillorder-top">
       <div>
@@ -334,7 +381,7 @@
 </div>
 
 <div class="grid">
-  <div class="card chart-card">
+  <div class="card chart-card" data-card="dash.trend">
     <div class="card-head">
       <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Spend trend</div>
       <div class="range-tabs" id="chart-tabs">

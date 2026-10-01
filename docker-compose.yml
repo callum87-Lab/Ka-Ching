@@ -10,6 +10,10 @@ services:
     environment:
       # Flat estimate added per distinct release date (i.e. per likely shipment)
       - SHIPPING_ESTIMATE=4.00
+      # Optional master password for the login (see README "Signing in").
+      # Keeps the login on and is the way back in if you forget the one set
+      # in Settings -> Security. Remove the line again once you're back in.
+      # - KACHING_PASSWORD=change-me
       # Phone sync for the Android app - off and hidden by default while
       # the app is dormant (see README). Uncomment only if you know you
       # need it, then switch it on in Settings -> Sync.

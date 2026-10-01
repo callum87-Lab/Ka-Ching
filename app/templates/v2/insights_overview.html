@@ -77,6 +77,10 @@
   .cm-bar .due.end { border-radius: 0 999px 999px 0; }
   .cm-bar .due.only { border-radius: 999px; }
   .cm-bar .mark { position: absolute; top: -5px; width: 2px; height: 24px; background: var(--neon-pink); border-radius: 2px; }
+  .cm-bar .mark { z-index: 2; }
+  .cm-bar-cats { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--text-muted); margin: 0 0 6px; }
+  .cm-bar-cats span { display: inline-flex; align-items: center; gap: 6px; }
+  .cm-bar-cats i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
   .cm-bar-lbls { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-muted); }
   .cm-chart { position: relative; margin-top: 8px; }
   .cm-chart svg { display: block; width: 100%; height: auto; cursor: crosshair; }
@@ -109,7 +113,7 @@
 {% else %}
 
 <div class="grid">
-  <div class="card ratio-card">
+  <div class="card ratio-card" data-card="ov.ratio">
     <div class="card-title" style="margin-bottom:0;">Pre-order vs released</div>
     <div class="gauge-wrap" style="position:relative; width:176px; height:100px; margin:10px auto 6px;">
       <svg viewBox="0 0 176 100" width="176" height="100">
@@ -132,7 +136,7 @@
     <div class="card-note" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">{{ preorder_pct }}% of what you're tracking is still to come &mdash; {{ preorder_count }} issue{{ "s" if preorder_count != 1 else "" }} on order, not yet released.</div>
   </div>
 
-  <div class="card overview-card">
+  <div class="card overview-card" data-card="ov.releases">
     <div class="card-head" style="margin-bottom:8px;">
       <div class="card-title" style="margin-bottom:0;">10 releases</div>
       <div class="recent-list-tabs" style="display:flex; gap:6px;">
@@ -160,7 +164,7 @@
 </div>
 
 <div class="grid">
-  <div class="card overview-card" style="grid-column: span 12;">
+  <div class="card overview-card" data-card="ov.spend" style="grid-column: span 12;">
     <div class="card-title" style="margin-bottom:16px;">Spend overview</div>
     <div class="stat-trio">
       <div>
@@ -195,7 +199,7 @@
 </div>
 
 <div class="grid">
-  <div class="card issue-card">
+  <div class="card issue-card" data-card="ov.issue">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Per issue</div>
     <div class="stat-trio">
       <div><div class="mini-stat-label">Total tracked</div><div class="mini-stat-value mono">{{ total_issues }}</div><div class="mini-stat-sub">{{ currency() }}{{ "%.2f"|format(total_all_spend) }} total, all time</div></div>
@@ -215,7 +219,7 @@
     {% if priciest_item %}<a class="card-note" style="color:var(--neon-blue); text-decoration:none;" href="/items/{{ priciest_item.id }}/edit">Edit priciest item &rarr;</a>{% endif %}
   </div>
 
-  <div class="card dist-card">
+  <div class="card dist-card" data-card="ov.dist">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg></span>Price distribution</div>
     <div class="dist-chart">
       {% for b in price_distribution %}
@@ -227,7 +231,7 @@
 </div>
 
 <div class="grid">
-  <div class="card weekday-card">
+  <div class="card weekday-card" data-card="ov.ship">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6-9 6-9-6z"/><path d="M3 9v6l9 6 9-6V9"/></svg></span>Shipping and patterns</div>
     <div class="weekday-trio">
       <div><div class="mini-stat-label">Busiest release day</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday[:3] }} ({{ busiest_weekday_count }}){% else %}&mdash;{% endif %}</div></div>
@@ -259,7 +263,7 @@
     </div>
   </div>
 
-  <div class="card cumulative-card">
+  <div class="card cumulative-card" data-card="ov.cum">
     <div class="card-title" style="margin-bottom:8px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-5 4 4 8-9"/></svg></span>Cumulative spend, {{ cumulative_month_label }}</div>
     <div id="cm-body"></div>
     <div class="trend-toggles cm-toggles" id="cm-toggles">
@@ -283,7 +287,7 @@
   {% endfor %}
 {% endmacro %}
 <div class="grid">
-  <div class="card" style="grid-column: span 12;">
+  <div class="card" data-card="ov.cat" style="grid-column: span 12;">
     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;">
       <div class="card-title" style="margin:0;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg></span>Spend by category</div>
       <div id="cat-spend-tabs" style="display:flex; gap:6px;">
@@ -297,7 +301,7 @@
 </div>
 
 <div class="grid">
-  <div class="card trend-card">
+  <div class="card trend-card" data-card="ov.trend">
     <div class="card-title" style="margin-bottom:8px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>12-month spend trend</div>
     <div class="chart-multi hide-comics hide-shipping" data-chart-id="twelvemonth">
       <div class="chart-area" style="position:relative;">{{ twelve_month_svg|safe }}</div>
@@ -392,10 +396,28 @@
     var scale = Math.max(M.budget || 0, spent + due) * 1.05 || 1;
     var sp = spent / scale * 100, du = due / scale * 100;
     h += '<div class="cm-bar">';
+    if (M.cats && M.cats.length >= 2) {
+      // Split by category: solid for spent, striped for still due, each in
+      // its category's colour
+      var at = 0;
+      M.cats.forEach(function (c) {
+        var w = c.spent / scale * 100;
+        if (w > 0) { h += '<div class="seg" style="left:' + at + '%;width:' + w + '%;background:' + c.color + ';" title="' + esc(c.name) + ' ' + fmt(c.spent) + '"></div>'; at += w; }
+      });
+      M.cats.forEach(function (c) {
+        var w = c.due / scale * 100;
+        if (w > 0) { h += '<div class="seg" style="left:' + at + '%;width:' + w + '%;background:repeating-linear-gradient(135deg,' + c.color + ' 0 5px,transparent 5px 10px);opacity:.7;" title="' + esc(c.name) + ' ' + fmt(c.due) + ' due"></div>'; at += w; }
+      });
+    } else {
     if (spent > 0.005) h += '<div class="seg spent' + (du < 0.01 && sp >= 99.5 ? ' full' : '') + '" style="width:' + sp + '%"></div>';
     if (due > 0.005) h += '<div class="seg due' + (spent <= 0.005 ? ' only' : (sp + du >= 99.5 ? ' end' : '')) + '" style="left:' + sp + '%;width:' + du + '%"></div>';
+    }
     if (M.budget) h += '<div class="mark" style="left:calc(' + (M.budget / scale * 100) + '% - 1px)" title="Budget"></div>';
-    h += '</div><div class="cm-bar-lbls"><span>' + fmt(spent) + ' spent' + (due > 0.005 ? ' &middot; ' + fmt(due) + ' due' : '') + '</span>' +
+    h += '</div>';
+    if (M.cats && M.cats.length >= 2) {
+      h += '<div class="cm-bar-cats">' + M.cats.map(function (c) { return '<span><i style="background:' + c.color + '"></i>' + esc(c.name) + ' ' + fmt(c.spent + c.due) + '</span>'; }).join('') + '</div>';
+    }
+    h += '<div class="cm-bar-lbls"><span>' + fmt(spent) + ' spent' + (due > 0.005 ? ' &middot; ' + fmt(due) + ' due' : '') + '</span>' +
          (M.budget ? '<span style="color:var(--neon-pink)">Budget ' + fmt(M.budget) + '</span>' : '') + '</div>';
 
     // Release-day bars

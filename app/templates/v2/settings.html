@@ -78,6 +78,51 @@
   .day-group:not(.expanded) .day-group-arrow { transform: rotate(-90deg); }
   .day-group-body { margin-top: 10px; }
   .day-group:not(.expanded) .day-group-body { display: none; }
+  .layout-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 6px 0 18px; }
+  .layout-preset { text-align: left; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
+  .layout-preset:hover { border-color: var(--border-strong); box-shadow: 0 0 16px rgba(47,216,255,0.35); }
+  .layout-preset.sel { border-color: var(--neon-blue); background: rgba(47,216,255,0.08); }
+  .layout-preset b { display: block; font-size: 14px; }
+  .layout-preset span { font-size: 12px; color: var(--text-muted); }
+  .layout-md { display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .layout-pages { background: rgba(255,255,255,0.02); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .layout-page { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border: none; border-bottom: 1px solid var(--border); background: none; color: var(--text-muted); font-size: 13.5px; font-weight: 600; text-align: left; }
+  .layout-page:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .layout-page.on { background: rgba(47,216,255,0.08); color: var(--neon-blue); box-shadow: inset 3px 0 0 var(--neon-blue); }
+  .layout-page small { font-size: 11.5px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+  .layout-cards { padding: 4px 18px 10px; min-width: 0; }
+  .layout-panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; padding: 12px 0 6px; }
+  .layout-panel-head a { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--neon-blue); text-decoration: none; }
+  .layout-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid var(--border); }
+  .layout-text { flex: 1 1 auto; min-width: 0; }
+  .layout-text b { display: block; font-size: 14px; font-weight: 600; }
+  .layout-text span { font-size: 12.5px; color: var(--text-muted); }
+  .layout-tag { display: inline-block; margin-left: 7px; font-size: 10.5px; font-weight: 700; color: var(--neon-violet); border: 1px solid rgba(155,123,255,0.5); border-radius: 999px; padding: 0 7px; vertical-align: 2px; }
+  @media (max-width: 900px) {
+    .layout-presets { grid-template-columns: 1fr; }
+    .layout-md { grid-template-columns: 1fr; }
+    .layout-pages { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+    .layout-page { flex: 0 0 auto; width: auto; border-bottom: none; border-right: 1px solid var(--border); }
+    .layout-page.on { box-shadow: inset 0 -3px 0 var(--neon-blue); }
+    .layout-cards { padding: 4px 14px 8px; }
+  }
+  .catlimit-list .catlimit-row.catlimit-unused { display: none; }
+  .catlimit-list.show-all .catlimit-row.catlimit-unused { display: flex; }
+  .catlimit-more { margin: 10px 0 0; font-size: 12.5px; color: var(--text-dim); }
+  .catlimit-more a { color: var(--neon-blue); text-decoration: none; }
+  .catlimit-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 22px; }
+  .catlimit-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .catlimit-name { display: flex; align-items: center; gap: 9px; font-size: 14px; min-width: 0; }
+  .catlimit-input { display: flex; align-items: center; gap: 6px; flex: 0 0 140px; }
+  .catlimit-input .field-input { width: 120px; }
+  @media (max-width: 900px) { .catlimit-list { grid-template-columns: 1fr; } }
+  .sec-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; margin-top: 14px; }
+  .sec-form .submit-btn, .sec-form .btn-secondary { justify-self: start; }
+  .sec-off { grid-template-columns: minmax(0, 1fr) auto; max-width: 560px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .sec-msg { border-radius: 12px; padding: 10px 14px; font-size: 13.5px; margin: 8px 0 6px; }
+  .sec-msg.good { background: rgba(60,242,166,0.08); border: 1px solid rgba(60,242,166,0.35); color: var(--neon-green); }
+  .sec-msg.bad { background: rgba(255,77,141,0.08); border: 1px solid rgba(255,77,141,0.35); color: var(--neon-pink); }
+  @media (max-width: 900px) { .sec-form, .sec-off { grid-template-columns: 1fr; } }
 {% endblock %}
 
 {% block content %}
@@ -221,15 +266,42 @@
   </div>
 
   <div class="grid">
+    <div class="card settings-card" id="category-limits">
+      <div class="settings-card-head">
+        <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h12"/></svg></span>Category limits</div>
+        <button type="button" class="collapse-btn" data-target="catlimits-body">&#9656;</button>
+      </div>
+      <div class="collapsible-body collapsed" id="catlimits-body">
+        <p class="warn-hint">Optional spending limit per category, for each budget cycle. Listed here: categories switched on below, anything with items, and anything with a limit already set. Leave blank for no limit. The Dashboard's Budget by category card shows each one, and going over shows in Alerts (and sends a push if budget alerts are on).</p>
+        <form method="post" action="/settings/category-limits">
+          <input type="hidden" name="next" value="/settings">
+          <div class="catlimit-list">
+            {% set _unused = [] %}
+            {% for c in categories_with_counts %}
+            {% set _in_use = c.item_count > 0 or c.id in category_limits or c.has_series %}
+            {% if not _in_use %}{% set _ = _unused.append(c.id) %}{% endif %}
+            <label class="catlimit-row{{ '' if _in_use else ' catlimit-unused' }}"><span class="catlimit-name"><span class="cat-dot" style="background:{{ c.color }};"></span>{{ c.name }}</span>
+              <span class="catlimit-input"><span class="muted">{{ currency() }}</span><input class="field-input" type="number" step="0.01" min="0" name="limit_{{ c.id }}" value="{{ '%.2f'|format(category_limits[c.id]) if c.id in category_limits else '' }}" placeholder="No limit"></span>
+            </label>
+            {% endfor %}
+          </div>
+          {% if _unused %}<p class="catlimit-more"><span>{{ _unused|length }} unused categor{{ 'y' if _unused|length == 1 else 'ies' }} not shown</span> &middot; <a href="#" data-catlimit-showall>Show all</a></p>{% endif %}
+          <button type="submit" class="submit-btn" style="margin-top:14px;">Save limits</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
     <div class="card settings-card" id="categories-card">
       <div class="settings-card-head">
         <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>Categories</div>
         <button type="button" class="collapse-btn" data-target="categories-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="categories-body">
-        <p class="warn-hint">What kinds of things you track. Turn on "Has series" for anything with numbered issues, volumes or sets.</p>
+        <p class="warn-hint">What kinds of things you track. <b style="color:var(--text);">Numbered issues</b>: turn on for anything sold as #1, #2, #3&hellip; (comics, manga volumes) &mdash; Price creep and Top titles then track price rises per series.</p>
         <div class="cat-list">
-          <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span>Has series</span><span></span></div>
+          <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span>Numbered issues</span><span></span></div>
           {% for c in categories_with_counts %}
           <div class="cat-row">
             <span class="cat-dot" style="background:{{ c.color }};"></span>
@@ -238,9 +310,9 @@
             <span class="series-cell">
               <form method="post" action="/settings/categories/{{ c.id }}/series">
                 <input type="hidden" name="next" value="/settings#categories-card">
-                <button type="submit" class="toggle-switch {{ 'on' if c.has_series else '' }}" aria-pressed="{{ 'true' if c.has_series else 'false' }}" aria-label="Has series: {{ c.name }}"></button>
+                <button type="submit" class="toggle-switch {{ 'on' if c.has_series else '' }}" aria-pressed="{{ 'true' if c.has_series else 'false' }}" aria-label="Numbered issues: {{ c.name }}"></button>
               </form>
-              {{ 'Has series' if c.has_series else 'No series' }}
+              {{ 'Yes' if c.has_series else 'No' }}
             </span>
             <form method="post" action="/settings/categories/{{ c.id }}/remove" class="cat-remove-wrap" style="text-align:right;">
               <input type="hidden" name="next" value="/settings#categories-card">
@@ -296,6 +368,92 @@
   </div>
 
 </div><!-- /settings-tab-general -->
+
+<div id="settings-tab-layout" style="display:none;">
+  <div class="grid">
+    <div class="card settings-card" id="layout-card">
+      <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Layout</div>
+      <p class="warn-hint">Choose which cards show on each page. Changes apply straight away &mdash; you can also use &#9881; Customise on each page.</p>
+      <div class="layout-presets">
+        <button type="button" class="layout-preset" data-preset="all"><b>Everything</b><span>Every card on every page</span></button>
+        <button type="button" class="layout-preset" data-preset="nopre"><b>I don't pre-order</b><span>Hides still-due, this week and on-order cards</span></button>
+        <button type="button" class="layout-preset" data-preset="essential"><b>Just the essentials</b><span>Totals, alerts, trends and the main lists</span></button>
+      </div>
+      {% set _hid = hidden_cards() %}
+      <div class="layout-md">
+        <div class="layout-pages" role="tablist">
+          {% for pg in card_layout() %}
+          <button type="button" class="layout-page{{ ' on' if loop.first else '' }}" data-layout-page="{{ loop.index0 }}" role="tab"><span>{{ pg.page.replace('Insights \u00b7 ', '') }}</span><small data-layout-count="{{ loop.index0 }}"></small></button>
+          {% endfor %}
+        </div>
+        <div class="layout-cards">
+          {% for pg in card_layout() %}
+          <div class="layout-panel" data-layout-panel="{{ loop.index0 }}"{% if not loop.first %} hidden{% endif %}>
+            <div class="layout-panel-head">{{ pg.page }} <a href="{{ pg.path }}">Open page &rarr;</a></div>
+            {% for c in pg.cards %}
+            <div class="layout-row">
+              <div class="layout-text"><b>{{ c.name }}{% if c.preorder %}<span class="layout-tag">pre-order</span>{% endif %}</b><span>{{ c.desc }}</span></div>
+              <button type="button" class="toggle-switch {{ '' if c.id in _hid else 'on' }}" data-layout-card="{{ c.id }}" data-preorder="{{ 'yes' if c.preorder else '' }}" data-essential="{{ 'yes' if c.essential else '' }}" aria-pressed="{{ 'false' if c.id in _hid else 'true' }}" aria-label="Show {{ c.name }}"></button>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /settings-tab-layout -->
+
+<div id="settings-tab-security" style="display:none;">
+  <div class="grid">
+    <div class="card settings-card" id="security-card">
+      <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Security</div>
+      {% set _sec = request.query_params.get('security') %}
+      {% if _sec %}
+      <div class="sec-msg {{ 'bad' if _sec in ('wrong-current','too-short','mismatch','managed') else 'good' }}">
+        {% if _sec == 'on' %}Login is on. This browser stays signed in; other devices will be asked for the password.
+        {% elif _sec == 'changed' %}Password changed. Every other device has been signed out.
+        {% elif _sec == 'off' %}Login is off. Anyone who can reach Ka-Ching! can open it again.
+        {% elif _sec == 'wrong-current' %}That current password isn't right, so nothing was changed.
+        {% elif _sec == 'too-short' %}Use at least 6 characters.
+        {% elif _sec == 'mismatch' %}The two new passwords didn't match.
+        {% elif _sec == 'managed' %}The password is set in docker-compose, so it can't be changed here.{% endif %}
+      </div>
+      {% endif %}
+      {% if login_env_managed() %}
+      <p class="warn-hint">Login is <b style="color:var(--text);">on</b> and <b style="color:var(--text);">managed in docker-compose</b> (<span class="mono">KACHING_PASSWORD</span>) &mdash; it can't be turned off from here while that line is set.</p>
+      <p class="warn-hint">Recovering a forgotten password? Set the password to use <b style="color:var(--text);">after</b> you remove that line &mdash; no old password needed while you're signed in with the docker-compose one.</p>
+      <form method="post" action="/settings/security/password" class="sec-form">
+        <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="6" required></label>
+        <label class="field-label"><span>New password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="6" required></label>
+        <button type="submit" class="submit-btn">Save password</button>
+      </form>
+      {% elif login_enabled() %}
+      <p class="warn-hint">Login is <b style="color:var(--neon-green);">on</b>. Every page, export and the old /classic/ view asks for the password. Changing it signs every other device out.</p>
+      <form method="post" action="/settings/security/password" class="sec-form">
+        <label class="field-label"><span>Current password</span><input class="field-input" type="password" name="current" autocomplete="current-password" required></label>
+        <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="6" required></label>
+        <label class="field-label"><span>New password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="6" required></label>
+        <button type="submit" class="submit-btn">Change password</button>
+      </form>
+      <form method="post" action="/settings/security/off" class="sec-form sec-off" onsubmit="return confirm('Turn the login off? Anyone who can reach Ka-Ching! will be able to open it.');">
+        <label class="field-label"><span>Current password</span><input class="field-input" type="password" name="current" autocomplete="current-password" required></label>
+        <button type="submit" class="btn-secondary danger">Turn login off</button>
+      </form>
+      {% else %}
+      <p class="warn-hint">Login is <b style="color:var(--text);">off</b> &mdash; fine on your home network. Turn it on if Ka-Ching! can ever be reached from outside it. The password is stored scrambled (hashed), never as plain text.</p>
+      <form method="post" action="/settings/security/password" class="sec-form">
+        <label class="field-label"><span>Password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="6" required></label>
+        <label class="field-label"><span>Password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="6" required></label>
+        <button type="submit" class="submit-btn">Turn login on</button>
+      </form>
+      {% endif %}
+      <p class="warn-hint" style="margin-top:18px;">Forgotten it? Add <span class="mono">KACHING_PASSWORD=something</span> under <span class="mono">environment:</span> in docker-compose.yml and rebuild &mdash; that password always works. Sign in, set a new one here, then remove the line and rebuild again.{% if login_enabled() %} Calendar subscriptions use a private link while login is on &mdash; re-add the <b style="color:var(--text);">Subscribe (live)</b> link from the Calendar page in your calendar app.{% endif %}</p>
+    </div>
+  </div>
+</div><!-- /settings-tab-security -->
+
+
 
 {% if sync_feature_available() %}
 <div id="settings-tab-sync" style="display:none;">
@@ -371,6 +529,21 @@
         <ul class="past-backups-list">
           {% for b in past_backups %}
           <li><span>{{ b.taken_at }}</span><span>{{ b.size_label }}</span><a href="/settings/backups/{{ b.filename }}" class="btn-secondary">Download</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if restore_copies %}
+      <div class="settings-card-head" style="margin-top:16px;">
+        <span class="warn-hint" style="margin:0;">Before-restore copies (newest {{ restore_copies|length }})</span>
+        <button type="button" class="collapse-btn" data-target="restore-copies-body">&#9656;</button>
+      </div>
+      <div class="collapsible-body collapsed" id="restore-copies-body">
+        <p class="warn-hint">Each restore first saves a copy of your data exactly as it was, in case you need to go back. The newest 3 are kept.</p>
+        <ul class="past-backups-list">
+          {% for c in restore_copies %}
+          <li><span>{{ c.taken_at }}</span><span>{{ c.size_label }}</span><a href="/settings/restore-copies/{{ c.filename }}" class="btn-secondary">Download</a></li>
           {% endfor %}
         </ul>
       </div>
@@ -464,8 +637,75 @@
 {% endblock %}
 
 {% block extra_script %}
+document.querySelectorAll('[data-catlimit-showall]').forEach(function (a) {
+  a.addEventListener('click', function (e) {
+    e.preventDefault();
+    document.querySelector('#catlimits-body .catlimit-list').classList.add('show-all');
+    a.parentNode.style.display = 'none';
+  });
+});
+
+// Settings -> Layout: pages on the left, that page's cards on the right;
+// every toggle saves straight away.
 (function () {
-  var settingsTabs = ['general', 'sync', 'backup', 'about', 'help'];
+  var toggles = document.querySelectorAll('[data-layout-card]');
+  if (!toggles.length) return;
+  function hiddenList() {
+    return Array.prototype.filter.call(toggles, function (t) { return !t.classList.contains('on'); })
+      .map(function (t) { return t.dataset.layoutCard; });
+  }
+  function presetMatch() {
+    var h = hiddenList().sort().join(), m = { all: '' };
+    m.nopre = Array.prototype.filter.call(toggles, function (t) { return t.dataset.preorder === 'yes'; }).map(function (t) { return t.dataset.layoutCard; }).sort().join();
+    m.essential = Array.prototype.filter.call(toggles, function (t) { return t.dataset.essential !== 'yes'; }).map(function (t) { return t.dataset.layoutCard; }).sort().join();
+    document.querySelectorAll('.layout-preset').forEach(function (b) { b.classList.toggle('sel', m[b.dataset.preset] === h); });
+  }
+  function counts() {
+    document.querySelectorAll('[data-layout-panel]').forEach(function (panel) {
+      var ts = panel.querySelectorAll('[data-layout-card]'), on = 0;
+      ts.forEach(function (t) { if (t.classList.contains('on')) on++; });
+      var c = document.querySelector('[data-layout-count="' + panel.dataset.layoutPanel + '"]');
+      if (c) c.textContent = on + ' of ' + ts.length;
+    });
+    presetMatch();
+  }
+  function save() {
+    counts();
+    fetch('/settings/layout', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hidden: hiddenList() }) }).catch(function () {});
+  }
+  function set(t, on) { t.classList.toggle('on', on); t.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+  toggles.forEach(function (t) { t.addEventListener('click', function () { set(t, !t.classList.contains('on')); save(); }); });
+  document.querySelectorAll('.layout-preset').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = b.dataset.preset;
+      toggles.forEach(function (t) {
+        set(t, p === 'all' ? true : p === 'nopre' ? t.dataset.preorder !== 'yes' : t.dataset.essential === 'yes');
+      });
+      save();
+    });
+  });
+  document.querySelectorAll('.layout-page').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.layout-page').forEach(function (x) { x.classList.toggle('on', x === b); });
+      document.querySelectorAll('[data-layout-panel]').forEach(function (p) { p.hidden = p.dataset.layoutPanel !== b.dataset.layoutPage; });
+    });
+  });
+  counts();
+  if (new URLSearchParams(window.location.search).get('security')) window.addEventListener('load', function () {
+    var st = document.querySelector('.sidebar [data-settings-tab="security"]'); if (st) st.click();
+  });
+  // Arriving from a page's "Manage in Settings" link (/settings#layout, or
+  // #layout-page-N to open that page's cards)
+  var m = window.location.hash.match(/^#layout(?:-card|-page-(\d+))?$/);
+  if (m) window.addEventListener('load', function () {
+    var tab = document.querySelector('.sidebar [data-settings-tab="layout"]');
+    if (tab) tab.click();
+    if (m[1]) { var pb = document.querySelector('.layout-page[data-layout-page="' + m[1] + '"]'); if (pb) pb.click(); }
+  });
+})();
+(function () {
+  var settingsTabs = ['general', 'sync', 'backup', 'layout', 'security', 'about', 'help'];
   var storageKey = 'kaching_settings_tab';
   var tabs = document.querySelectorAll('[data-settings-tab]');
 

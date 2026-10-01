@@ -189,6 +189,70 @@
   body :is(.trend-toggles, .overtime-legend) .trend-toggle-row .trend-toggle-label { color: var(--text-muted); }
   body :is(.trend-toggles, .overtime-legend) .trend-toggle-row:has(input:checked) .trend-toggle-label { color: var(--text); }
 
+  /* ---- One size for every pill-shaped button and tab, everywhere ---- */
+  body :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .logorders-tab, .preset-pill, .warn-action-btn, .page-btn, .btn-secondary, .btn-primary, .submit-btn, .export-btn, .csv-btn, .filter-toggle-btn, .delay-btn, .bulk-btn, .clear-btn, .parser-hint-btn, .notif-test-btn, .add-cat-btn, .month-nav-today, .cat-chip, .kc-cust) {
+    height: 36px !important; min-height: 36px; padding: 0 16px !important; font-size: 13.5px !important;
+    line-height: 1 !important; display: inline-flex !important; align-items: center; justify-content: center;
+    gap: 7px; box-sizing: border-box; white-space: nowrap; vertical-align: middle;
+  }
+
+  /* "/" shortcut hint inside the search box (keyboards only) */
+  .kc-kbd { flex: 0 0 auto; font-family: inherit; font-size: 11px; font-weight: 700; color: var(--text-dim);
+    border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px; line-height: 1.3; }
+  .search-box:focus-within .kc-kbd { display: none; }
+  @media (hover: none), (max-width: 900px) { .kc-kbd { display: none; } }
+
+  /* ---- Expand / collapse buttons: round, blue chevron, flips when open ---- */
+  .kc-chev { width: 32px !important; height: 32px; flex: 0 0 32px; border-radius: 50%; border: 1px solid var(--border-strong) !important;
+    background: var(--surface-raised) !important; color: var(--neon-blue) !important; display: inline-flex !important;
+    align-items: center; justify-content: center; padding: 0 !important; cursor: pointer; font-size: 0 !important;
+    transform: none !important; transition: box-shadow 0.15s ease, border-color 0.15s ease; }
+  .kc-chev svg { width: 16px; height: 16px; transition: transform 0.2s ease; }
+  .kc-chev:hover, :is(.day-group-head, .thisweek-head, .shop-row, .settings-card-head):hover .kc-chev {
+    box-shadow: 0 0 14px rgba(47,216,255,0.5); border-color: var(--neon-blue) !important; }
+  .kc-chev.open svg, .day-group.expanded .kc-chev svg, .shop-row.expanded .kc-chev svg { transform: rotate(180deg); }
+
+  /* ---- Show / hide cards (Customise) ---- */
+  .kc-solo { grid-column: span 12 !important; }
+  .kc-empty { display: none !important; }
+  .kc-cust-row { display: flex; justify-content: flex-end; margin: -6px 0 12px; }
+  .page-head.kc-has-cust { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .kc-cust { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; font-size: 13px; padding: 7px 14px; }
+  .kc-cust svg { width: 15px; height: 15px; }
+  .kc-editbar { display: none; position: sticky; top: 10px; z-index: 30; margin: 0 0 14px; padding: 10px 14px;
+    background: rgba(12,24,44,0.94); border: 1px solid var(--neon-blue); border-radius: 14px;
+    align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; color: var(--text); }
+  body.kc-editing .kc-editbar { display: flex; }
+  body.kc-editing [data-card] { position: relative; outline: 1px dashed var(--border-strong); outline-offset: 4px; }
+  /* Customise strip: a header across the top of each card (the card's own
+     content moves down beneath it, nothing is covered) */
+  .kc-strip { display: none; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 16px 9px 20px;
+    background: rgba(47,216,255,0.07); border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 700;
+    cursor: pointer; user-select: none; }
+  body.kc-editing .kc-strip { display: flex; }
+  .kc-strip .kc-nm { color: var(--text); }
+  .kc-strip .kc-nmwrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .kc-handle { cursor: grab; color: var(--text-muted); font-size: 15px; letter-spacing: -3px; padding: 2px 8px 2px 2px; margin-left: -6px;
+    touch-action: none; user-select: none; line-height: 1; border-radius: 6px; }
+  .kc-handle:hover { color: var(--neon-blue); background: rgba(47,216,255,0.10); }
+  body.kc-drag-active, body.kc-drag-active * { cursor: grabbing !important; user-select: none; }
+  .kc-dragging { opacity: 0.55; outline: 2px solid var(--neon-blue) !important; box-shadow: 0 0 24px rgba(47,216,255,0.35); }
+  .kc-fill { grid-column: span var(--kc-span) !important; }
+  .kc-bar-btns { display: flex; gap: 8px; flex: 0 0 auto; }
+  .kc-strip .kc-st { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+  body.kc-editing .kc-flexrow { flex-wrap: wrap; align-content: flex-start; }
+  .kc-strip.kc-group { grid-column: span 12; border: 1px solid var(--border); border-radius: 14px; }
+  body.kc-editing [data-card].kc-off > :not(.kc-strip) { opacity: 0.35; }
+  body.kc-editing .kc-strip.is-off { background: rgba(255,255,255,0.03); }
+  body.kc-editing .kc-strip.is-off .kc-nm { color: var(--text-muted); }
+  .kc-strip .sw { width: 34px; height: 19px; border-radius: 999px; border: 1px solid var(--border-strong); position: relative; background: rgba(255,255,255,0.04); flex: 0 0 34px; }
+  .kc-strip .sw::before { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--text-dim); transition: left 0.15s; }
+  .kc-strip.on .sw { border-color: var(--neon-blue); background: rgba(47,216,255,0.15); }
+  .kc-strip.on .sw::before { left: 17px; background: var(--neon-blue); }
+  .kc-hidden-strip { margin: 6px 0 20px; border: 1px dashed var(--border-strong); border-radius: 14px; padding: 10px 14px; font-size: 13px; color: var(--text-muted); }
+  .kc-hidden-strip a { color: var(--neon-blue); cursor: pointer; text-decoration: none; }
+  body.kc-editing .kc-hidden-strip { display: none; }
+
   /* ---- Phone / narrow screens (desktop above 900px is untouched) ---- */
   .menu-btn, .topbar-brand, .drawer-scrim, .mobile-subnav { display: none; }
   .shop-select-wrap { display: none; align-items: center; gap: 8px; margin: 0 0 14px; }
@@ -270,6 +334,9 @@ KC.pref = {
   }
 };
 </script>
+<style id="kc-hidden-cards">{% for c in hidden_cards() %}body:not(.kc-editing) [data-card="{{ c }}"] { display: none !important; }
+{% endfor %}</style>
+<script>window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order()|tojson }}; window.KC_LAYOUT_PAGES = {{ card_layout()|map(attribute='path')|list|tojson }}; window.KC_CARD_NAMES = { {% for pg in card_layout() %}{% for c in pg.cards %}{{ c.id|tojson }}: {{ c.name|tojson }}, {% endfor %}{% endfor %} };</script>
 {% block head_script %}{% endblock %}
 </head>
 <body>
@@ -315,11 +382,16 @@ KC.pref = {
       <a class="sub-item active" data-settings-tab="general" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--neon-blue); font-weight:600; cursor:pointer;">General</a>
       {% if sync_feature_available() %}<a class="sub-item" data-settings-tab="sync" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Sync</a>{% endif %}
       <a class="sub-item" data-settings-tab="backup" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Data backup</a>
+      <a class="sub-item" data-settings-tab="layout" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Layout</a>
+      <a class="sub-item" data-settings-tab="security" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Security</a>
       <a class="sub-item" data-settings-tab="about" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">About</a>
       <a class="sub-item" data-settings-tab="help" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Help</a>
     </div>
     {% endif %}
 
+    {% if login_enabled() %}
+    <a class="nav-item kc-signout" href="/logout"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</a>
+    {% endif %}
     {% set _display = sidebar_budget_display() %}
     {% if _display != 'hidden' %}
     <div class="sidebar-foot">
@@ -371,6 +443,7 @@ KC.pref = {
       <form class="search-box" action="/search" method="get" style="cursor:text;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" name="q" placeholder="Search a title, order #..." autocomplete="off" style="background:none; border:none; outline:none; color:var(--text); font-size:14.5px; font-family:inherit; width:100%; padding:0;">
+        <kbd class="kc-kbd" title="Press / to search">/</kbd>
       </form>
       <div class="topbar-right">
         {% set most_recent_sync = topbar_most_recent_sync() if sync_enabled() else None %}
@@ -388,6 +461,309 @@ KC.pref = {
     </div>
 
     {% block content %}{% endblock %}
+
+    <script>
+    // Every expand/collapse arrow becomes the same round chevron button.
+    (function () {
+      var CH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+      document.querySelectorAll('.main .collapse-btn, .main .day-group-arrow, .main .thisweek-chevron, .main .shop-expand-arrow').forEach(function (el) {
+        if (el.classList.contains('shop-expand-arrow') && !el.textContent.trim()) return;  // rows with nothing to expand
+        el.innerHTML = CH;
+        el.classList.add('kc-chev');
+        if (el.classList.contains('collapse-btn')) el.setAttribute('aria-label', 'Show or hide');
+      });
+    })();
+    </script>
+
+    <script>
+    // Show / hide cards. Hidden cards are hidden by the server-rendered
+    // rule in <head>; this adds the Customise mode, keeps rows tidy (a card
+    // whose partner is hidden widens to full width, an emptied row takes no
+    // space) and notes how many cards are hidden on the page.
+    (function () {
+      var cards = document.querySelectorAll('.main [data-card]');
+      if (!cards.length) return;
+      var hidden = (window.KC_HIDDEN || []).slice();
+      var pageIds = [];
+      cards.forEach(function (c) { if (pageIds.indexOf(c.dataset.card) === -1) pageIds.push(c.dataset.card); });
+      var editing = false, draft = null;
+      var path = window.location.pathname;
+
+      // All of the page's card rows become one flowing grid, so cards can be
+      // put in any order; each card keeps its own width (half, full...).
+      function spanOf(el) {
+        var m = (getComputedStyle(el).gridColumnStart || '').match(/span (\d+)/);
+        return m ? parseInt(m[1], 10) : 12;
+      }
+      var cardGrids = [];
+      cards.forEach(function (c) { var g = c.parentNode; if (cardGrids.indexOf(g) === -1) cardGrids.push(g); });
+      var flow = document.createElement('div');
+      flow.className = 'grid kc-flow';
+      cardGrids[0].parentNode.insertBefore(flow, cardGrids[0]);
+      var defaultOrder = [];
+      var unitEls = {}, unitSpan = {};
+      cardGrids.forEach(function (g) {
+        Array.prototype.slice.call(g.children).forEach(function (k) {
+          var id = k.dataset && k.dataset.card;
+          if (!id) return;
+          if (!unitEls[id]) { unitEls[id] = []; defaultOrder.push(id); unitSpan[id] = 0; }
+          unitEls[id].push(k); unitSpan[id] += spanOf(k);
+          k.dataset.kcSpan = spanOf(k);
+        });
+      });
+      Object.keys(unitSpan).forEach(function (id) { if (unitSpan[id] > 12) unitSpan[id] = 12; });
+      function orderedIds(saved) {
+        var out = (saved || []).filter(function (id) { return unitEls[id]; });
+        defaultOrder.forEach(function (id) { if (out.indexOf(id) === -1) out.push(id); });
+        return out;
+      }
+      function applyOrder(ids) {
+        ids.forEach(function (id) {
+          if (groupStrips[id]) flow.appendChild(groupStrips[id]);
+          unitEls[id].forEach(function (el) { flow.appendChild(el); });
+        });
+      }
+      var groupStrips = {};
+      // On a phone, a card can ask to sit after another by default (e.g. the
+      // calendar's shop breakdown goes below the month grid there)
+      if (window.innerWidth <= 900 && !(window.KC_ORDER || {})[path]) {
+        defaultOrder.slice().forEach(function (id) {
+          var after = unitEls[id][0].dataset.phoneAfter;
+          if (!after || defaultOrder.indexOf(after) === -1) return;
+          defaultOrder.splice(defaultOrder.indexOf(id), 1);
+          defaultOrder.splice(defaultOrder.indexOf(after) + 1, 0, id);
+        });
+      }
+      applyOrder(orderedIds((window.KC_ORDER || {})[path]));
+      // anything else left in the old rows (e.g. an empty-state message) stays put
+      cardGrids.forEach(function (g) { if (!g.children.length) g.remove(); });
+      function currentOrder() {
+        var seen = [];
+        Array.prototype.forEach.call(flow.children, function (k) {
+          var id = k.dataset.card || k.dataset.kcCard;
+          if (id && seen.indexOf(id) === -1) seen.push(id);
+        });
+        return seen;
+      }
+
+      // Pack visible cards into rows of 12; a card left without a partner on
+      // its row widens to fill it (e.g. its pair was hidden or moved away).
+      function tidy() {
+        var row = [], used = 0;
+        function close() {
+          if (row.length && used < 12) {
+            var last = row[row.length - 1];
+            unitEls[last].forEach(function (el) {
+              el.classList.add('kc-fill');
+              el.style.setProperty('--kc-span', String(parseInt(el.dataset.kcSpan, 10) + (12 - used)));
+            });
+          }
+          row = []; used = 0;
+        }
+        currentOrder().forEach(function (id) {
+          unitEls[id].forEach(function (el) { el.classList.remove('kc-fill', 'kc-solo'); el.style.removeProperty('--kc-span'); });
+        });
+        currentOrder().forEach(function (id) {
+          var vis = unitEls[id].some(function (el) { return getComputedStyle(el).display !== 'none'; });
+          if (!vis) return;
+          var w = unitSpan[id];
+          if (used + w > 12) close();
+          row.push(id); used += w;
+          if (used >= 12) close();
+        });
+        close();
+      }
+      function writeRule(list) {
+        document.getElementById('kc-hidden-cards').textContent = list.map(function (id) {
+          return 'body:not(.kc-editing) [data-card="' + id + '"] { display: none !important; }';
+        }).join('\n');
+      }
+      function save(list) {
+        hidden = list; window.KC_HIDDEN = list; writeRule(list);
+        fetch('/settings/layout', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hidden: list }) }).catch(function () {});
+      }
+      function strip() {
+        var old = document.querySelector('.kc-hidden-strip'); if (old) old.remove();
+        var n = pageIds.filter(function (id) { return hidden.indexOf(id) !== -1; }).length;
+        if (!n) return;
+        var d = document.createElement('div'); d.className = 'kc-hidden-strip';
+        d.innerHTML = n + ' card' + (n > 1 ? 's' : '') + ' hidden on this page &middot; <a data-kc="show">Show</a> &middot; <a href="/settings#layout-page-' + Math.max(0, (window.KC_LAYOUT_PAGES || []).indexOf(window.location.pathname)) + '">Manage in Settings</a>';
+        var lastGrid = document.querySelectorAll('.main .grid'); lastGrid = lastGrid[lastGrid.length - 1];
+        lastGrid.parentNode.insertBefore(d, lastGrid.nextSibling);
+      }
+
+      // Customise button: in the page heading, or in a row of its own
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'tab-pill kc-cust';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Customise</span>';
+      var head = document.querySelector('.main .page-head');
+      if (head) {
+        var wrap = document.createElement('div');
+        while (head.firstChild) wrap.appendChild(head.firstChild);
+        head.appendChild(wrap); head.appendChild(btn); head.classList.add('kc-has-cust');
+      } else {
+        var row = document.createElement('div'); row.className = 'kc-cust-row'; row.appendChild(btn);
+        var firstGrid = cards[0].closest('.grid'); firstGrid.parentNode.insertBefore(row, firstGrid);
+      }
+      var bar = document.createElement('div'); bar.className = 'kc-editbar';
+      bar.innerHTML = '<span>Switch cards on or off, and drag <b>\u2807\u2807</b> to move them. Changes are kept when you tap Done.</span><span class="kc-bar-btns"><button type="button" class="tab-pill" data-kc="reset-order">Reset order</button><button type="button" class="tab-pill active" data-kc="done">Done</button></span>';
+      var fg = cards[0].closest('.grid'); fg.parentNode.insertBefore(bar, fg);
+
+      // One strip per card, across its top. A group of stat tiles shares one
+      // strip, placed as a full-width row above the tiles.
+      var names = {}, counts = {};
+      cards.forEach(function (c) { counts[c.dataset.card] = (counts[c.dataset.card] || 0) + 1; });
+      var seen = {};
+      cards.forEach(function (c) {
+        var id = c.dataset.card;
+        if (seen[id]) return; seen[id] = true;
+        var strip = document.createElement('div');
+        strip.className = 'kc-strip'; strip.dataset.kcCard = id; strip.setAttribute('role', 'switch');
+        strip.innerHTML = '<span class="kc-nmwrap"><span class="kc-handle" title="Drag to move" aria-label="Drag to move">\u2807\u2807</span><span class="kc-nm"></span></span><span class="kc-st"><span class="kc-lbl"></span><span class="sw"></span></span>';
+        strip.querySelector('.kc-nm').textContent = (window.KC_CARD_NAMES || {})[id] || id;
+        if (counts[id] > 1) {
+          strip.classList.add('kc-group');
+          c.parentNode.insertBefore(strip, c);
+          groupStrips[id] = strip;
+        } else {
+          c.insertBefore(strip, c.firstChild);
+        }
+      });
+      // Fit each strip flush to its card's edges (padding differs between
+      // desktop and phone, so this runs each time Customise opens)
+      function fitStrips() {
+        document.querySelectorAll('.kc-strip:not(.kc-group)').forEach(function (strip) {
+          var c = strip.parentNode, cs = getComputedStyle(c), r = cs.borderTopLeftRadius;
+          strip.style.margin = '-' + cs.paddingTop + ' -' + cs.paddingRight + ' ' + cs.paddingTop + ' -' + cs.paddingLeft;
+          strip.style.borderRadius = r + ' ' + r + ' 0 0';
+          strip.style.flex = '0 0 auto';
+          strip.style.alignSelf = 'stretch';
+          strip.style.width = 'auto';
+          strip.style.gridColumn = '1 / -1';   // cards laid out as a grid
+          // Cards laid out as a row (e.g. the ring pair): wrap, strip on its own line
+          if (cs.display.indexOf('flex') !== -1 && cs.flexDirection.indexOf('row') === 0) {
+            c.classList.add('kc-flexrow');
+            strip.style.flex = '0 0 calc(100% + ' + cs.paddingLeft + ' + ' + cs.paddingRight + ')';
+          }
+        });
+      }
+      function paintEditing() {
+        document.querySelectorAll('.kc-strip').forEach(function (e) {
+          var off = draft.indexOf(e.dataset.kcCard) !== -1;
+          e.classList.toggle('on', !off); e.classList.toggle('is-off', off);
+          e.setAttribute('aria-checked', off ? 'false' : 'true');
+          e.querySelector('.kc-lbl').textContent = off ? 'Hidden' : 'Showing';
+        });
+        cards.forEach(function (c) { c.classList.toggle('kc-off', draft.indexOf(c.dataset.card) !== -1); });
+      }
+      function setEditing(on) {
+        editing = on;
+        document.body.classList.toggle('kc-editing', on);
+        btn.querySelector('span').textContent = on ? 'Done' : 'Customise';
+        btn.classList.toggle('active', on);
+        if (on) { draft = hidden.slice(); fitStrips(); paintEditing(); }
+        else {
+          cards.forEach(function (c) { c.classList.remove('kc-off'); });
+          if (draft && draft.join() !== hidden.join()) save(draft.slice().sort());
+          draft = null;
+        }
+        tidy(); strip();
+        if (window.dispatchEvent) window.dispatchEvent(new Event('resize'));
+      }
+      btn.addEventListener('click', function () { setEditing(!editing); });
+      document.addEventListener('click', function (e) {
+        if (e.target.closest('.kc-handle')) return;
+        var t = e.target.closest('[data-kc], .kc-strip');
+        if (!t) return;
+        if (t.classList.contains('kc-strip')) {
+          e.preventDefault(); e.stopPropagation();
+          var id = t.dataset.kcCard, i = draft.indexOf(id);
+          if (i === -1) draft.push(id); else draft.splice(i, 1);
+          paintEditing();
+        } else if (t.dataset.kc === 'reset-order') {
+          applyOrder(defaultOrder); tidy(); saveOrder([]);
+        } else if (t.dataset.kc === 'done') {
+          setEditing(false);
+        } else if (t.dataset.kc === 'show') {
+          save(hidden.filter(function (id) { return pageIds.indexOf(id) === -1; }));
+          tidy(); strip(); window.dispatchEvent(new Event('resize'));
+        }
+      }, true);
+      function saveOrder(list) {
+        window.KC_ORDER = window.KC_ORDER || {};
+        if (list.length) window.KC_ORDER[path] = list; else delete window.KC_ORDER[path];
+        fetch('/settings/card-order', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: path, order: list }) }).catch(function () {});
+      }
+
+      // Dragging: grab the handle (mouse, pen or finger) and the card follows
+      // the pointer, moving live between the others.
+      var drag = null;
+      function unitAt(x, y) {
+        var el = document.elementFromPoint(x, y);
+        el = el && el.closest('.kc-flow > *');
+        if (!el) return null;
+        return el.dataset.card || el.dataset.kcCard || null;
+      }
+      function moveUnit(id, targetId, after) {
+        if (id === targetId) return;
+        var els = (groupStrips[id] ? [groupStrips[id]] : []).concat(unitEls[id]);
+        var tEls = (groupStrips[targetId] ? [groupStrips[targetId]] : []).concat(unitEls[targetId]);
+        var ref = after ? tEls[tEls.length - 1].nextSibling : tEls[0];
+        els.forEach(function (el) { flow.insertBefore(el, ref); });
+      }
+      flow.addEventListener('pointerdown', function (e) {
+        var h = e.target.closest('.kc-handle');
+        if (!h || !editing) return;
+        e.preventDefault();
+        var id = h.closest('.kc-strip').dataset.kcCard;
+        drag = { id: id, before: currentOrder().join(), x: e.clientX, y: e.clientY };
+        drag.raf = requestAnimationFrame(autoScroll);
+        (groupStrips[id] ? [groupStrips[id]] : []).concat(unitEls[id]).forEach(function (el) { el.classList.add('kc-dragging'); });
+        document.body.classList.add('kc-drag-active');
+        try { h.setPointerCapture(e.pointerId); } catch (err) {}
+      });
+      // Holding a card near the top or bottom of the screen scrolls the page
+      function autoScroll() {
+        if (!drag) return;
+        var y = drag.y, step = 0;
+        if (y < 80) step = -Math.ceil((80 - y) / 5); else if (y > window.innerHeight - 80) step = Math.ceil((y - (window.innerHeight - 80)) / 5);
+        if (step) { window.scrollBy(0, step); place(drag.x, drag.y); }
+        drag.raf = requestAnimationFrame(autoScroll);
+      }
+      function place(x, y) {
+        var tid = unitAt(x, y);
+        if (!tid || tid === drag.id) return;
+        var tEls = unitEls[tid], r = tEls[0].getBoundingClientRect(), rl = tEls[tEls.length - 1].getBoundingClientRect();
+        var sameRow = y >= r.top && y <= rl.bottom && r.width < flow.getBoundingClientRect().width - 20;
+        var after = sameRow ? (x > r.left + r.width / 2) : (y > (r.top + rl.bottom) / 2);
+        moveUnit(drag.id, tid, after);
+        tidy();
+      }
+      document.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        e.preventDefault();
+        drag.x = e.clientX; drag.y = e.clientY;
+        place(e.clientX, e.clientY);
+      }, { passive: false });
+      function endDrag() {
+        if (!drag) return;
+        var id = drag.id, before = drag.before;
+        cancelAnimationFrame(drag.raf);
+        drag = null;
+        document.body.classList.remove('kc-drag-active');
+        (groupStrips[id] ? [groupStrips[id]] : []).concat(unitEls[id]).forEach(function (el) { el.classList.remove('kc-dragging'); });
+        var now = currentOrder();
+        if (now.join() !== before) saveOrder(now.join() === defaultOrder.join() ? [] : now);
+        tidy();
+      }
+      document.addEventListener('pointerup', endDrag);
+      document.addEventListener('pointercancel', endDrag);
+
+      tidy(); strip();
+    })();
+    </script>
 
     <script>
     // Narrow screens: copy this section's sidebar tabs (Orders All/Unpaid,
@@ -421,9 +797,23 @@ KC.pref = {
 </div>
 <div class="drawer-scrim" id="drawer-scrim"></div>
 <script>
+// Press "/" anywhere (when not already typing) to jump into search; Esc leaves it
+(function () {
+  var q = document.querySelector('.topbar input[name="q"]');
+  if (!q) return;
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target;
+    if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    e.preventDefault();
+    q.focus(); q.select();
+  });
+  q.addEventListener('keydown', function (e) { if (e.key === 'Escape') q.blur(); });
+})();
+
 // Installable as a home-screen app (the worker does no caching)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
 }
 
 // Label every table cell with its column heading, used by the phone
@@ -671,14 +1061,25 @@ document.addEventListener('click', function () {
     if (!body) return;
     if (state[key] === true) {
       body.classList.remove('collapsed');
-      btn.innerHTML = '&#9662;';
+      btn.classList.add('open');
     }
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
       var collapsed = body.classList.toggle('collapsed');
-      btn.innerHTML = collapsed ? '&#9656;' : '&#9662;';
+      btn.classList.toggle('open', !collapsed);
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       state[key] = !collapsed;
       saveState();
     });
+    // The whole heading row opens and closes it, not just the button
+    var head = btn.closest('.settings-card-head');
+    if (head) {
+      head.style.cursor = 'pointer';
+      head.addEventListener('click', function (e) {
+        if (e.target.closest('a, input, select, textarea, form') || e.target === btn || btn.contains(e.target)) return;
+        btn.click();
+      });
+    }
   });
 })();
 

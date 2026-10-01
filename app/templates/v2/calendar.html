@@ -63,6 +63,8 @@
   .day-group { border-top: 1px solid var(--border); padding: 12px 0; }
   .day-group:first-of-type { border-top: none; padding-top: 4px; }
   .day-group-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; cursor: pointer; }
+  .day-group-ship { font-size: 12px; color: var(--text-dim); margin-right: 10px; white-space: nowrap; }
+  @media (max-width: 480px) { .day-group-ship { display: none; } }
   .day-group-label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
   .day-group-label .paid-tag { font-size: 11px; color: var(--neon-green); text-transform: none; font-weight: 600; }
   .day-group-right { display: flex; align-items: center; gap: 10px; }
@@ -126,7 +128,7 @@
   </div>
   <div style="display:flex; gap:8px;">
     <a class="export-btn" href="/calendar/export.ics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download .ics</a>
-    <a class="export-btn" href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>Subscribe (live)</a>
+    <a class="export-btn" href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics{% if calendar_feed_key() %}?key={{ calendar_feed_key() }}{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>Subscribe (live)</a>
   </div>
 </div>
 
@@ -138,7 +140,7 @@
 </div>
 
 <div class="grid cal-main-grid">
-  <div class="card mini-cal-card" style="grid-column: span 3;">
+  <div class="card mini-cal-card" data-card="cal.mini" data-phone-after="cal.big" style="grid-column: span 3;">
     <div class="mini-cal-head">
       <a class="month-nav-btn" href="?month={{ prev_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}">&lsaquo;</a>
       <span>{{ viewed_month_label }}</span>
@@ -176,7 +178,7 @@
     {% endif %}
   </div>
 
-  <div class="card big-cal-card" style="grid-column: span 9;">
+  <div class="card big-cal-card" data-card="cal.big" style="grid-column: span 9;">
     <div class="big-cal-head">
       <a class="month-nav-btn" href="?month={{ prev_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}" aria-label="Previous month">&larr;</a>
       <span class="big-cal-title">{{ viewed_month_label }}</span>
@@ -206,7 +208,7 @@
 </div>
 
 <div class="grid">
-  <div class="card heatmap-card">
+  <div class="card heatmap-card" data-card="cal.heatmap">
     <div class="card-head">
       <div class="card-title"><span class="card-icon-badge" style="background:rgba(60,242,166,0.14);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon-green)" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Activity</div>
     </div>
@@ -231,7 +233,7 @@
 </div>
 
 <div class="grid">
-  <div class="card list-card">
+  <div class="card list-card" data-card="cal.list">
     <div class="list-card-head">
       <div class="list-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span id="releases-title" data-month-title="{{ viewed_month_label }} releases">{{ viewed_month_label }} releases</span></div>
       <button type="button" class="tab-pill day-filter-clear" id="day-filter-clear" hidden>Show whole month</button>
@@ -241,7 +243,7 @@
       <div class="day-group" id="agenda-{{ group.date }}">
         <div class="day-group-head">
           <div class="day-group-label">{{ group.date_label }}{% if group.all_paid %} <span class="paid-tag">&middot; paid</span>{% endif %}</div>
-          <div class="day-group-right"><span class="day-group-total mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span><span class="day-group-arrow">&#9662;</span></div>
+          <div class="day-group-right">{% if group.shipping %}<span class="day-group-ship">{{ currency() }}{{ "%.2f"|format(group.subtotal) }} + {{ currency() }}{{ "%.2f"|format(group.shipping) }} ship</span>{% endif %}<span class="day-group-total mono">{{ currency() }}{{ "%.2f"|format(group.subtotal + (group.shipping or 0)) }}</span><span class="day-group-arrow">&#9662;</span></div>
         </div>
         <div class="day-group-body">
           {% for sg in group.source_groups %}
@@ -270,7 +272,7 @@
 
 <div class="cal-export-bottom">
   <a class="export-btn" href="/calendar/export.ics">Download .ics</a>
-  <a class="export-btn" href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics">Subscribe (live)</a>
+  <a class="export-btn" href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics{% if calendar_feed_key() %}?key={{ calendar_feed_key() }}{% endif %}">Subscribe (live)</a>
 </div>
 {% endblock %}
 

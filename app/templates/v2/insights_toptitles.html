@@ -68,28 +68,28 @@
 
 {% if top_titles or series_totals %}
 <div class="grid">
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="titles.stats">
     <div class="plain-stat-label">Priciest single issue</div>
     {% if priciest_item %}
     <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(priciest_item.price) }}</div>
     <div class="plain-stat-sub">{{ priciest_item.name }}</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="titles.stats">
     <div class="plain-stat-label">Top series by spend</div>
     {% if top_series_by_spend %}
     <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(top_series_by_spend.total) }}</div>
     <div class="plain-stat-sub">{{ top_series_by_spend.series }} &middot; {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="titles.stats">
     <div class="plain-stat-label">Most collected series</div>
     {% if most_collected_series %}
     <div class="plain-stat-value mono">{{ most_collected_series.count }}</div>
     <div class="plain-stat-sub">{{ most_collected_series.series }} &middot; issues tracked</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="titles.stats">
     <div class="plain-stat-label">Longest running</div>
     {% if longest_running_series %}
     <div class="plain-stat-value mono">{{ longest_running_series.years_running }} yrs</div>
@@ -101,7 +101,7 @@
 {% if priciest_item %}
 {% set priciest_series_m = priciest_item.name.split(' #')[0] %}
 <div class="grid">
-  <div class="card titles-hero">
+  <div class="card titles-hero" data-card="titles.hero">
     <div>
       <div class="titles-hero-eyebrow">Priciest issue tracked</div>
       <div class="titles-hero-title">{{ priciest_item.name }}</div>
@@ -114,7 +114,7 @@
     {% endif %}
   </div>
 
-  <div class="card titles-table-card">
+  <div class="card titles-table-card" data-card="titles.priciest">
     <div class="card-title" style="margin-bottom:14px;">Priciest issues, all time</div>
     <table class="titles-table">
       <thead><tr><th class="rank-col">#</th><th>Title</th><th>Series</th><th class="num">Price</th><th>Shop</th></tr></thead>
@@ -136,7 +136,7 @@
 {% endif %}
 
 <div class="grid">
-  <div class="card" style="grid-column: span 12;">
+  <div class="card" data-card="titles.series" style="grid-column: span 12;">
     <div class="card-title" style="margin-bottom:14px;">Top series by total spend</div>
     {% if series_totals %}
     {% set max_total = series_totals[0].total %}
@@ -157,7 +157,7 @@
 </div>
 
 <div class="grid">
-  <div class="card" style="grid-column: span 12;">
+  <div class="card" data-card="titles.compare" style="grid-column: span 12;">
     <div class="card-title" style="margin-bottom:14px;">All series, compared</div>
     {% if all_series_totals %}
     <table class="compare-table">

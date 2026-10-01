@@ -67,12 +67,12 @@
 {% if shop_stats %}
 {% set total_spend = shop_stats|sum(attribute='total') %}
 <div class="grid">
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="shop.stats">
     <div class="plain-stat-label">Total, all time</div>
     <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(shop_total_all_time) }}</div>
     <div class="plain-stat-sub">across {{ shop_stats|length }} shop{{ "s" if shop_stats|length != 1 else "" }}</div>
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="shop.stats">
     <div class="plain-stat-label">Top shop</div>
     {% if top_shop %}
     <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(top_shop.total) }}</div>
@@ -81,7 +81,7 @@
     <div class="plain-stat-value">&mdash;</div>
     {% endif %}
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="shop.stats">
     <div class="plain-stat-label">Fastest growing</div>
     {% if fastest_growing_shop %}
     <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(fastest_growing_shop.last_90d_total) }}</div>
@@ -91,7 +91,7 @@
     <div class="plain-stat-sub">Not enough history yet</div>
     {% endif %}
   </div>
-  <div class="card plain-stat">
+  <div class="card plain-stat" data-card="shop.stats">
     <div class="plain-stat-label">Avg per shop</div>
     <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(avg_per_shop) }}</div>
     <div class="plain-stat-sub">{{ shop_total_issues }} issue{{ "s" if shop_total_issues != 1 else "" }} total</div>
@@ -99,7 +99,7 @@
 </div>
 
 <div class="grid">
-  <div class="card donut-card">
+  <div class="card donut-card" data-card="shop.donut">
     <div class="card-head" style="margin-bottom:16px; width:100%;">
       <div class="card-title" style="margin-bottom:0;">Share of spend</div>
       <div class="range-tabs" id="donut-range-tabs" style="display:flex; gap:6px;">
@@ -121,7 +121,7 @@
     </div>
   </div>
 
-  <div class="card breakdown-card">
+  <div class="card breakdown-card" data-card="shop.breakdown">
     <div class="card-title" style="margin-bottom:10px;">By shop, all time</div>
     {% for s in shop_stats %}
     <div class="shop-row" {% if s.sub_shops %}data-toggle="shop-{{ loop.index }}"{% endif %}>
@@ -152,7 +152,7 @@
 </div>
 
 <div class="grid">
-  <div class="card compare-card" style="grid-column: span 12;">
+  <div class="card compare-card" data-card="shop.compare" style="grid-column: span 12;">
     <div class="card-title" style="margin-bottom:10px;">Shop comparison</div>
     <table class="compare-table">
       <thead><tr><th>Shop</th><th class="num">Total</th><th class="num">Issues</th><th class="num">Avg/issue</th><th class="num">Avg shipping</th><th class="num">Last 90d</th></tr></thead>
@@ -179,7 +179,7 @@
 </div>
 
 <div class="grid">
-  <div class="card overtime-card">
+  <div class="card overtime-card" data-card="shop.overtime">
     <div class="card-head" style="margin-bottom:6px;">
       <div>
         <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Spend by shop</div>
