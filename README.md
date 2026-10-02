@@ -1,4 +1,4 @@
-[![OpenSSF Baseline](https://www.bestpractices.dev/projects/15163/baseline)](https://www.bestpractices.dev/projects/15163)
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/15163/baseline)](https://www.bestpractices.dev/en/projects/15163/baseline-1)
 ![Ka-Ching!](app/static/img/readme-banner.png)
 
 # Ka-Ching!
