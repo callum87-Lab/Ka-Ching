@@ -703,6 +703,31 @@ dashboard — reliably.
 It's a small, honest tool that does one job on hardware you own, with data
 that never leaves it.
 
+## Dependencies
+
+Ka-Ching! keeps its dependencies deliberately few:
+
+- **How they're chosen:** only well-established, actively maintained
+  libraries, and only when the job can't reasonably be done with Python's
+  standard library. Today that's four: FastAPI (web framework), Uvicorn
+  (web server), Jinja2 (page templates) and python-multipart (form uploads).
+  Nothing is loaded from the internet at runtime - no CDNs, external fonts
+  or scripts; every chart and icon is built into the app.
+- **How they're obtained:** from PyPI with pip, at the exact versions pinned
+  in [`requirements.txt`](requirements.txt), on top of the official
+  `python:3.12-slim` Docker image.
+- **How they're tracked:** GitHub's dependency graph and Dependabot alerts
+  watch them for known vulnerabilities; updates are tested before a version
+  is changed, and noted in [CHANGELOG.md](CHANGELOG.md).
+
+## Project documents
+
+- [SECURITY.md](SECURITY.md) - reporting a vulnerability, and how it's handled
+- [CONTRIBUTING.md](CONTRIBUTING.md) - how to contribute
+- [MAINTAINERS.md](MAINTAINERS.md) - who maintains the project and what they look after
+- [INTERFACES.md](INTERFACES.md) - every way data gets in or out of the app
+- [CHANGELOG.md](CHANGELOG.md) - what changed in each release
+
 ## Contributing a new shop's parser
 
 Ka-Ching! only knows how to reliably read Forbidden Planet, eBay, and
