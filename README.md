@@ -1,3 +1,4 @@
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/15163/baseline)](https://www.bestpractices.dev/projects/15163)
 ![Ka-Ching!](app/static/img/readme-banner.png)
 
 # Ka-Ching!
