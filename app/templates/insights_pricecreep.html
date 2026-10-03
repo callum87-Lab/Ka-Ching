@@ -255,7 +255,7 @@
   var svg = document.getElementById('creep-svg');
   var tooltip = document.getElementById('creep-tooltip');
   if (!svg) return;
-  var data = {{ creep_cumulative_json|safe }};
+  var data = {{ creep_cumulative_json|json_script }};
   if (data.length < 2) return;
 
   var W = 760, H = 170, padL = 10, padR = 10, padT = 15, padB = 20;

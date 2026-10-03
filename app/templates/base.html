@@ -936,7 +936,8 @@ KC.pref = {
 </script>
 <style id="kc-hidden-cards">{% for c in hidden_cards() %}body:not(.kc-editing) [data-card="{{ c }}"] { display: none !important; }
 {% endfor %}</style>
-<script>window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order()|tojson }}; window.KC_WIDE = {{ wide_layout_json()|safe }}; window.KC_LAYOUT_PAGES = {{ card_layout()|map(attribute='path')|list|tojson }}; window.KC_CARD_NAMES = { {% for pg in card_layout() %}{% for c in pg.cards %}{{ c.id|tojson }}: {{ c.name|tojson }}, {% endfor %}{% endfor %} };</script>
+<script>window.kcEsc = function (v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
+window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order()|tojson }}; window.KC_WIDE = {{ wide_layout_json()|json_script }}; window.KC_LAYOUT_PAGES = {{ card_layout()|map(attribute='path')|list|tojson }}; window.KC_CARD_NAMES = { {% for pg in card_layout() %}{% for c in pg.cards %}{{ c.id|tojson }}: {{ c.name|tojson }}, {% endfor %}{% endfor %} };</script>
 {% block head_script %}{% endblock %}
 </head>
 <body class="wide-{{ wide_layout() }}">

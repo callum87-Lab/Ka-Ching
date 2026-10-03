@@ -3,7 +3,7 @@
    remembered one before the page draws. #}
 <script>
 (function () {
-  var data = {{ category_chips_json|safe }};
+  var data = {{ category_chips_json|json_script }};
   if (data.explicit || !data.chips.length) return;
   var saved = KC.pref.get('insights_categories', null);
   if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return;

@@ -95,3 +95,25 @@ def test_raw_form_next_cannot_leave_site(client, seeded, field_route):
     r = client.post(field_route, data={"next": "//evil.example"}, follow_redirects=False)
     loc = r.headers.get("location", "/")
     assert not urlparse(loc).netloc and not loc.startswith("//"), loc
+
+
+PAYLOAD = '</script><script>alert(1)</script><img src=x onerror=alert(2)>'
+
+
+def test_names_cannot_inject_script(client, fresh_db):
+    """Item, shop and category names (which can come from pasted pages) are
+    always escaped - in the HTML and inside the pages' scripts."""
+    import sqlite3
+    from .conftest import add_item
+    con = sqlite3.connect(fresh_db)
+    con.execute("INSERT INTO categories (name, color, has_series, sort_order) VALUES (?, '#ff00ff', 1, 99)", (f"Cat {PAYLOAD}",))
+    cat = con.execute("SELECT id FROM categories WHERE name LIKE 'Cat %'").fetchone()[0]
+    con.commit()
+    for days in (2, -3, -20, 40):
+        add_item(fresh_db, f"Evil {PAYLOAD} #{days}", 3.0, days, source=f"Shop {PAYLOAD}",
+                 order_number=f"X{days}", category=cat)
+    for path in ["/", "/orders", "/calendar", "/search?q=Evil", "/insights", "/insights/spend-by-shop",
+                 "/insights/price-creep", "/insights/top-titles", "/alerts", "/settings"]:
+        page = client.get(path).text
+        assert "<script>alert(1)" not in page, path
+        assert "<img src=x onerror" not in page, path

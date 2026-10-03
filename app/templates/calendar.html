@@ -345,7 +345,7 @@
   var monthsRow = document.getElementById('heatmap-months');
   if (!grid) return;
 
-  var dailyTotals = {{ heatmap_daily_json|safe }};
+  var dailyTotals = {{ heatmap_daily_json|json_script }};
   var heatmapStart = new Date('{{ heatmap_start }}T00:00:00');
   var maxTotal = 0;
   Object.keys(dailyTotals).forEach(function (d) { if (dailyTotals[d] > maxTotal) maxTotal = dailyTotals[d]; });

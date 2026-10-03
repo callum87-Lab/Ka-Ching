@@ -197,6 +197,18 @@ async def friendly_form_error(request: Request, exc: RequestValidationError):
     }, status_code=422)
 
 
+def _json_for_script(value):
+    """JSON placed inside a page's <script>: escape <, > and & so a name
+    containing "</script>" (from an import, a shop or a category) can
+    never end the script early and run as code."""
+    from markupsafe import Markup
+    text = value if isinstance(value, str) else json.dumps(value)
+    return Markup(text.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e"))
+
+
+templates.env.filters["json_script"] = _json_for_script
+
+
 def render(name, context, **kwargs):
     """Render a page. (Starlette 1.x takes the request as the first
     argument; every context here already carries it.)"""

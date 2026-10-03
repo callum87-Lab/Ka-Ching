@@ -1,5 +1,6 @@
 """Page routes: Dashboard, Orders, Calendar, Search, Insights, Alerts, and redirects for old addresses."""
 from .core import *  # noqa: F401,F403 - the shared app, templates and helpers
+import html
 
 
 def _smooth_svg_path(points):
@@ -143,7 +144,7 @@ def render_trend_svg(chart_data, range_key, style="curve", label_font_size=12):
         color = "var(--neon-blue)" if c["is_current"] else "var(--text-muted)"
         alt_class = " trend-axis-label-alt" if i % 2 == 1 else ""
         parts.append(f'<text class="trend-axis-label{alt_class}" x="{x_at(i)}" y="{label_y}" text-anchor="middle" font-size="{label_font_size}" '
-                      f'font-weight="{weight}" fill="{color}">{c["label"]}</text>')
+                      f'font-weight="{weight}" fill="{color}">{html.escape(str(c["label"]))}</text>')
 
     hit_w = round(step, 1)
     for i, c in enumerate(chart_data):
@@ -151,7 +152,7 @@ def render_trend_svg(chart_data, range_key, style="curve", label_font_size=12):
         zx = round(cx - hit_w / 2, 1)
         parts.append(
             f'<rect class="trend-hit" x="{zx}" y="0" width="{hit_w}" height="{bars_top + bars_h}" '
-            f'fill="transparent" data-label="{c["label"]}" data-total="{c["total"]:.2f}" '
+            f'fill="transparent" data-label="{html.escape(str(c["label"]))}" data-total="{c["total"]:.2f}" '
             f'data-comics="{c["comics_total"]:.2f}" data-shipping="{c["shipping_total"]:.2f}" '
             f'data-count="{c["count"]}" data-cx="{cx}" data-cy="{cy}"/>'
         )

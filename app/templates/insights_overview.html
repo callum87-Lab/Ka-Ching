@@ -338,7 +338,7 @@
 (function () {
   var body = document.getElementById('cm-body');
   if (!body) return;
-  var M = {{ cumulative_month_json|safe }};
+  var M = {{ cumulative_month_json|json_script }};
   var CUR = '{{ currency() }}';
   var KEY = 'overview.cumulative.series';
   var WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];

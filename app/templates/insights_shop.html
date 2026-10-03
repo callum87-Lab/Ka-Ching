@@ -205,7 +205,7 @@
 
 {% block extra_script %}
 (function () {
-  var donutData = {{ donut_data_json|safe }};
+  var donutData = {{ donut_data_json|json_script }};
   var svg = document.getElementById('donut-svg');
   var totalText = document.getElementById('donut-total-text');
   var periodText = document.getElementById('donut-period-text');
@@ -281,7 +281,7 @@
   var tabs = document.getElementById('overtime-range-tabs');
   if (!svg) return;
 
-  var fullData = {{ shop_over_time_json|safe }};
+  var fullData = {{ shop_over_time_json|json_script }};
   if (!fullData.series.length || !fullData.months.length) return;
 
   var W = 760, H = 220, padL = 40, padR = 10, padT = 10, padB = 24;
@@ -368,7 +368,7 @@
         var label = document.createElement('label');
         label.className = 'trend-toggle-row trend-toggle-checked shop-toggle';
         label.style.setProperty('--shop-color', s.color);
-        label.innerHTML = '<span class="toggle"><input type="checkbox" data-legend-shop="' + s.name.replace(/"/g, '&quot;') + '"' + (visibleShops[s.name] ? ' checked' : '') + '><span class="toggle-track"></span></span><span class="trend-toggle-label">' + s.name + '</span>';
+        label.innerHTML = '<span class="toggle"><input type="checkbox" data-legend-shop="' + kcEsc(s.name) + '"' + (visibleShops[s.name] ? ' checked' : '') + '><span class="toggle-track"></span></span><span class="trend-toggle-label">' + kcEsc(s.name) + '</span>';
         legend.appendChild(label);
       });
       legend.querySelectorAll('[data-legend-shop]').forEach(function (checkbox) {
@@ -391,7 +391,7 @@
 
   function showTip(i, months, series, isPeak) {
     var rows = series.map(function (s) {
-      return '<div class="ot-row"><span style="color:' + s.color + ';">' + s.name + '</span><span class="mono">{{ currency() }}' + s.data[i].toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
+      return '<div class="ot-row"><span style="color:' + kcEsc(s.color) + ';">' + kcEsc(s.name) + '</span><span class="mono">{{ currency() }}' + s.data[i].toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
     }).join('');
     var peakBadge = isPeak ? ' <span style="background:rgba(60,242,166,0.14); color:var(--neon-green); font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px;">PEAK</span>' : '';
     tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:6px;">' + months[i] + peakBadge + '</div>' + rows;
