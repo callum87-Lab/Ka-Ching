@@ -124,6 +124,7 @@ def download_restore_copy(filename: str):
 
 @app.post("/settings/auto-backup/on")
 def turn_on_auto_backup(next: str = Form("/")):
+    next = safe_redirect(next, '/')
     conn = db.get_db()
     notifications.set_setting(conn.cursor(), "auto_backup", "yes")
     conn.commit()
@@ -174,8 +175,7 @@ async def save_category_limits(request: Request):
     notifications.set_setting(conn.cursor(), "category_limits", json.dumps(limits))
     conn.commit()
     conn.close()
-    back = form.get("next") or "/settings"
-    back = back if (back.startswith("/") and not back.startswith("//")) else "/settings"
+    back = safe_redirect(form.get("next"), "/settings")
     return RedirectResponse(url=f"{back}?limits_saved=1#category-limits", status_code=303)
 
 
@@ -201,7 +201,7 @@ def set_login_password(request: Request, current: str = Form(""), password: str 
     conn.close()
     logger.info("LOGIN: password %s", "changed" if stored else "set, login turned on")
     response = RedirectResponse(url=back + ("?security=changed" if stored else "?security=on"), status_code=303)
-    _set_session_cookie(response, True)
+    _set_session_cookie(response, True, request)
     return response
 
 
@@ -225,6 +225,7 @@ def turn_login_off(current: str = Form("")):
 
 @app.post("/settings/wide-layout")
 def save_wide_layout(layout: str = Form("standard"), next: str = Form("/settings#layout")):
+    next = safe_redirect(next, '/settings#layout')
     conn = db.get_db()
     notifications.set_setting(conn.cursor(), "wide_layout", layout if layout in WIDE_LAYOUTS else "standard")
     conn.commit()
@@ -273,6 +274,7 @@ def generate_sync_key(next: str | None = Form(None)):
     # using - a deliberate choice (lost/compromised key should actually stop
     # working), just means the person needs to re-paste the new one into any
     # device they still want syncing.
+    next = safe_redirect(next, None)
     conn = db.get_db()
     cur = conn.cursor()
     notifications.set_setting(cur, "sync_api_key", secrets.token_urlsafe(24))
@@ -285,6 +287,7 @@ def generate_sync_key(next: str | None = Form(None)):
 
 @app.post("/settings/sync/enabled")
 def set_sync_enabled(enabled: str = Form(...), next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     conn = db.get_db()
     notifications.set_setting(conn.cursor(), "sync_enabled", "1" if enabled == "1" else "0")
     conn.commit()
@@ -295,6 +298,7 @@ def set_sync_enabled(enabled: str = Form(...), next: str = Form("/settings")):
 
 @app.post("/settings/categories/add")
 def add_category(name: str = Form(...), next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     conn = db.get_db()
     _create_category(conn.cursor(), name)
     conn.commit()
@@ -304,6 +308,7 @@ def add_category(name: str = Form(...), next: str = Form("/settings")):
 
 @app.post("/settings/categories/{category_id}/series")
 def toggle_category_series(category_id: int, next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     conn = db.get_db()
     conn.execute("UPDATE categories SET has_series = 1 - has_series WHERE id = ?", (category_id,))
     conn.commit()
@@ -316,6 +321,7 @@ def remove_category(category_id: int, next: str = Form("/settings")):
     """Only removes a category nothing uses - items are never left without
     one. The default category can't be removed either, since new items
     from sync and older code paths fall back to it."""
+    next = safe_redirect(next, '/settings')
     conn = db.get_db()
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM items WHERE category_id = ? AND deleted_at IS NULL", (category_id,))
@@ -340,6 +346,7 @@ def rename_shop(old_name: str = Form(...), new_name: str = Form(...), next: str 
     just a plain rename of the source column. Also renames it in
     shipment_postage so real shipping estimates already captured for
     this shop don't silently stop matching after the rename."""
+    next = safe_redirect(next, '/settings')
     old_clean = old_name.strip()
     new_clean = new_name.strip()
     if not old_clean or not new_clean or old_clean == new_clean:
@@ -382,6 +389,7 @@ def save_settings(
 ):
     # Only the Budget card sends this; every other settings form (and
     # the old UI) leaves it alone rather than resetting it.
+    next = safe_redirect(next, '/settings')
     if sidebar_budget_display in SIDEBAR_BUDGET_DISPLAYS:
         _c = db.get_db()
         notifications.set_setting(_c.cursor(), "sidebar_budget_display", sidebar_budget_display)
@@ -415,6 +423,7 @@ def save_settings(
 
 @app.post("/settings/test")
 def test_notification(next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     conn = db.get_db()
     cur = conn.cursor()
     ok, err = notifications.send_via_configured_provider(
@@ -428,6 +437,7 @@ def test_notification(next: str = Form("/settings")):
 
 @app.post("/settings/test-digest")
 def test_digest(next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     result = notifications.check_and_notify_tomorrow(force=True)
     if result is None:
         return RedirectResponse(url=f"{next}?test_error=No+provider+configured", status_code=303)
@@ -439,6 +449,7 @@ def test_digest(next: str = Form("/settings")):
 
 @app.post("/settings/test-weekly-digest")
 def test_weekly_digest(next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     result = notifications.check_and_notify_week(force=True)
     if result is None:
         return RedirectResponse(url=f"{next}?test_error=No+provider+configured", status_code=303)
@@ -450,6 +461,7 @@ def test_weekly_digest(next: str = Form("/settings")):
 
 @app.post("/settings/test-budget-alert")
 def test_budget_alert(next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     result = check_budget_threshold(force=True)
     if result is None:
         return RedirectResponse(url=f"{next}?test_error=No+provider+configured", status_code=303)
@@ -494,6 +506,7 @@ def export_notification_config():
 
 @app.post("/settings/import-notifications")
 async def import_notification_config(notification_config_file: UploadFile = File(...), next: str = Form("/settings")):
+    next = safe_redirect(next, '/settings')
     contents = await notification_config_file.read()
     try:
         config = json.loads(contents)
@@ -565,9 +578,10 @@ def download_auto_backup(filename: str):
     can point outside the backups folder."""
     if not _AUTO_BACKUP_NAME_RE.match(filename):
         raise HTTPException(status_code=404, detail="Not found")
-    backup_dir = os.path.join(os.path.dirname(db.DB_PATH), "backups")
-    full_path = os.path.join(backup_dir, filename)
-    if not os.path.isfile(full_path):
+    backup_dir = os.path.realpath(os.path.join(os.path.dirname(db.DB_PATH), "backups"))
+    full_path = os.path.realpath(os.path.join(backup_dir, filename))
+    # belt and braces: the resolved path must still be inside the backups folder
+    if not full_path.startswith(backup_dir + os.sep) or not os.path.isfile(full_path):
         raise HTTPException(status_code=404, detail="Not found")
     return FileResponse(full_path, filename=filename, media_type="application/octet-stream")
 
@@ -576,6 +590,7 @@ def download_auto_backup(filename: str):
 async def restore_backup(backup_file: UploadFile = File(...), next: str | None = Form(None)):
     # The v2 Settings page sends next=/v2/settings; the old UI sends
     # nothing and keeps landing back on /settings. Local paths only.
+    next = safe_redirect(next, None)
     back = next if (next and next.startswith("/") and not next.startswith("//")) else "/settings"
     contents = await backup_file.read()
 

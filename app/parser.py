@@ -417,7 +417,7 @@ _ORDER_DETAIL_CONFIRMED_RE = re.compile(
     r"(?:Confirmed on:|Placed)\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})", re.IGNORECASE
 )
 _ORDER_DETAIL_ITEM_RE = re.compile(
-    r"^[ \t]*\*?\s*\[(?!Cancel item\])([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
+    r"^(?:[ \t]*\*)?\s*\[(?!Cancel item\])([^\[\]]+?)\](?:\([^)]*\))?\s*\n"
     r"(?:([^\n]+)\n)??"
     r"(Dispatched|Awaiting Stock|Processing|Pre-?order|Backordered|Cancelled|Charged)\b[^\n]*\n"
     r"(?:[^\n]*\n)*?"
@@ -507,7 +507,7 @@ def parse_order_detail_items(text: str):
 
 _ORDER_DETAIL_HEADING_RE = re.compile(r"Order(?:\s+Number)?\s*#\[?(\d+)\]?")
 _SHIPMENT_POSTAGE_RE = re.compile(
-    r"package with \d+ items?[^\d£\n]*?£?\s*([\d,]+\.\d{2})"
+    r"package with \d+ items?[^\d£\n]{0,200}?£?\s*([\d,]+\.\d{2})"
     r"|Postage\s*£\s*([\d,]+\.\d{2})",
     re.IGNORECASE,
 )
@@ -575,8 +575,8 @@ def store_shipment_postage(samples):
 _EMAIL_REF_RE = re.compile(r"Order Ref:\s*#?(\d+)", re.IGNORECASE)
 _EMAIL_DATE_RE = re.compile(r"Order Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 _EMAIL_ITEM_RE = re.compile(
-    r"^\d+\s*x\s+(.+?)\s+"
-    r"(Dispatched|Pre-?order|Backordered|Processing|Charged)\b.*?"
+    r"^\d+\s*x\s+(\S.{0,300}?)\s+"
+    r"(Dispatched|Pre-?order|Backordered|Processing|Charged)\b.{0,500}?"
     r"(?:Due for release on\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\.)?\s*"
     r"£\s*([\d,]+\.\d{2})",
     re.MULTILINE | re.IGNORECASE | re.DOTALL,
@@ -715,6 +715,11 @@ def _build_order_detail_preview(text: str, order_detail: dict) -> dict:
     }
 
 
+# Far more than any real order page; anything longer is cut short before
+# parsing so a huge paste can't tie the app up.
+MAX_PASTE_CHARS = 1_000_000
+
+
 def detect_import(text: str, shop_hint: str | None = None):
     """Tries each known parser in turn and returns a single unified preview
     structure for the review-and-confirm screen. Never touches the database
@@ -725,6 +730,7 @@ def detect_import(text: str, shop_hint: str | None = None):
     generic parser, which still extracts what it safely can (order number,
     total, shipping, item rows where the structure is clear enough) and
     leaves the rest blank for the person to fill in themselves."""
+    text = (text or "")[:MAX_PASTE_CHARS]
     # An order-DETAIL page (or its shorter order-summary cousin) needs to be
     # ruled in or out before the order-history-list parser ever runs on it -
     # that parser triggers on any standalone [bracketed] line as an item
@@ -979,15 +985,15 @@ _CURRENCY_SIGN = r"(?:£|\$|€|GBP\s?|USD\s?|EUR\s?)"
 _GENERIC_PRICE_RE = re.compile(rf"{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})")
 _GENERIC_EXCLUDE_KEYWORDS = ["subtotal", "total", "postage", "p&p", "shipping"]
 _GENERIC_START_ANCHORS = [r"Line Items", r"Items Ordered", r"Item Description.*?Price", r"Order Details"]
-_GENERIC_ORDER_NUM_RE = re.compile(r"(?:Order\s*(?:Number|Ref|#)|Order\s*ID)\s*:?\s*#?\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
-_GENERIC_TOTAL_RE = re.compile(rf"\b(?:Grand\s*Total|Total)\b\s*:?\s*{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})", re.IGNORECASE)
-_GENERIC_SHIPPING_RE = re.compile(rf"(?:Postage\s*&?\s*Packaging|P\s*&\s*P|Shipping|Postage)\s*:?\s*{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})", re.IGNORECASE)
+_GENERIC_ORDER_NUM_RE = re.compile(r"(?:Order\s*(?:Number|Ref|#)|Order\s*ID)\s*(?::\s*)?(?:#\s*)?([A-Za-z0-9\-]+)", re.IGNORECASE)
+_GENERIC_TOTAL_RE = re.compile(rf"\b(?:Grand\s*Total|Total)\b\s*(?::\s*)?{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})", re.IGNORECASE)
+_GENERIC_SHIPPING_RE = re.compile(rf"(?:Postage\s*(?:&\s*)?Packaging|P\s*&\s*P|Shipping|Postage)\s*(?::\s*)?{_CURRENCY_SIGN}\s?(\d+\.\d{{2}})", re.IGNORECASE)
 _GENERIC_EXACT_DATE_RE = re.compile(
-    r"(?:Expected Release|Release Date|Ships?)\s*:?\s*(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})",
+    r"(?:Expected Release|Release Date|Ships?)\s*(?::\s*)?(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)\s+(\d{4})",
     re.IGNORECASE,
 )
 _GENERIC_INFORMAL_NOTE_RE = re.compile(
-    r"\((expected[^)]*|ships?[^)]*|pre-?order[^)]*|in stock[^)]*)\)",
+    r"\((expected[^)]{0,200}|ships?[^)]{0,200}|pre-?order[^)]{0,200}|in stock[^)]{0,200})\)",
     re.IGNORECASE,
 )
 
@@ -1005,10 +1011,26 @@ def _generic_find_start(text, first_price_pos):
     return best if best is not None else 0
 
 
+def _strip_stock_suffix(s):
+    """Remove a trailing "<spaces><number><spaces>In Stock|Pre-order" -
+    done with plain string handling rather than a regex, which could crawl
+    on lines with very long runs of spaces."""
+    body = s.rstrip()
+    lowered = body.lower()
+    for word in ("in stock", "pre-order", "preorder"):
+        if lowered.endswith(word) and len(body) > len(word) and body[-len(word) - 1].isspace():
+            head = body[: -len(word)].rstrip()
+            parts = head.rsplit(None, 1)
+            if len(parts) == 2 and parts[1].isdigit() and head[: len(head) - len(parts[1])][-1:].isspace():
+                return head[: len(head) - len(parts[1])].rstrip()
+    return s
+
+
 def _generic_clean_name(s):
     s = re.sub(r"^[\s,;:\-]+(and\s+)?", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"[\s,;:\-]+$", "", s)
-    s = re.sub(r"\s+\d+\s+(In Stock|Pre-?order)\s*$", "", s, flags=re.IGNORECASE)
+    s = s.rstrip(" \t\n\r\f\v,;:-")
+    # trailing "  2  In Stock" / "1 Pre-order" (a quantity and stock note)
+    s = _strip_stock_suffix(s)
     s = re.sub(r"\s{2,}", " ", s).strip()
     return s
 
@@ -1024,15 +1046,15 @@ def _generic_clean_name(s):
 
 _EBAY_MAX_PLAUSIBLE_SHIPPING = 15.00
 
-_EBAY_ORDER_NUM_RE = re.compile(r"Order number\s*\t?\s*([\w\-]+)", re.IGNORECASE)
-_EBAY_TOTAL_RE = re.compile(r"Total\s*\t?\s*£(\d+\.\d{2})", re.IGNORECASE)
-_EBAY_SELLER_RE = re.compile(r"Sold by\s*\t?\s*(\S+)", re.IGNORECASE)
+_EBAY_ORDER_NUM_RE = re.compile(r"Order number\s*([\w\-]+)", re.IGNORECASE)
+_EBAY_TOTAL_RE = re.compile(r"Total\s*£(\d+\.\d{2})", re.IGNORECASE)
+_EBAY_SELLER_RE = re.compile(r"Sold by\s*(\S+)", re.IGNORECASE)
 _EBAY_ITEM_PRICE_RE = re.compile(r"£(\d+\.\d{2})\s*Unit price", re.IGNORECASE)
 _EBAY_SKIP_EXACT = {"Item details", "incl.", "Buyer Protection", "Buy again", "More actions", "Track package"}
-_EBAY_PLACED_RE = re.compile(r"Time placed\s*\t?\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
+_EBAY_PLACED_RE = re.compile(r"Time placed\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 _EBAY_DELIVERED_RE = re.compile(r"Delivered on\s+[A-Za-z]+,?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})", re.IGNORECASE)
 _EBAY_PAID_RE = re.compile(r"Paid on\s+\d{1,2}\s+[A-Za-z]+", re.IGNORECASE)
-_EBAY_TRACKING_RE = re.compile(r"Number\s*\n?\s*\t?\s*([A-Z0-9]{8,})", re.IGNORECASE)
+_EBAY_TRACKING_RE = re.compile(r"Number\s*([A-Z0-9]{8,})", re.IGNORECASE)
 
 
 def looks_like_ebay(text: str) -> bool:
@@ -1153,7 +1175,7 @@ def parse_ebay_order(text: str):
 _WHATNOT_SELLER_RE = re.compile(r"purchase from\s+(\S+)\s+on Whatnot", re.IGNORECASE)
 _WHATNOT_ORDER_NUM_RE = re.compile(r"Order\s*#\s*(\d+)")
 _WHATNOT_TOTAL_RE = re.compile(r"Order Total:\s*£\s*(\d+\.\d{2})")
-_WHATNOT_SUBTOTAL_RE = re.compile(r"Subtotal\s*\n?\s*£\s*(\d+\.\d{2})")
+_WHATNOT_SUBTOTAL_RE = re.compile(r"Subtotal\s*£\s*(\d+\.\d{2})")
 _WHATNOT_SHIPPING_RE = re.compile(r"Shipping\s+£\s*(\d+\.\d{2})")
 _WHATNOT_PAID_RE = re.compile(r"Payment Method", re.IGNORECASE)
 

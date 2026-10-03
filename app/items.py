@@ -58,6 +58,7 @@ def check_preview_duplicates(cur, preview_items):
 
 @app.post("/items/{item_id}/mark")
 def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(None)):
+    next = safe_redirect(next, None)
     conn = db.get_db()
     cur = conn.cursor()
 
@@ -164,6 +165,7 @@ def bulk_item_action(
     bulk_action: str = Form(...),
     next: str | None = Form(None),
 ):
+    next = safe_redirect(next, None)
     conn = db.get_db()
     cur = conn.cursor()
     now_ids = [int(i) for i in item_ids if i.isdigit()]
@@ -338,6 +340,7 @@ def update_item(
     next: str = Form("/"),
     category_id: str | None = Form(None),
 ):
+    next = safe_redirect(next, '/')
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
     charge_status = "charged" if already_paid else "not_charged"
@@ -401,6 +404,7 @@ def delay_item(item_id: int, days: int = Form(...), next: str | None = Form(None
     fixed number of days (+30/+60/+90) without opening the full edit
     form. Only +30/+60/+90 are accepted - anything else is a genuinely
     custom date change, which the full edit form already handles."""
+    next = safe_redirect(next, None)
     if days not in (30, 60, 90):
         return RedirectResponse(url=next or "/", status_code=303)
 
@@ -427,7 +431,7 @@ def delay_item(item_id: int, days: int = Form(...), next: str | None = Form(None
     conn.commit()
     conn.close()
     logger.info("DELAY: id=%s old_date=%s new_date=%s (+%s days)", item_id, existing["release_date"], new_date, days)
-    return RedirectResponse(url=next or f"/items/{item_id}/edit", status_code=303)
+    return RedirectResponse(url=next or safe_redirect(f"/items/{item_id}/edit", "/"), status_code=303)
 
 
 @app.get("/import")

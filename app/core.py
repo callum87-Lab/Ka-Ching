@@ -47,7 +47,7 @@ import sqlite3
 from datetime import date, datetime, timedelta, timezone
 
 
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -140,6 +140,22 @@ async def currency_context_middleware(request: Request, call_next):
 templates.env.globals["currency"] = lambda: _currency_ctx.get()
 
 
+def safe_redirect(target, default="/"):
+    """Where to send someone after a form: only ever a page within Ka-Ching!
+    itself. Anything else - another site (https://..., //host, /\\host),
+    or a value with control characters - falls back to the default, so a
+    crafted link can't bounce people off to another website."""
+    if not isinstance(target, str):
+        return default
+    candidate = target.strip().replace("\\", "")
+    if any(ord(ch) < 32 for ch in candidate):
+        return default
+    if not urlparse(candidate).netloc and not urlparse(candidate).scheme \
+            and candidate.startswith("/") and not candidate.startswith("//"):
+        return candidate
+    return default
+
+
 def render(name, context, **kwargs):
     """Render a page. (Starlette 1.x takes the request as the first
     argument; every context here already carries it.)"""
@@ -227,8 +243,13 @@ def _session_valid(value):
     return int(expiry) == 0 or int(expiry) > int(datetime.now(timezone.utc).timestamp())
 
 
-def _set_session_cookie(response, remember):
+def _set_session_cookie(response, remember, request=None):
     kwargs = {"httponly": True, "samesite": "lax", "path": "/"}
+    # Over HTTPS (directly, or behind a reverse proxy that says so) the
+    # cookie is marked secure, so a browser never sends it over plain HTTP.
+    if request is not None and (request.url.scheme == "https"
+                                or request.headers.get("x-forwarded-proto", "").split(",")[0].strip() == "https"):
+        kwargs["secure"] = True
     if remember:
         kwargs["max_age"] = LOGIN_REMEMBER_DAYS * 86400
     response.set_cookie(LOGIN_COOKIE, _session_value(remember), **kwargs)

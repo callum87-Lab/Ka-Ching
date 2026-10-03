@@ -1973,6 +1973,7 @@ def orders_v2(request: Request, month: str | None = None, chart_range: str | Non
 
 @app.post("/duplicates/dismiss")
 def dismiss_duplicate(name: str = Form(...), release_date: str = Form(...), next: str | None = Form(None)):
+    next = safe_redirect(next, None)
     conn = db.get_db()
     cur = conn.cursor()
     cur.execute(

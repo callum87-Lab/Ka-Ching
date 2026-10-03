@@ -22,7 +22,8 @@ def _locked_out(ip):
 
 
 def _safe_next(value, default="/"):
-    return value if (value and value.startswith("/") and not value.startswith("//") and not value.startswith("/login")) else default
+    target = safe_redirect(value, default)
+    return default if target.startswith("/login") else target
 
 
 @app.get("/login")
@@ -47,7 +48,7 @@ def login_submit(request: Request, password: str = Form(""), remember: str = For
     _login_fails.pop(ip, None)
     logger.info("LOGIN: signed in from %s (remember=%s)", ip, bool(remember))
     response = RedirectResponse(url=target, status_code=303)
-    _set_session_cookie(response, bool(remember))
+    _set_session_cookie(response, bool(remember), request)
     return response
 
 
