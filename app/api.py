@@ -180,7 +180,7 @@ def export_ics():
         d_next = (date.fromisoformat(release_date_str) + timedelta(days=1)).strftime("%Y%m%d")
         total = round(sum(i["price"] for i in day_items), 2)
         names = [f"{i['name']} ({i['source']})" for i in day_items]
-        summary = f"{len(day_items)} item{'s' if len(day_items) != 1 else ''} out ({currency_symbol}{total:.2f})"
+        summary = f"{len(day_items)} item{'s' if len(day_items) != 1 else ''} out ({currency_symbol}{total:,.2f})"
         description = "\\n".join(_ics_escape(n) for n in names)
         uid = f"kaching-{release_date_str}@kaching.local"
 

@@ -78,7 +78,7 @@
     {% for s in preview.postage_samples %}
     <div class="preview-simple-row">
       <span>Shipment {{ s.shipment_index + 1 }}</span>
-      <span class="mono">{{ currency() }}{{ "%.2f"|format(s.amount) }}</span>
+      <span class="mono">{{ currency() }}{{ "{:,.2f}".format(s.amount) }}</span>
     </div>
     {% endfor %}
     <form method="post" action="/import/confirm" style="margin-top:16px;">
@@ -120,10 +120,10 @@
       {% else %}
       <input type="hidden" name="order_shipping_json" value='{{ preview.order_shipping_map|tojson }}'>
       {% if preview.declared_total %}
-      <p class="warn-hint" style="max-width:none;">Order total on the page: <span class="mono">{{ currency() }}{{ "%.2f"|format(preview.declared_total) }}</span></p>
+      <p class="warn-hint" style="max-width:none;">Order total on the page: <span class="mono">{{ currency() }}{{ "{:,.2f}".format(preview.declared_total) }}</span></p>
       {% endif %}
       {% if preview.order_shipping_map %}
-      <p class="warn-hint" style="max-width:none;">Shipping detected (exact, from the order's own total): {% for order_num, amount in preview.order_shipping_map.items() %}<span class="mono">{{ currency() }}{{ "%.2f"|format(amount) }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+      <p class="warn-hint" style="max-width:none;">Shipping detected (exact, from the order's own total): {% for order_num, amount in preview.order_shipping_map.items() %}<span class="mono">{{ currency() }}{{ "{:,.2f}".format(amount) }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</p>
       {% endif %}
       {% endif %}
 
@@ -148,21 +148,22 @@
           <input type="text" name="category_id_{{ loop.index0 }}" class="field-input category-input" aria-label="Category"
                  value="{{ import_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60">
           <input type="number" step="0.01" min="0" name="price_{{ loop.index0 }}" value="{{ item.price }}" class="field-input">
-          <input type="date" name="release_date_{{ loop.index0 }}" value="{{ item.release_date }}" class="field-input">
+          <input type="date" name="release_date_{{ loop.index0 }}" value="{{ item.release_date or '' }}" class="field-input">
           {% if preview.parser != 'forbidden_planet' %}
           <input type="text" name="source_{{ loop.index0 }}" value="{{ item.source }}" list="known-sources" placeholder="Shop" class="field-input">
           {% endif %}
           <input type="hidden" name="order_number_{{ loop.index0 }}" value="{{ item.order_number or '' }}">
-          <input type="hidden" name="placed_date_{{ loop.index0 }}" value="{{ item.placed_date }}">
-          <input type="hidden" name="status_{{ loop.index0 }}" value="{{ item.status }}">
-          <input type="hidden" name="charge_status_{{ loop.index0 }}" value="{{ item.charge_status }}">
-          <input type="hidden" name="note_{{ loop.index0 }}" value="{{ item.note }}">
-          <input type="hidden" name="tracking_number_{{ loop.index0 }}" value="{{ item.tracking_number }}">
+          <input type="hidden" name="placed_date_{{ loop.index0 }}" value="{{ item.placed_date or '' }}">
+          <input type="hidden" name="status_{{ loop.index0 }}" value="{{ item.status or '' }}">
+          <input type="hidden" name="charge_status_{{ loop.index0 }}" value="{{ item.charge_status or '' }}">
+          <input type="hidden" name="note_{{ loop.index0 }}" value="{{ item.note or '' }}">
+          <input type="hidden" name="tracking_number_{{ loop.index0 }}" value="{{ item.tracking_number or '' }}">
           <span></span>
-          {% if item.note or item.duplicate_flag %}
+          {% if item.note or item.duplicate_flag or (item.already_tracked and preview.parser != 'forbidden_planet') %}
           <div class="preview-row-note">
             {% if item.note %}<span class="muted">{{ item.note }}</span>{% endif %}
             {% if item.duplicate_flag %}<span class="preview-duplicate-flag">&#9888; {{ item.duplicate_flag }}</span>{% endif %}
+            {% if item.already_tracked and preview.parser != 'forbidden_planet' %}<span class="preview-duplicate-flag">&#9888; Already tracked in this order - will be skipped</span>{% endif %}
           </div>
           {% endif %}
         </div>

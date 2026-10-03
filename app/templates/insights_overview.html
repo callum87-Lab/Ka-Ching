@@ -11,7 +11,7 @@
   .recent-row .rn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .shop-toggle input:checked ~ .toggle-track { background: color-mix(in srgb, var(--shop-color) 15%, transparent); border-color: var(--shop-color); }
   .shop-toggle input:checked ~ .toggle-track::before { background: var(--shop-color); }
-  .shop-toggles-row { flex-wrap: nowrap; gap: 10px; justify-content: center; }
+  .shop-toggles-row { flex-wrap: wrap; gap: 10px; justify-content: center; }
   .shop-toggles-row .toggle { width: 30px; height: 17px; }
   .shop-toggles-row .shop-toggle { flex: 0 0 auto; white-space: nowrap; }
   .shop-toggles-row .trend-toggle-label { font-size: 12.5px; }
@@ -99,6 +99,13 @@
   .card-note { font-size: 13px; color: var(--text-dim); margin-top: 14px; line-height: 1.5; }
   .trend-card { grid-column: span 12; }
   .trend-card.half { grid-column: span 6; }
+  /* big amounts (e.g. £10,000+) mustn't push the three figures off a phone */
+  .stat-trio > div { min-width: 0; }
+  .stat-trio .mini-stat-value { overflow-wrap: anywhere; }
+  @media (max-width: 520px) {
+    .stat-trio { grid-template-columns: 1fr 1fr !important; row-gap: 16px; }
+    .stat-trio .mini-stat-value { font-size: 20px; }
+  }
 {% endblock %}
 
 {% block content %}
@@ -147,17 +154,17 @@
     </div>
     <div class="recent-list" data-list-panel="recent">
       {% for r in recent_releases %}
-      <div class="recent-row"><span class="rd mono">{{ r.release_date_label }}</span><span class="rn" title="{{ r.name }}">{{ r.name }}</span><span class="rp mono">{{ currency() }}{{ "%.2f"|format(r.price) }}</span></div>
+      <div class="recent-row"><span class="rd mono">{{ r.release_date_label }}</span><span class="rn" title="{{ r.name }}">{{ r.name }}</span><span class="rp mono">{{ currency() }}{{ "{:,.2f}".format(r.price) }}</span></div>
       {% endfor %}
     </div>
     <div class="recent-list" data-list-panel="expensive" style="display:none;">
       {% for r in most_expensive_releases %}
-      <div class="recent-row"><span class="rd mono">{{ r.release_date_label }}</span><span class="rn" title="{{ r.name }}">{{ r.name }}</span><span class="rp mono">{{ currency() }}{{ "%.2f"|format(r.price) }}</span></div>
+      <div class="recent-row"><span class="rd mono">{{ r.release_date_label }}</span><span class="rn" title="{{ r.name }}">{{ r.name }}</span><span class="rp mono">{{ currency() }}{{ "{:,.2f}".format(r.price) }}</span></div>
       {% endfor %}
     </div>
     <div class="recent-list" data-list-panel="lowest" style="display:none;">
       {% for r in lowest_releases %}
-      <div class="recent-row"><span class="rd mono">{{ r.release_date_label }}</span><span class="rn" title="{{ r.name }}">{{ r.name }}</span><span class="rp mono">{{ currency() }}{{ "%.2f"|format(r.price) }}</span></div>
+      <div class="recent-row"><span class="rd mono">{{ r.release_date_label }}</span><span class="rn" title="{{ r.name }}">{{ r.name }}</span><span class="rp mono">{{ currency() }}{{ "{:,.2f}".format(r.price) }}</span></div>
       {% endfor %}
     </div>
   </div>
@@ -169,29 +176,29 @@
     <div class="stat-trio">
       <div>
         <div class="mini-stat-label">Priciest month</div>
-        {% if top_month %}<div class="mini-stat-value mono">{{ currency() }}{{ "%.2f"|format(top_month.total) }}</div><div class="mini-stat-sub">{{ top_month.label }} &middot; {{ top_month.count }} issues</div>{% else %}<div class="mini-stat-value">&mdash;</div>{% endif %}
+        {% if top_month %}<div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(top_month.total) }}</div><div class="mini-stat-sub">{{ top_month.label }} &middot; {{ top_month.count }} issues</div>{% else %}<div class="mini-stat-value">&mdash;</div>{% endif %}
       </div>
       <div>
         <div class="mini-stat-label">Avg per month</div>
-        <div class="mini-stat-value mono">{{ currency() }}{{ "%.2f"|format(avg_per_month) }}</div>
+        <div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(avg_per_month) }}</div>
         {% if month_trend %}<span class="trend-pill {{ 'trend-up' if month_trend.above_average else 'trend-down' }}">{{ '▲' if month_trend.above_average else '▼' }} {{ month_trend.pct }}% ({{ month_trend.label }})</span>{% endif %}
       </div>
       <div>
         <div class="mini-stat-label">Next month</div>
-        <div class="mini-stat-value mono">{{ currency() }}{{ "%.2f"|format(next_month_forecast) }}</div>
+        <div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(next_month_forecast) }}</div>
         <div class="mini-stat-sub">{{ next_month_forecast_label }} forecast so far</div>
       </div>
     </div>
     {% if monthly_budget %}
     <div class="full-bar-row">
-      <div class="full-bar-label"><span>This month vs budget</span><span>{{ currency() }}{{ "%.2f"|format(current_month_spend) }} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }} &middot; {{ budget_vs_month_pct }}%</span></div>
+      <div class="full-bar-label"><span>This month vs budget</span><span>{{ currency() }}{{ "{:,.2f}".format(current_month_spend) }} of {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }} &middot; {{ budget_vs_month_pct }}%</span></div>
       <div class="full-bar-track"><div class="full-bar-fill" style="width:{{ budget_vs_month_bar_pct }}%;background:var(--neon-blue);"></div></div>
     </div>
     {% endif %}
     {% if upcoming_releases %}
     <div class="coming-mini-title">Coming up</div>
     {% for u in upcoming_releases %}
-    <div class="coming-mini-row"><span class="cw mono">{{ u.days_until_label }}</span><span class="cn">{{ u.name }}</span><span class="cp mono">{{ currency() }}{{ "%.2f"|format(u.price) }}</span></div>
+    <div class="coming-mini-row"><span class="cw mono">{{ u.days_until_label }}</span><span class="cn">{{ u.name }}</span><span class="cp mono">{{ currency() }}{{ "{:,.2f}".format(u.price) }}</span></div>
     {% endfor %}
     {% endif %}
     {% if top_month %}<div class="card-note">{{ top_month.label }} was your priciest month so far.</div>{% endif %}
@@ -202,9 +209,9 @@
   <div class="card issue-card" data-card="ov.issue">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Per issue</div>
     <div class="stat-trio">
-      <div><div class="mini-stat-label">Total tracked</div><div class="mini-stat-value mono">{{ total_issues }}</div><div class="mini-stat-sub">{{ currency() }}{{ "%.2f"|format(total_all_spend) }} total, all time</div></div>
-      <div><div class="mini-stat-label">Priciest item</div>{% if priciest_item %}<div class="mini-stat-value mono">{{ currency() }}{{ "%.2f"|format(priciest_item.price) }}</div>{% endif %}</div>
-      <div><div class="mini-stat-label">Average issue</div><div class="mini-stat-value mono">{{ currency() }}{{ "%.2f"|format(avg_per_issue) }}</div></div>
+      <div><div class="mini-stat-label">Total tracked</div><div class="mini-stat-value mono">{{ total_issues }}</div><div class="mini-stat-sub">{{ currency() }}{{ "{:,.2f}".format(total_all_spend) }} total, all time</div></div>
+      <div><div class="mini-stat-label">Priciest item</div>{% if priciest_item %}<div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</div>{% endif %}</div>
+      <div><div class="mini-stat-label">Average issue</div><div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(avg_per_issue) }}</div></div>
     </div>
     {% if priciest_item %}
     <div class="full-bar-row">
@@ -213,7 +220,7 @@
     </div>
     {% endif %}
     <div class="full-bar-row">
-      <div class="full-bar-label"><span>Items vs shipping, all time</span><span>{{ currency() }}{{ "%.2f"|format(total_all_comics) }} items &middot; {{ currency() }}{{ "%.2f"|format(total_all_shipping) }} shipping</span></div>
+      <div class="full-bar-label"><span>Items vs shipping, all time</span><span>{{ currency() }}{{ "{:,.2f}".format(total_all_comics) }} items &middot; {{ currency() }}{{ "{:,.2f}".format(total_all_shipping) }} shipping</span></div>
       <div class="split-bar-track"><div style="width:{{ comics_share_pct }}%;background:var(--neon-blue);"></div><div style="width:{{ shipping_share_pct }}%;background:var(--neon-pink);"></div></div>
     </div>
     {% if priciest_item %}<a class="card-note" style="color:var(--neon-blue); text-decoration:none;" href="/items/{{ priciest_item.id }}/edit">Edit priciest item &rarr;</a>{% endif %}
@@ -235,7 +242,7 @@
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6-9 6-9-6z"/><path d="M3 9v6l9 6 9-6V9"/></svg></span>Shipping and patterns</div>
     <div class="weekday-trio">
       <div><div class="mini-stat-label">Busiest release day</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday[:3] }} ({{ busiest_weekday_count }}){% else %}&mdash;{% endif %}</div></div>
-      <div><div class="mini-stat-label">Saved by cancelling</div><div class="mini-stat-value mono" style="font-size:16px;">{{ currency() }}{{ "%.2f"|format(cancelled_saved) }}</div></div>
+      <div><div class="mini-stat-label">Saved by cancelling</div><div class="mini-stat-value mono" style="font-size:16px;">{{ currency() }}{{ "{:,.2f}".format(cancelled_saved) }}</div></div>
       <div><div class="mini-stat-label">Shipping vs cover</div><div class="mini-stat-value mono" style="font-size:16px;">{{ shipping_ratio_pct }}%</div></div>
     </div>
     <div class="weekday-chart" id="weekday-chart">
@@ -258,8 +265,8 @@
     </div>
     {% endif %}
     <div class="card-note">
-      {% if biggest_shipping %}Biggest shipping charge was {{ currency() }}{{ "%.2f"|format(biggest_shipping.amount) }} ({{ biggest_shipping.source }}){% endif %}
-      {% if avg_shipping_per_month %} &middot; averaging {{ currency() }}{{ "%.2f"|format(avg_shipping_per_month) }}/month.{% endif %}
+      {% if biggest_shipping %}Biggest shipping charge was {{ currency() }}{{ "{:,.2f}".format(biggest_shipping.amount) }} ({{ biggest_shipping.source }}){% endif %}
+      {% if avg_shipping_per_month %} &middot; averaging {{ currency() }}{{ "{:,.2f}".format(avg_shipping_per_month) }}/month.{% endif %}
     </div>
   </div>
 
@@ -336,7 +343,7 @@
   var KEY = 'overview.cumulative.series';
   var WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var MO = M.month_name.slice(0, 3);
-  function fmt(v) { return CUR + v.toFixed(2); }
+  function fmt(v) { return CUR + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function iso(d) { return M.ym + '-' + String(d).padStart(2, '0'); }
   function niceTicks(max) {

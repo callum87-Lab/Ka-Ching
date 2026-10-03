@@ -84,7 +84,7 @@
   <div class="card plain-stat" data-card="shop.stats">
     <div class="plain-stat-label">Fastest growing</div>
     {% if fastest_growing_shop %}
-    <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(fastest_growing_shop.last_90d_total) }}</div>
+    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(fastest_growing_shop.last_90d_total) }}</div>
     <div class="plain-stat-sub"><span class="src-dot" style="width:8px;height:8px;border-radius:50%;background:{{ fastest_growing_shop.color }};display:inline-block;margin-right:4px;"></span>{{ fastest_growing_shop.source }} &middot; +{{ fastest_growing_shop.trend_pct }}% vs last 90d</div>
     {% else %}
     <div class="plain-stat-value">&mdash;</div>
@@ -128,7 +128,7 @@
       <span class="src-dot" style="background:{{ s.color }};"></span>
       <span class="shop-name">{{ s.source }}{% if s.sub_shops %}<span class="seller-count">({{ s.sub_shops|length }} seller{{ "s" if s.sub_shops|length != 1 else "" }})</span>{% endif %}</span>
       <div class="shop-bar-track"><div class="shop-bar-fill" style="width:{{ s.pct }}%;background:{{ s.color }};"></div></div>
-      <span class="shop-total mono">{{ currency() }}{{ "%.2f"|format(s.total) }}</span>
+      <span class="shop-total mono">{{ currency() }}{{ "{:,.2f}".format(s.total) }}</span>
       <span class="shop-count">{{ s.count }} issue{{ "s" if s.count != 1 else "" }}</span>
       <span class="shop-expand-arrow">{% if s.sub_shops %}&#9656;{% endif %}</span>
     </div>
@@ -139,7 +139,7 @@
         <span class="src-dot" style="background:{{ sub.color }}; opacity:0.75;"></span>
         <span>{{ sub.source }}</span>
         <div class="shop-bar-track"><div class="shop-bar-fill" style="width:{{ sub.pct }}%;background:{{ sub.color }}; opacity:0.75;"></div></div>
-        <span class="mono">{{ currency() }}{{ "%.2f"|format(sub.total) }}</span>
+        <span class="mono">{{ currency() }}{{ "{:,.2f}".format(sub.total) }}</span>
         <span>{{ sub.count }} item{{ "s" if sub.count != 1 else "" }}</span>
         <span></span>
       </div>
@@ -160,10 +160,10 @@
         {% for s in shop_stats %}
         <tr>
           <td><div class="shop-cell"><span class="dot" style="background:{{ s.color }};"></span>{{ s.source }}</div></td>
-          <td class="num mono">{{ currency() }}{{ "%.2f"|format(s.total) }}</td>
+          <td class="num mono">{{ currency() }}{{ "{:,.2f}".format(s.total) }}</td>
           <td class="num mono">{{ s.count }}</td>
-          <td class="num mono">{{ currency() }}{{ "%.2f"|format(s.total / s.count) if s.count else '—' }}</td>
-          <td class="num mono">{{ currency() }}{{ "%.2f"|format(s.avg_shipping) }}</td>
+          <td class="num mono">{{ currency() }}{{ "{:,.2f}".format(s.total / s.count) if s.count else '—' }}</td>
+          <td class="num mono">{{ currency() }}{{ "{:,.2f}".format(s.avg_shipping) }}</td>
           <td class="num mono">
             {% if s.trend_pct is not none %}
             <span style="color: {{ 'var(--neon-pink)' if s.trend_up else 'var(--neon-green)' }};">{{ '▲' if s.trend_up else '▼' }} {{ s.trend_pct|abs }}%</span>
@@ -391,7 +391,7 @@
 
   function showTip(i, months, series, isPeak) {
     var rows = series.map(function (s) {
-      return '<div class="ot-row"><span style="color:' + s.color + ';">' + s.name + '</span><span class="mono">{{ currency() }}' + s.data[i].toFixed(2) + '</span></div>';
+      return '<div class="ot-row"><span style="color:' + s.color + ';">' + s.name + '</span><span class="mono">{{ currency() }}' + s.data[i].toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
     }).join('');
     var peakBadge = isPeak ? ' <span style="background:rgba(60,242,166,0.14); color:var(--neon-green); font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px;">PEAK</span>' : '';
     tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:6px;">' + months[i] + peakBadge + '</div>' + rows;

@@ -809,6 +809,9 @@ input[type="file"] {
   .glance-big .nm { font-size: 15px; font-weight: 700; margin: 6px 0 2px; line-height: 1.35; }
   .glance-big .pr { font-size: 22px; font-weight: 800; color: var(--neon-green); margin-top: 8px; }
 
+  .kc-flash { margin: 0 0 16px; padding: 11px 16px; border-radius: 12px; font-size: 14px;
+    background: rgba(47,216,255,0.08); border: 1px solid rgba(47,216,255,0.35); color: var(--text); }
+
   /* ---- Show / hide cards (Customise) ---- */
   .kc-solo { grid-column: span 12 !important; }
   .kc-empty { display: none !important; }
@@ -1003,24 +1006,24 @@ KC.pref = {
         <div class="budget-mini-bar"><div class="budget-mini-fill" style="width:{{ _budget.budget_bar_pct }}%;"></div></div>
         {% endif %}
         {% if _display == 'left' or (_display == 'daily' and not _budget.days_left) %}
-        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.left|abs) }} {{ 'over' if _budget.over else 'left' }}</div>
-        <div class="budget-mini-sub">of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</div>
+        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "{:,.2f}".format(_budget.left|abs) }} {{ 'over' if _budget.over else 'left' }}</div>
+        <div class="budget-mini-sub">of {{ currency() }}{{ "{:,.2f}".format(_budget.monthly_budget) }}</div>
         {% elif _display == 'percent' %}
         <div class="budget-mini-main mono {{ _cls }}">{{ "%.0f"|format(_budget.budget_pct) }}% used</div>
-        <div class="budget-mini-sub mono">{{ currency() }}{{ "%.2f"|format(_budget.cycle_spend) }} of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</div>
+        <div class="budget-mini-sub mono">{{ currency() }}{{ "{:,.2f}".format(_budget.cycle_spend) }} of {{ currency() }}{{ "{:,.2f}".format(_budget.monthly_budget) }}</div>
         {% elif _display == 'daily' %}
         {% if _budget.per_day %}
-        <div class="budget-mini-main mono bm-ok">{{ currency() }}{{ "%.2f"|format(_budget.per_day) }} a day</div>
-        <div class="budget-mini-sub">{{ currency() }}{{ "%.2f"|format(_budget.left) }} left &middot; {{ _budget.days_left }} day{{ 's' if _budget.days_left != 1 else '' }} to go</div>
+        <div class="budget-mini-main mono bm-ok">{{ currency() }}{{ "{:,.2f}".format(_budget.per_day) }} a day</div>
+        <div class="budget-mini-sub">{{ currency() }}{{ "{:,.2f}".format(_budget.left) }} left &middot; {{ _budget.days_left }} day{{ 's' if _budget.days_left != 1 else '' }} to go</div>
         {% else %}
-        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.left|abs) }} {{ 'over' if _budget.over else 'left' }}</div>
+        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "{:,.2f}".format(_budget.left|abs) }} {{ 'over' if _budget.over else 'left' }}</div>
         <div class="budget-mini-sub">{{ _budget.days_left }} day{{ 's' if _budget.days_left != 1 else '' }} to go</div>
         {% endif %}
         {% elif _display == 'due' %}
-        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.spent_to_date or 0) }} spent</div>
-        <div class="budget-mini-sub mono">{{ currency() }}{{ "%.2f"|format(_budget.still_due) }} still due &middot; of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</div>
+        <div class="budget-mini-main mono {{ _cls }}">{{ currency() }}{{ "{:,.2f}".format(_budget.spent_to_date or 0) }} spent</div>
+        <div class="budget-mini-sub mono">{{ currency() }}{{ "{:,.2f}".format(_budget.still_due) }} still due &middot; of {{ currency() }}{{ "{:,.2f}".format(_budget.monthly_budget) }}</div>
         {% else %}
-        <div class="mono" style="font-size:12px;"><span class="{{ _cls }}">{{ currency() }}{{ "%.2f"|format(_budget.cycle_spend) }}</span> <span class="muted">of {{ currency() }}{{ "%.2f"|format(_budget.monthly_budget) }}</span></div>
+        <div class="mono" style="font-size:12px;"><span class="{{ _cls }}">{{ currency() }}{{ "{:,.2f}".format(_budget.cycle_spend) }}</span> <span class="muted">of {{ currency() }}{{ "{:,.2f}".format(_budget.monthly_budget) }}</span></div>
         {% endif %}
       </div>
       {% else %}
@@ -1057,6 +1060,8 @@ KC.pref = {
       </div>
     </div>
 
+    {% set _flash = pop_flash() %}
+    {% if _flash %}<div class="kc-flash" role="status">{{ _flash }}</div>{% endif %}
     {% block content %}{% endblock %}
 
     <script>
@@ -1429,8 +1434,8 @@ KC.pref = {
     <div class="card">
       <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>This week</div>
       {% if g.week %}
-      {% for w in g.week %}<div class="glance-row"><span class="gd">{{ w.day }}</span><span class="gn">{{ w.name }}</span><span class="gp mono">{{ currency() }}{{ "%.2f"|format(w.price) }}</span></div>{% endfor %}
-      <div class="glance-foot"><span>{% if g.week_more %}+{{ g.week_more }} more &middot; {% endif %}<a href="/orders" style="color:var(--neon-blue);text-decoration:none;">Orders &rarr;</a></span><span class="mono">{{ currency() }}{{ "%.2f"|format(g.week_total) }}</span></div>
+      {% for w in g.week %}<div class="glance-row"><span class="gd">{{ w.day }}</span><span class="gn">{{ w.name }}</span><span class="gp mono">{{ currency() }}{{ "{:,.2f}".format(w.price) }}</span></div>{% endfor %}
+      <div class="glance-foot"><span>{% if g.week_more %}+{{ g.week_more }} more &middot; {% endif %}<a href="/orders" style="color:var(--neon-blue);text-decoration:none;">Orders &rarr;</a></span><span class="mono">{{ currency() }}{{ "{:,.2f}".format(g.week_total) }}</span></div>
       {% else %}<div class="glance-empty">Nothing due in the next 7 days.</div>{% endif %}
     </div>
     <div class="card">
@@ -1443,8 +1448,8 @@ KC.pref = {
       <div class="eyebrow">BIGGEST STILL TO COME &middot; DUE {{ g.big.due|upper }}</div>
       <div class="nm">{{ g.big.name }}</div>
       <div class="small muted" style="font-size:12.5px;">{{ g.big.source }} &middot; {{ g.big.days }} day{{ 's' if g.big.days != 1 else '' }}</div>
-      <div class="pr mono">{{ currency() }}{{ "%.2f"|format(g.big.price) }}</div>
-      <div class="glance-foot"><span>Still on order: {{ g.upcoming_count }} item{{ 's' if g.upcoming_count != 1 else '' }}</span><span class="mono">{{ currency() }}{{ "%.2f"|format(g.upcoming_total) }}</span></div>
+      <div class="pr mono">{{ currency() }}{{ "{:,.2f}".format(g.big.price) }}</div>
+      <div class="glance-foot"><span>Still on order: {{ g.upcoming_count }} item{{ 's' if g.upcoming_count != 1 else '' }}</span><span class="mono">{{ currency() }}{{ "{:,.2f}".format(g.upcoming_total) }}</span></div>
     </div>
     {% endif %}
   </aside>

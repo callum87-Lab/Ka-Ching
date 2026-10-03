@@ -322,6 +322,8 @@ def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
     _migrate(conn)
+    # Older import screens saved the word "None" as a note; clear it.
+    conn.execute("UPDATE items SET note = NULL WHERE note = 'None'")
     _backfill_sync_columns(conn)
     _seed_categories(conn)
     _backfill_categories(conn)

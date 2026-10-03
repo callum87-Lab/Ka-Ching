@@ -71,14 +71,14 @@
   <div class="card plain-stat" data-card="titles.stats">
     <div class="plain-stat-label">Priciest single issue</div>
     {% if priciest_item %}
-    <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(priciest_item.price) }}</div>
+    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</div>
     <div class="plain-stat-sub">{{ priciest_item.name }}</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
   <div class="card plain-stat" data-card="titles.stats">
     <div class="plain-stat-label">Top series by spend</div>
     {% if top_series_by_spend %}
-    <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(top_series_by_spend.total) }}</div>
+    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(top_series_by_spend.total) }}</div>
     <div class="plain-stat-sub">{{ top_series_by_spend.series }} &middot; {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
@@ -107,10 +107,10 @@
       <div class="titles-hero-title">{{ priciest_item.name }}</div>
       <div class="titles-hero-sub">{{ priciest_item.source }} &middot; {{ priciest_item.release_date_label }}</div>
     </div>
-    <div class="titles-hero-price"><span class="mono">{{ currency() }}{{ "%.2f"|format(priciest_item.price) }}</span></div>
+    <div class="titles-hero-price"><span class="mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</span></div>
     {% if top_series_by_spend and priciest_series_m == top_series_by_spend.series %}
     <div class="titles-hero-divider"></div>
-    <div class="titles-hero-note">Also the series with your highest total spend &mdash; <b>{{ currency() }}{{ "%.2f"|format(top_series_by_spend.total) }}</b> across {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}.</div>
+    <div class="titles-hero-note">Also the series with your highest total spend &mdash; <b>{{ currency() }}{{ "{:,.2f}".format(top_series_by_spend.total) }}</b> across {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}.</div>
     {% endif %}
   </div>
 
@@ -124,7 +124,7 @@
           <td class="rank-cell">{{ loop.index }}</td>
           <td><b>{{ t.name }}</b></td>
           <td>{{ t.series }}</td>
-          <td class="num mono">{{ currency() }}{{ "%.2f"|format(t.price) }}</td>
+          <td class="num mono">{{ currency() }}{{ "{:,.2f}".format(t.price) }}</td>
           <td>{{ t.source }}</td>
         </tr>
         {% endfor %}
@@ -145,7 +145,7 @@
       <div class="series-row">
         <span>{{ s.series }}</span>
         <div class="series-bar-track"><div class="series-bar-fill" style="width:{{ (s.total / max_total * 100)|round(1) if max_total else 0 }}%; background:{{ bar_colors[loop.index0] if loop.index0 < bar_colors|length else 'var(--neon-pink)' }};"></div></div>
-        <span class="mono" style="text-align:right; font-weight:700;">{{ currency() }}{{ "%.2f"|format(s.total) }}</span>
+        <span class="mono" style="text-align:right; font-weight:700;">{{ currency() }}{{ "{:,.2f}".format(s.total) }}</span>
         <span class="mono" style="text-align:right; color:var(--text-dim);">{{ s.count }} issue{{ "s" if s.count != 1 else "" }}</span>
       </div>
       {% endfor %}
@@ -167,8 +167,8 @@
         <tr>
           <td>{{ s.series }}</td>
           <td class="num mono">{{ s.count }}</td>
-          <td class="num mono">{{ currency() }}{{ "%.2f"|format(s.total) }}</td>
-          <td class="num mono">{{ currency() }}{{ "%.2f"|format(s.avg_price) }}</td>
+          <td class="num mono">{{ currency() }}{{ "{:,.2f}".format(s.total) }}</td>
+          <td class="num mono">{{ currency() }}{{ "{:,.2f}".format(s.avg_price) }}</td>
           <td class="muted">{{ s.first_date_label }}</td>
           <td class="muted">{{ s.latest_date_label }}</td>
         </tr>

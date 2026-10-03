@@ -47,7 +47,7 @@
       <label class="field-label"><span>Name</span><input class="field-input" type="text" name="name" required value="{{ item.name if item else '' }}" placeholder="e.g. Batman #1 or Pokémon booster box"></label>
 
       <div class="settings-form-grid">
-        <label class="field-label"><span>Price</span><input class="field-input" type="number" name="price" step="0.01" min="0" required value="{{ item.price if item else '' }}"></label>
+        <label class="field-label"><span>Price</span><input class="field-input" type="number" name="price" step="0.01" min="0" max="100000" required value="{{ item.price if item else '' }}"></label>
         <label class="field-label"><span>Release date</span><input class="field-input" type="date" name="release_date" required value="{{ item.release_date if item else '' }}"></label>
       </div>
 

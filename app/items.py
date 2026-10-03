@@ -36,6 +36,29 @@ def _parse_item_form_date(raw: str, fallback: date) -> str:
         return fallback.isoformat()
 
 
+MAX_PRICE = 100_000
+
+
+def _price_ok(value):
+    """A sensible price: a real number from 0 up to 100,000."""
+    return isinstance(value, (int, float)) and value == value and 0 <= value <= MAX_PRICE
+
+
+def _valid_date(raw):
+    try:
+        datetime.strptime((raw or "").strip(), "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+
+def _clean_text(value):
+    """A form value, or None if it's empty or the literal text "None"
+    (which older review screens sent back for a missing value)."""
+    value = (value or "").strip()
+    return None if value in ("", "None") else value
+
+
 def check_preview_duplicates(cur, preview_items):
     """For each previewed item, flag whether something with the same name
     already exists under a DIFFERENT order - a likely accidental double
@@ -49,10 +72,14 @@ def check_preview_duplicates(cur, preview_items):
         )
         existing_rows = [dict(r) for r in cur.fetchall()]
         others = [r for r in existing_rows if str(r["order_number"]) != str(it["order_number"])]
+        it["already_tracked"] = any(
+            str(r["order_number"]) == str(it["order_number"]) and abs((r["price"] or 0) - (it["price"] or 0)) < 0.005
+            for r in existing_rows
+        )
         it["duplicate_flag"] = None
         if others:
             r = others[0]
-            it["duplicate_flag"] = f"Already tracked - order #{r['order_number']}, {symbol}{r['price']:.2f}"
+            it["duplicate_flag"] = f"Already tracked - order #{r['order_number']}, {symbol}{r['price']:,.2f}"
     return preview_items
 
 
@@ -258,6 +285,8 @@ async def create_items(request: Request):
             price_val = float(raw_price)
         except (TypeError, ValueError):
             continue
+        if not _price_ok(price_val):
+            continue
         category_id = _resolve_category(cur, category_ids[idx] if idx < len(category_ids) else None) or fallback_category
         cur.execute(
             """
@@ -341,8 +370,15 @@ def update_item(
     category_id: str | None = Form(None),
 ):
     next = safe_redirect(next, '/')
+    if not _price_ok(price):
+        conn = db.get_db()
+        set_flash(conn.cursor(), f"Price must be between 0 and {MAX_PRICE:,} - nothing was changed.")
+        conn.commit()
+        conn.close()
+        return RedirectResponse(url=safe_redirect(f"/items/{item_id}/edit", "/"), status_code=303)
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
+    bad_date = bool(release_date.strip()) and not _valid_date(release_date)
     charge_status = "charged" if already_paid else "not_charged"
     source_clean = source.strip() or DEFAULT_SOURCE
     tracking_clean = tracking_number.strip() or None
@@ -354,6 +390,10 @@ def update_item(
     cur.execute("SELECT * FROM items WHERE id = ?", (item_id,))
     existing = cur.fetchone()
     now = db.utc_now()
+    if bad_date and existing is not None:
+        # an unreadable date never silently becomes today's
+        release_iso = existing["release_date"]
+        set_flash(cur, "That release date wasn't a valid date, so it was left as it was.")
 
     new_values = {
         "name": name.strip(), "price": price, "release_date": release_iso,
@@ -510,6 +550,8 @@ async def import_confirm(request: Request):
             price = float(form.get(f"price_{i}") or "0")
         except ValueError:
             continue
+        if not _price_ok(price):
+            continue
         kept_items.append({
             "name": name,
             "price": price,
@@ -518,7 +560,7 @@ async def import_confirm(request: Request):
             "placed_date_raw": form.get(f"placed_date_{i}") or "",
             "status": form.get(f"status_{i}") or "preorder",
             "charge_status": form.get(f"charge_status_{i}") or "not_charged",
-            "note": form.get(f"note_{i}") or None,
+            "note": _clean_text(form.get(f"note_{i}")),
             "source": (form.get(f"source_{i}") or "").strip(),
             "tracking_number": (form.get(f"tracking_number_{i}") or "").strip() or None,
             "category_id_raw": form.get(f"category_id_{i}"),
@@ -585,10 +627,20 @@ async def import_confirm(request: Request):
         conn = db.get_db()
         cur = conn.cursor()
         created = []
+        skipped = 0
         order_sources = {}
         for it in kept_items:
             item_source = it["source"] or "Unknown shop"
             release_iso = it["release_date_raw"] or None
+            # The same item in the same order is already tracked (e.g. the
+            # page was pasted twice): leave the existing one alone.
+            cur.execute(
+                "SELECT 1 FROM items WHERE order_number IS ? AND name = ? AND abs(price - ?) < 0.005",
+                (it["order_number"], it["name"], it["price"]),
+            )
+            if cur.fetchone():
+                skipped += 1
+                continue
             cur.execute(
                 """
                 INSERT INTO items
@@ -623,8 +675,11 @@ async def import_confirm(request: Request):
                 (order_number, shipping_val, now, order_sources[order_number]),
             )
 
+        if skipped:
+            set_flash(cur, f"{skipped} item{'s' if skipped != 1 else ''} already tracked, so skipped"
+                           + (f"; {len(created)} added." if created else "."))
         conn.commit()
         conn.close()
-        logger.info("IMPORT CONFIRM (generic): created=%s shipping=%s", created, order_shipping_map)
+        logger.info("IMPORT CONFIRM (generic): created=%s skipped=%s shipping=%s", created, skipped, order_shipping_map)
 
     return RedirectResponse(url=next_url, status_code=303)

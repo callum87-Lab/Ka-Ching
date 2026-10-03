@@ -170,7 +170,7 @@
       {% for item in g.entries %}
       <div class="warn-item-row">
         <span class="row-name">Order #{{ item.order_number or '—' }}</span>
-        <span class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+        <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
         <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
         <div class="row-menu-wrap">
           <button type="button" class="row-menu-btn" data-drawer-template="drawer-dup-{{ item.id }}">&#8942;</button>
@@ -200,8 +200,8 @@
     <p class="warn-hint">Spend this budget cycle has gone past the limit you set for these categories.</p>
     {% for r in category_overages %}
     <div class="warn-item-row undated-row">
-      <span class="row-name"><span class="cat-dot" style="background:{{ r.color }}; display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:8px;"></span>{{ r.name }} &middot; <span class="muted">{{ currency() }}{{ "%.2f"|format(r.total) }} of {{ currency() }}{{ "%.2f"|format(r.limit) }}</span></span>
-      <span class="row-price mono" style="color:var(--neon-pink);">+{{ currency() }}{{ "%.2f"|format(r.over) }}</span>
+      <span class="row-name"><span class="cat-dot" style="background:{{ r.color }}; display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:8px;"></span>{{ r.name }} &middot; <span class="muted">{{ currency() }}{{ "{:,.2f}".format(r.total) }} of {{ currency() }}{{ "{:,.2f}".format(r.limit) }}</span></span>
+      <span class="row-price mono" style="color:var(--neon-pink);">+{{ currency() }}{{ "{:,.2f}".format(r.over) }}</span>
       <a class="warn-action-btn" href="/settings#category-limits">Limits</a>
     </div>
     {% endfor %}
@@ -219,7 +219,7 @@
     {% for item in undated_items %}
     <div class="warn-item-row undated-row">
       <span class="row-name">{{ item.name }}{% if item.source %} &middot; <span class="muted">{{ item.source }}</span>{% endif %}</span>
-      <span class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+      <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
       <a class="warn-action-btn" href="/items/{{ item.id }}/edit">Set date</a>
     </div>
     {% endfor %}
@@ -238,7 +238,7 @@
     {% for item in ghost_items %}
     <div class="warn-item-row">
       <span class="row-name">{{ item.name }}{% if item.release_date %} &middot; {{ item.release_date }}{% endif %}</span>
-      <span class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+      <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
       <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
       <div class="row-menu-wrap">
         <button type="button" class="row-menu-btn" data-drawer-template="drawer-ghost-{{ item.id }}">&#8942;</button>
@@ -273,7 +273,7 @@
         <button type="submit" class="paid-check" title="Mark as paid"></button>
       </form>
       <span class="row-name">{{ item.name }}<span class="late-tag">{{ item.days_late }}d late</span></span>
-      <span class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+      <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
       <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
       <div class="row-menu-wrap">
         <button type="button" class="row-menu-btn" data-drawer-template="drawer-aw-{{ item.id }}">&#8942;</button>

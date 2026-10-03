@@ -62,7 +62,7 @@
 
 <div class="page-head">
   <h1>Orders</h1>
-  <p>{{ currency() }}{{ "%.2f"|format(viewed_remaining_total) }} left of {{ currency() }}{{ "%.2f"|format(viewed_grand_total) }} this month</p>
+  <p>{{ currency() }}{{ "{:,.2f}".format(viewed_remaining_total) }} left of {{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }} this month</p>
 </div>
 
 {% macro item_row(item) %}
@@ -75,7 +75,7 @@
     </button>
   </form>
   <div class="row-name">{{ item.name }}</div>
-  <div class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+  <div class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
   <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
   <div class="row-menu-wrap">
     <button type="button" class="row-menu-btn" data-drawer-template="drawer-{{ item.id }}">&#8942;</button>
@@ -107,19 +107,19 @@
   <div class="card list-card">
     <div class="list-card-head">
       <div class="list-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>This week</div>
-      <span class="list-total"><b>{{ currency() }}{{ "%.2f"|format(week_remaining) }}</b> left of {{ currency() }}{{ "%.2f"|format(week_total) }}</span>
+      <span class="list-total"><b>{{ currency() }}{{ "{:,.2f}".format(week_remaining) }}</b> left of {{ currency() }}{{ "{:,.2f}".format(week_total) }}</span>
     </div>
     {% if week_groups %}
       {% for group in week_groups %}
       <div class="day-group" id="tw-{{ group.date }}">
         <div class="day-group-head">
           <div class="day-group-label">{{ group.date_label }}{% if group.all_paid %} <span class="paid-tag">&middot; paid</span>{% endif %}</div>
-          <div class="day-group-right"><span class="day-group-total mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span><span class="day-group-arrow">&#9662;</span></div>
+          <div class="day-group-right"><span class="day-group-total mono">{{ currency() }}{{ "{:,.2f}".format(group.subtotal) }}</span><span class="day-group-arrow">&#9662;</span></div>
         </div>
         <div class="day-group-body">
           {% for sg in group.source_groups %}
           <div class="source-subgroup">
-            <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "%.2f"|format(sg.subtotal) }}</span></div>
+            <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "{:,.2f}".format(sg.subtotal) }}</span></div>
             {% for item in sg.entries %}{{ item_row(item) }}{% endfor %}
           </div>
           {% endfor %}
@@ -146,7 +146,7 @@
           {% endif %}
         </div>
       </div>
-      <span class="list-total"><b>{{ currency() }}{{ "%.2f"|format(viewed_remaining_total) }}</b> left of {{ currency() }}{{ "%.2f"|format(viewed_grand_total) }}</span>
+      <span class="list-total"><b>{{ currency() }}{{ "{:,.2f}".format(viewed_remaining_total) }}</b> left of {{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }}</span>
     </div>
 
     {% if viewed_groups %}
@@ -154,15 +154,15 @@
       <div class="day-group" id="bm-{{ group.date }}">
         <div class="day-group-head">
           <div class="day-group-label">{{ group.date_label }}{% if group.all_paid %} <span class="paid-tag">&middot; paid</span>{% endif %}</div>
-          <div class="day-group-right"><span class="day-group-total mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span><span class="day-group-arrow">&#9662;</span></div>
+          <div class="day-group-right"><span class="day-group-total mono">{{ currency() }}{{ "{:,.2f}".format(group.subtotal) }}</span><span class="day-group-arrow">&#9662;</span></div>
         </div>
         <div class="day-group-body">
           {% for sg in group.source_groups %}
           <div class="source-subgroup">
-            <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "%.2f"|format(sg.subtotal) }}</span></div>
+            <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "{:,.2f}".format(sg.subtotal) }}</span></div>
             {% for item in sg.entries %}{{ item_row(item) }}{% endfor %}
             {% if sg.shipping_amount %}
-            <div class="group-ship-note">+ {{ currency() }}{{ "%.2f"|format(sg.shipping_amount) }} {{ "" if sg.shipping_is_exact else "est. " }}shipping ({{ sg.source }})</div>
+            <div class="group-ship-note">+ {{ currency() }}{{ "{:,.2f}".format(sg.shipping_amount) }} {{ "" if sg.shipping_is_exact else "est. " }}shipping ({{ sg.source }})</div>
             {% endif %}
           </div>
           {% endfor %}
@@ -184,7 +184,7 @@
       <div class="item-row recent-cancelled-row" style="padding-left:0;{{ '' if loop.first else ' border-top:1px solid var(--border);' }}">
         <span></span>
         <div class="row-name" title="{{ item.name }}" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ item.name }}</div>
-        <div class="row-price mono muted">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+        <div class="row-price mono muted">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
         <span></span>
         <form method="post" action="/items/{{ item.id }}/mark">
           <input type="hidden" name="next" value="{{ request.url.path }}">
@@ -211,7 +211,7 @@
     <div class="card list-card">
       <div class="list-card-head">
         <div class="list-title"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>Unpaid</div>
-        <span class="list-total">{{ unpaid_count }} item{{ "s" if unpaid_count != 1 else "" }} &middot; <b>{{ currency() }}{{ "%.2f"|format(unpaid_total) }}</b> outstanding</span>
+        <span class="list-total">{{ unpaid_count }} item{{ "s" if unpaid_count != 1 else "" }} &middot; <b>{{ currency() }}{{ "{:,.2f}".format(unpaid_total) }}</b> outstanding</span>
       </div>
 
       {% if unpaid_groups %}
@@ -219,12 +219,12 @@
         <div class="day-group" id="up-{{ group.date }}">
           <div class="day-group-head">
             <div class="day-group-label">{{ group.date_label }}{% if group.days_late %} <span style="color:var(--neon-pink); font-weight:700;">&middot; {{ group.days_late }}d late</span>{% endif %}</div>
-            <div class="day-group-right"><span class="day-group-total mono">{{ currency() }}{{ "%.2f"|format(group.subtotal) }}</span><span class="day-group-arrow">&#9662;</span></div>
+            <div class="day-group-right"><span class="day-group-total mono">{{ currency() }}{{ "{:,.2f}".format(group.subtotal) }}</span><span class="day-group-arrow">&#9662;</span></div>
           </div>
           <div class="day-group-body">
             {% for sg in group.source_groups %}
             <div class="source-subgroup">
-              <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "%.2f"|format(sg.subtotal) }}</span></div>
+              <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "{:,.2f}".format(sg.subtotal) }}</span></div>
               {% for item in sg.entries %}
               <div class="item-row {{ 'is-paid' if item.charge_status == 'charged' else '' }}">
                 <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
@@ -233,7 +233,7 @@
                   <button type="submit" class="paid-check" title="Mark as paid"></button>
                 </form>
                 <div class="row-name">{{ item.name }}{% if item.is_awaiting_charge %}<span class="mono" style="font-size: 11.5px;color:var(--neon-pink);background:rgba(255,77,141,0.1);padding:2px 7px;border-radius:999px;margin-left:8px;">awaiting charge</span>{% endif %}</div>
-                <div class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+                <div class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
                 <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
                 <div class="row-menu-wrap">
                   <button type="button" class="row-menu-btn" data-drawer-template="drawer-up-{{ item.id }}">&#8942;</button>
@@ -269,7 +269,7 @@
     <div class="card list-card">
       <div class="list-card-head">
         <div class="list-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>Cancelled</div>
-        <span class="list-total">{{ currency() }}{{ "%.2f"|format(cancelled_saved_total) }} saved this year</span>
+        <span class="list-total">{{ currency() }}{{ "{:,.2f}".format(cancelled_saved_total) }} saved this year</span>
       </div>
       {% if cancelled_this_year %}
         <div id="cancelled-list-body">
@@ -277,7 +277,7 @@
         <div class="item-row cancelled-row" style="padding-left:0;{{ '' if loop.first else ' border-top:1px solid var(--border);' }}">
           <span></span>
           <div class="row-name">{{ item.name }}<div style="font-size: 12px;color:var(--text-dim);">Cancelled {{ item.cancelled_label }}</div></div>
-          <div class="row-price mono muted">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+          <div class="row-price mono muted">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
           <span></span>
           <form method="post" action="/items/{{ item.id }}/mark">
             <input type="hidden" name="next" value="/orders">

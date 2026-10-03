@@ -93,7 +93,7 @@
   </div>
   <div class="card plain-stat" data-card="creep.stats">
     <div class="plain-stat-label">Extra spend from creep</div>
-    <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(creep_total_extra) }}</div>
+    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(creep_total_extra) }}</div>
     <div class="plain-stat-sub">this year, vs first-tracked prices</div>
   </div>
 </div>
@@ -107,9 +107,9 @@
       <div class="creep-hero-sub">{{ creep_biggest_jumper.issue_count }} issue{{ "s" if creep_biggest_jumper.issue_count != 1 else "" }} tracked</div>
     </div>
     <div class="creep-hero-prices">
-      <span class="mono creep-hero-old">{{ currency() }}{{ "%.2f"|format(creep_biggest_jumper.first_price) }}</span>
+      <span class="mono creep-hero-old">{{ currency() }}{{ "{:,.2f}".format(creep_biggest_jumper.first_price) }}</span>
       <span class="creep-hero-arrow">&rarr;</span>
-      <span class="mono creep-hero-new">{{ currency() }}{{ "%.2f"|format(creep_biggest_jumper.latest_price) }}</span>
+      <span class="mono creep-hero-new">{{ currency() }}{{ "{:,.2f}".format(creep_biggest_jumper.latest_price) }}</span>
     </div>
     <div class="creep-hero-divider"></div>
     <div class="creep-hero-note">Up <b>+{{ creep_biggest_jumper.change_pct }}%</b> since your first tracked issue &mdash; the sharpest climb of anything you follow.</div>
@@ -147,7 +147,7 @@
         <tr data-change="{{ s.change_pct }}" data-issues="{{ s.issue_count }}">
           <td><span class="cat-dot-inline" style="--c:{{ s.category_color }}; background:{{ s.category_color }};" title="{{ s.category_name }}" aria-label="{{ s.category_name }}"></span>{{ s.series }}</td>
           <td class="num mono">{{ s.issue_count }}</td>
-          <td class="mono nowrap"><span class="{{ 'muted' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "%.2f"|format(s.first_price) }}</span> &rarr; <span style="{{ 'color:var(--neon-pink);' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "%.2f"|format(s.latest_price) }}</span></td>
+          <td class="mono nowrap"><span class="{{ 'muted' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "{:,.2f}".format(s.first_price) }}</span> &rarr; <span style="{{ 'color:var(--neon-pink);' if s.change_pct > 0 else '' }}">{{ currency() }}{{ "{:,.2f}".format(s.latest_price) }}</span></td>
           <td class="num">
             {% if s.change_pct > 0 %}
             <span class="trend-pill trend-up">+{{ s.change_pct }}%</span>
@@ -157,7 +157,7 @@
             <span class="trend-pill trend-flat">{{ s.change_pct }}%</span>
             {% endif %}
           </td>
-          <td>{% if s.variant_count %}<div class="prem"><div class="prem-track"><div class="prem-fill" style="width:{{ [s.premium_bar_pct, 4]|max }}%;"></div></div><span class="mono">+{{ currency() }}{{ "%.2f"|format(s.variant_premium) }}</span></div>{% else %}<span class="prem-none">no variants</span>{% endif %}</td>
+          <td>{% if s.variant_count %}<div class="prem"><div class="prem-track"><div class="prem-fill" style="width:{{ [s.premium_bar_pct, 4]|max }}%;"></div></div><span class="mono">+{{ currency() }}{{ "{:,.2f}".format(s.variant_premium) }}</span></div>{% else %}<span class="prem-none">no variants</span>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -179,7 +179,7 @@
       <svg id="creep-svg" viewBox="0 0 760 170" style="width:100%; height:auto;"></svg>
       <div class="creep-tooltip" id="creep-tooltip"></div>
     </div>
-    <div class="card-note">{{ currency() }}{{ "%.2f"|format(creep_total_extra) }} extra this year is small next to your total spend, but it's a real number &mdash; worth a glance if it starts accelerating rather than climbing steadily.</div>
+    <div class="card-note">{{ currency() }}{{ "{:,.2f}".format(creep_total_extra) }} extra this year is small next to your total spend, but it's a real number &mdash; worth a glance if it starts accelerating rather than climbing steadily.</div>
   </div>
 </div>
 
@@ -319,7 +319,7 @@
 
   function showTip(i, e) {
     var peakBadge = i === peakIdx ? ' <span style="background:rgba(60,242,166,0.14); color:var(--neon-green); font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px;">PEAK</span>' : '';
-    tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + data[i].label + ' 2026' + peakBadge + '</div><div class="mono">{{ currency() }}' + data[i].value.toFixed(2) + '</div>';
+    tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + data[i].label + ' ' + String(data[i].month_key || '').slice(0, 4) + peakBadge + '</div><div class="mono">{{ currency() }}' + data[i].value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>';
     tooltip.style.display = 'block';
     positionTip(e);
   }

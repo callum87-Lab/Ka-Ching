@@ -53,7 +53,7 @@ from urllib.parse import quote, urlparse
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 
 
-from fastapi.responses import FileResponse, RedirectResponse, Response, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, PlainTextResponse
 
 
 from starlette.background import BackgroundTask
@@ -154,6 +154,47 @@ def safe_redirect(target, default="/"):
             and candidate.startswith("/") and not candidate.startswith("//"):
         return candidate
     return default
+
+
+def set_flash(cur, message):
+    """A short message shown once at the top of the next page."""
+    notifications.set_setting(cur, "_flash_message", message)
+
+
+def _pop_flash():
+    conn = db.get_db()
+    cur = conn.cursor()
+    message = notifications.get_setting(cur, "_flash_message", "") or ""
+    if message:
+        notifications.set_setting(cur, "_flash_message", "")
+        conn.commit()
+    conn.close()
+    return message
+
+
+templates.env.globals["pop_flash"] = _pop_flash
+
+
+from fastapi.encoders import jsonable_encoder  # noqa: E402
+from fastapi.exceptions import RequestValidationError  # noqa: E402
+
+
+@app.exception_handler(RequestValidationError)
+async def friendly_form_error(request: Request, exc: RequestValidationError):
+    """A form that arrives with something missing or unreadable gets a
+    normal Ka-Ching! page with a way back - not raw technical text.
+    Scripts (JSON requests) still get the detailed JSON answer."""
+    wants_page = "text/html" in request.headers.get("accept", "") or \
+        request.headers.get("content-type", "").startswith(("application/x-www-form-urlencoded", "multipart/form-data"))
+    if not wants_page:
+        return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})
+    back = safe_redirect(request.headers.get("referer", "").split(request.url.netloc, 1)[-1] if request.headers.get("referer") else "/", "/")
+    return render("error.html", {
+        "request": request,
+        "heading": "That didn't go through",
+        "message": "Something in the form was missing or not filled in properly, so nothing was saved. Go back, check each box, and try again.",
+        "back": back,
+    }, status_code=422)
 
 
 def render(name, context, **kwargs):
@@ -849,7 +890,7 @@ def check_category_limits():
         if recent:
             continue
         title = f"{r['name']} is over its limit"
-        message = f"{currency_symbol}{r['total']:.2f} of {currency_symbol}{r['limit']:.2f} this cycle ({currency_symbol}{r['over']:.2f} over)."
+        message = f"{currency_symbol}{r['total']:,.2f} of {currency_symbol}{r['limit']:,.2f} this cycle ({currency_symbol}{r['over']:,.2f} over)."
         result = notifications.send_via_configured_provider(cur, title, message)
         if result[0]:
             sent[key] = today.isoformat() if cycle_key == "28day" else cycle_key
@@ -925,7 +966,7 @@ def check_budget_threshold(force: bool = False):
         return None
 
     title = f"Budget alert: {pct:.0f}% of {period_label}'s budget"
-    message = f"{currency_symbol}{spend:.2f} of {currency_symbol}{monthly_budget:.2f} spent so far {period_label}."
+    message = f"{currency_symbol}{spend:,.2f} of {currency_symbol}{monthly_budget:,.2f} spent so far {period_label}."
     if force and pct < BUDGET_ALERT_THRESHOLD_PCT:
         message += f" (Not yet at the {BUDGET_ALERT_THRESHOLD_PCT}% threshold - this is a test send.)"
 

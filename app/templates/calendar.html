@@ -195,7 +195,7 @@
           <div class="cal-day {{ 'cal-has-items' if day.count > 0 else '' }} {{ 'cal-today' if day.is_today else '' }}" {% if day.count > 0 %}data-day="{{ day.date_iso }}" role="button" tabindex="0"{% endif %}>
             <span class="cal-day-num">{% if day.count > 0 %}<span class="cal-day-dot" style="background: rgba(47,216,255,{{ 0.25 + day.intensity * 0.75 }});"></span>{% endif %}{{ day.day }}</span>
             {% if day.count > 0 %}
-            <span class="cal-day-total mono">{{ currency() }}{{ "%.2f"|format(day.total) }}</span>
+            <span class="cal-day-total mono">{{ currency() }}{{ "{:,.2f}".format(day.total) }}</span>
             <span class="cal-day-count">{{ day.count }} issue{{ "s" if day.count != 1 else "" }}</span>
             {% endif %}
           </div>
@@ -243,16 +243,16 @@
       <div class="day-group" id="agenda-{{ group.date }}">
         <div class="day-group-head">
           <div class="day-group-label">{{ group.date_label }}{% if group.all_paid %} <span class="paid-tag">&middot; paid</span>{% endif %}</div>
-          <div class="day-group-right">{% if group.shipping %}<span class="day-group-ship">{{ currency() }}{{ "%.2f"|format(group.subtotal) }} + {{ currency() }}{{ "%.2f"|format(group.shipping) }} ship</span>{% endif %}<span class="day-group-total mono">{{ currency() }}{{ "%.2f"|format(group.subtotal + (group.shipping or 0)) }}</span><span class="day-group-arrow">&#9662;</span></div>
+          <div class="day-group-right">{% if group.shipping %}<span class="day-group-ship">{{ currency() }}{{ "{:,.2f}".format(group.subtotal) }} + {{ currency() }}{{ "{:,.2f}".format(group.shipping) }} ship</span>{% endif %}<span class="day-group-total mono">{{ currency() }}{{ "{:,.2f}".format(group.subtotal + (group.shipping or 0)) }}</span><span class="day-group-arrow">&#9662;</span></div>
         </div>
         <div class="day-group-body">
           {% for sg in group.source_groups %}
           <div class="source-subgroup">
-            <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "%.2f"|format(sg.subtotal) }}</span></div>
+            <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "{:,.2f}".format(sg.subtotal) }}</span></div>
             {% for item in sg.entries %}
             <div class="ro-item-row {{ 'is-paid' if item.charge_status == 'charged' else '' }}">
               <span>{{ item.name }}{% if item.charge_status == 'charged' %}<span class="paid-tag-inline">paid</span>{% endif %}</span>
-              <span class="mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</span>
+              <span class="mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
               <div class="ro-row-menu-wrap">
                 <button class="ro-row-menu-btn" data-menu-id="ro-menu-{{ item.id }}">&#8942;</button>
                 <template class="ro-row-menu-template" id="ro-menu-{{ item.id }}"><a href="/items/{{ item.id }}/edit">Edit</a></template>
@@ -399,7 +399,7 @@
           level = frac > 0.75 ? 4 : frac > 0.5 ? 3 : frac > 0.25 ? 2 : 1;
         }
         cell.style.background = levels[level];
-        if (val > 0) cell.title = key + ': {{ currency() }}' + val.toFixed(2);
+        if (val > 0) cell.title = key + ': {{ currency() }}' + val.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
       grid.appendChild(cell);
     }

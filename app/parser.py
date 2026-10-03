@@ -1240,6 +1240,24 @@ def parse_whatnot_order(text: str):
     }
 
 
+# Lines that sit between items on many order pages but aren't part of an
+# item's name: headings, order numbers, quantities, subtotals.
+_GENERIC_METADATA_LINE_RE = re.compile(
+    r"^(?:order\s*(?:summary|details|confirmation|number|no\.?|ref(?:erence)?|id|#)\b.*"
+    r"|(?:qty|quantity)\b\s*(?::\s*)?\d*"
+    r"|\d+\s*x"
+    r"|(?:sub\s*total|items?\s+in\s+(?:this|your)\s+order|your\s+order)\b.*"
+    r"|(?:sku|item\s*(?:no\.?|number|code))\s*:.*)$",
+    re.IGNORECASE,
+)
+
+
+def _drop_metadata_lines(text):
+    """Remove whole lines that are page furniture rather than item name."""
+    kept = [ln for ln in text.splitlines() if not _GENERIC_METADATA_LINE_RE.match(ln.strip())]
+    return "\n".join(kept)
+
+
 def parse_generic_order(text: str):
     """Returns {order_number, declared_total, shipping, items: [{name, price,
     release_date, note}]}. Never touches the database - pure parsing."""
@@ -1302,7 +1320,7 @@ def parse_generic_order(text: str):
                     elif im2:
                         note = im2.group(1).strip()
 
-            name = _generic_clean_name(name_source)
+            name = _generic_clean_name(_drop_metadata_lines(name_source))
             cursor = m.end()
             if name:
                 items.append({

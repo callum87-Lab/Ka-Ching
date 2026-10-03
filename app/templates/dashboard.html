@@ -136,7 +136,7 @@
 
 <div class="page-head">
   <h1>{{ current_month_label }}</h1>
-  <p>Shipping estimated at {{ currency() }}{{ "%.2f"|format(shipping_estimate) }} per parcel</p>
+  <p>Shipping estimated at {{ currency() }}{{ "{:,.2f}".format(shipping_estimate) }} per parcel</p>
 </div>
 
 {% if date_changes_flash %}
@@ -155,17 +155,17 @@
     <div class="ringpair-half">
       {{ still_due_ring_svg|safe }}
       <div class="ring-label">Still due &middot; {{ current_month_label }}</div>
-      <div class="ring-sub mono">{{ currency() }}{{ "%.2f"|format(hero_remaining_total) }} of {{ currency() }}{{ "%.2f"|format(hero_grand_total) }}</div>
-      <div class="ring-detail">{{ currency() }}{{ "%.2f"|format(hero_grand_total - hero_remaining_total) }} spent so far <span class="dim">this month</span></div>
+      <div class="ring-sub mono">{{ currency() }}{{ "{:,.2f}".format(hero_remaining_total) }} of {{ currency() }}{{ "{:,.2f}".format(hero_grand_total) }}</div>
+      <div class="ring-detail">{{ currency() }}{{ "{:,.2f}".format(hero_grand_total - hero_remaining_total) }} spent so far <span class="dim">this month</span></div>
     </div>
     <div class="ringpair-divider"></div>
     <div class="ringpair-half">
       {% if budget_ring_svg %}
       {{ budget_ring_svg|safe }}
       <div class="ring-label">Budget</div>
-      <div class="ring-sub mono">{{ currency() }}{{ "%.2f"|format(cycle_spend) }} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }}</div>
+      <div class="ring-sub mono">{{ currency() }}{{ "{:,.2f}".format(cycle_spend) }} of {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }}</div>
       {% if cycle_spend > monthly_budget %}
-      <div class="ring-detail warn">{{ currency() }}{{ "%.2f"|format(cycle_spend - monthly_budget) }} over budget</div>
+      <div class="ring-detail warn">{{ currency() }}{{ "{:,.2f}".format(cycle_spend - monthly_budget) }} over budget</div>
       {% else %}
       <div class="ring-detail">{{ budget_bar_pct }}% of {{ budget_cycle_label }}'s budget</div>
       {% endif %}
@@ -179,22 +179,22 @@
   <div class="card yearpair-card" data-card="dash.year">
     <div class="yearpair-half">
       <div class="plain-stat-head"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="plain-stat-label">{{ year_stats.year }} so far</span></div>
-      <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</div>
+      <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(year_stats.spent) }}</div>
       <div class="plain-stat-sub">{{ year_stats.count }} issue{{ "s" if year_stats.count != 1 else "" }} tracked this year</div>
       {% if year_stats.total > 0 %}
       <div class="plain-stat-bar-track"><div class="plain-stat-bar-fill" style="width:{{ (year_stats.spent / year_stats.total * 100)|round(1) }}%;"></div></div>
       <div class="plain-stat-bar-legend">
-        <span><span class="dot"></span>Spent <b class="mono">{{ currency() }}{{ "%.2f"|format(year_stats.spent) }}</b></span>
-        <span class="dim">of <b class="mono">{{ currency() }}{{ "%.2f"|format(year_stats.total) }}</b> tracked</span>
+        <span><span class="dot"></span>Spent <b class="mono">{{ currency() }}{{ "{:,.2f}".format(year_stats.spent) }}</b></span>
+        <span class="dim">of <b class="mono">{{ currency() }}{{ "{:,.2f}".format(year_stats.total) }}</b> tracked</span>
       </div>
       {% endif %}
     </div>
     <div class="yearpair-divider"></div>
     <div class="yearpair-half">
       <div class="plain-stat-head"><span class="card-icon-badge violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="plain-stat-label">All time</span></div>
-      <div class="plain-stat-value mono">{{ currency() }}{{ "%.2f"|format(all_time_stats.spent) }}</div>
+      <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(all_time_stats.spent) }}</div>
       <div class="plain-stat-sub">{{ all_time_stats.count }} issue{{ "s" if all_time_stats.count != 1 else "" }} tracked, all time</div>
-      <div class="plain-stat-chip">{{ currency() }}{{ "%.2f"|format(all_time_stats.total) }} tracked total</div>
+      <div class="plain-stat-chip">{{ currency() }}{{ "{:,.2f}".format(all_time_stats.total) }} tracked total</div>
     </div>
     {% if all_time_stats.spent > 0 %}
     <div class="yearpair-foot">
@@ -217,10 +217,10 @@
     </div>
     <div class="catbudget-legend">
       {% for r in category_budget %}
-      <span class="catbudget-item{{ ' over' if r.over else '' }}"><span class="cat-dot" style="background:{{ r.color }};"></span>{{ r.name }} <b class="mono">{{ currency() }}{{ "%.2f"|format(r.total) }}</b>{% if r.limit %}<span class="catbudget-lim"> / {{ currency() }}{{ "%.2f"|format(r.limit) }}{% if r.over %} &middot; {{ currency() }}{{ "%.2f"|format(r.over) }} over{% endif %}</span>{% endif %}</span>
+      <span class="catbudget-item{{ ' over' if r.over else '' }}"><span class="cat-dot" style="background:{{ r.color }};"></span>{{ r.name }} <b class="mono">{{ currency() }}{{ "{:,.2f}".format(r.total) }}</b>{% if r.limit %}<span class="catbudget-lim"> / {{ currency() }}{{ "{:,.2f}".format(r.limit) }}{% if r.over %} &middot; {{ currency() }}{{ "{:,.2f}".format(r.over) }} over{% endif %}</span>{% endif %}</span>
       {% endfor %}
     </div>
-    <div class="catbudget-foot">{{ currency() }}{{ "%.2f"|format(category_budget_total) }}{% if monthly_budget %} of {{ currency() }}{{ "%.2f"|format(monthly_budget) }} overall{% endif %} &middot; <a href="/settings#category-limits">Set limits</a></div>
+    <div class="catbudget-foot">{{ currency() }}{{ "{:,.2f}".format(category_budget_total) }}{% if monthly_budget %} of {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }} overall{% endif %} &middot; <a href="/settings#category-limits">Set limits</a></div>
   </div>
 </div>
 {% endif %}
@@ -230,7 +230,7 @@
     <div class="thisweek-head" onclick="document.getElementById('thisweek-body').classList.toggle('open'); this.querySelector('.thisweek-chevron').classList.toggle('open');">
       <span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
       <span class="thisweek-label">This week</span>
-      {% if week_total > 0 %}<span class="thisweek-total mono">{{ currency() }}{{ "%.2f"|format(week_remaining) }} left of {{ currency() }}{{ "%.2f"|format(week_total) }}</span>{% else %}<span class="thisweek-total thisweek-none">Nothing due</span>{% endif %}
+      {% if week_total > 0 %}<span class="thisweek-total mono">{{ currency() }}{{ "{:,.2f}".format(week_remaining) }} left of {{ currency() }}{{ "{:,.2f}".format(week_total) }}</span>{% else %}<span class="thisweek-total thisweek-none">Nothing due</span>{% endif %}
       <span class="thisweek-chevron open">&#9662;</span>
     </div>
     <div class="thisweek-body open" id="thisweek-body">
@@ -247,7 +247,7 @@
                 <button type="submit" class="mini-paid-circle {{ 'checked' if item.charge_status == 'charged' else '' }}" title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}"></button>
               </form>
               <div class="tw-item-name">{{ item.name }}<div class="tw-item-date">{{ group.date_label }}</div></div>
-              <div class="tw-item-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+              <div class="tw-item-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
               <div class="tw-row-menu">
                 <button type="button" class="tw-menu-btn" data-drawer-template="tw-drawer-{{ item.id }}">&#8942;</button>
               </div>
@@ -311,7 +311,7 @@
     {% for r in category_budget if r.over %}
     <a class="alert-line" href="/alerts#category-limits">
       <span class="dot" style="background:var(--neon-pink); box-shadow:0 0 6px rgba(255,77,141,0.6);"></span>
-      <span class="txt"><b>{{ r.name }}</b> {{ currency() }}{{ "%.2f"|format(r.over) }} over its limit</span>
+      <span class="txt"><b>{{ r.name }}</b> {{ currency() }}{{ "{:,.2f}".format(r.over) }} over its limit</span>
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endfor %}
@@ -366,12 +366,12 @@
       <div class="stillorder-countdown">{{ biggest_still_to_come.days_until_due }}<span>days</span></div>
       {% endif %}
     </div>
-    <div class="stillorder-price mono">{{ currency() }}{{ "%.2f"|format(biggest_still_to_come.price) }}</div>
+    <div class="stillorder-price mono">{{ currency() }}{{ "{:,.2f}".format(biggest_still_to_come.price) }}</div>
     <div class="stillorder-divider"></div>
     <div class="stillorder-onorder-label">Still on order, not yet released</div>
     <div class="stillorder-onorder-row">
       <span class="stillorder-onorder-count mono">{{ still_to_come_count }} item{{ "s" if still_to_come_count != 1 else "" }}</span>
-      <span class="stillorder-onorder-total mono">{{ currency() }}{{ "%.2f"|format(still_to_come_total) }}</span>
+      <span class="stillorder-onorder-total mono">{{ currency() }}{{ "{:,.2f}".format(still_to_come_total) }}</span>
     </div>
     {% else %}
     <div class="stillorder-eyebrow">Biggest still to come</div>

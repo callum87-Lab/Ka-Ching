@@ -153,10 +153,10 @@
   <div class="grid">
     <div class="totals-bar">
       <span class="match-count"><b>{{ match_count }}</b> match{{ "es" if match_count != 1 else "" }}{% if total_pages > 1 %} &middot; page <b>{{ current_page }}</b> of <b>{{ total_pages }}</b>{% endif %}</span>
-      <span class="spent-figure">Spent: <b>{{ currency() }}{{ "%.2f"|format(spent) }}</b></span>
-      <span class="remaining-figure">Still due: <b>{{ currency() }}{{ "%.2f"|format(remaining) }}</b></span>
+      <span class="spent-figure">Spent: <b>{{ currency() }}{{ "{:,.2f}".format(spent) }}</b></span>
+      <span class="remaining-figure">Still due: <b>{{ currency() }}{{ "{:,.2f}".format(remaining) }}</b></span>
       {% if cancelled_count %}
-      <span class="cancelled-note">+ {{ cancelled_count }} cancelled ({{ currency() }}{{ "%.2f"|format(cancelled_total) }}, not counted above)</span>
+      <span class="cancelled-note">+ {{ cancelled_count }} cancelled ({{ currency() }}{{ "{:,.2f}".format(cancelled_total) }}, not counted above)</span>
       {% endif %}
       <a class="csv-btn" href="/search/export.csv?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download CSV</a>
     </div>
@@ -170,7 +170,7 @@
         <div></div>
         <div class="row-name"><span class="cancelled-tag">Cancelled</span>{{ item.name }}</div>
         <div></div>
-        <div class="row-price mono muted">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+        <div class="row-price mono muted">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
         <form method="post" action="/items/{{ item.id }}/mark" style="grid-column: 5 / 7; display:flex; justify-content:flex-end;">
           <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
           <input type="hidden" name="action" value="undo">
@@ -188,7 +188,7 @@
         </form>
         <div class="row-name">{{ item.name }}</div>
         <div class="row-tracking">{% if item.tracking_number %}&#128230; {{ item.tracking_number }}{% endif %}</div>
-        <div class="row-price mono">{{ currency() }}{{ "%.2f"|format(item.price) }}</div>
+        <div class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
         <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
         <div class="row-menu-wrap">
           <button type="button" class="row-menu-btn" data-drawer-template="drawer-{{ item.id }}">&#8942;</button>
