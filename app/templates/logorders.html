@@ -1,4 +1,4 @@
-{% extends "v2/base.html" %}
+{% extends "base.html" %}
 {% block title %}Ka-Ching! &middot; Log Orders{% endblock %}
 
 {% block extra_style %}
@@ -78,7 +78,6 @@
       <p class="warn-hint" style="max-width:none;">Copy your order history page (Forbidden Planet, eBay, or similar) and paste the whole thing below &mdash; addresses, card details and pagination are ignored automatically. Items you've already ticked "paid" or "cancelled" yourself are left alone; everything else gets refreshed to match what the retailer's currently showing, so it's safe to paste the same page again next month. You can also paste one of Forbidden Planet's "revised release date" emails straight in &mdash; it'll update just that item's date without needing a full re-import.</p>
 
       <form method="post" action="/import">
-        <input type="hidden" name="v2" value="1">
         <div class="parser-hint-row">
           <span>Detected automatically, but if you know which shop this is:</span>
           <button type="button" class="parser-hint-btn" data-shop="Forbidden Planet">Forbidden Planet</button>

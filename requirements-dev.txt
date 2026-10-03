@@ -1,0 +1,5 @@
+# Only needed to run the tests (not in the Docker image)
+-r requirements.txt
+pytest==8.3.3
+httpx==0.28.1
+pip-audit==2.10.1

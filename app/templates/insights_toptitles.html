@@ -1,7 +1,7 @@
-{% extends "v2/base.html" %}
+{% extends "base.html" %}
 {% block title %}Ka-Ching! &middot; Top titles{% endblock %}
 
-{% block head_script %}{% include "v2/_category_chips_head.html" %}{% endblock %}
+{% block head_script %}{% include "_category_chips_head.html" %}{% endblock %}
 
 {% block extra_style %}  .plain-stat { grid-column: span 3; }
   .plain-stat-label { font-size: 13.5px; color: var(--text-muted); margin-bottom: 4px; }
@@ -64,7 +64,7 @@
   <p>Your priciest items, and the series you've spent the most keeping up with</p>
 </div>
 
-{% include "v2/_category_chips.html" %}
+{% include "_category_chips.html" %}
 
 {% if top_titles or series_totals %}
 <div class="grid">

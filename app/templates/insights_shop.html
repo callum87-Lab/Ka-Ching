@@ -1,4 +1,4 @@
-{% extends "v2/base.html" %}
+{% extends "base.html" %}
 {% block title %}Ka-Ching! &middot; Spend by shop{% endblock %}
 
 {% block extra_style %}
@@ -398,10 +398,12 @@
     tooltip.style.display = 'block';
   }
   function positionTip(e) {
-    var rect = svg.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-    tooltip.style.left = Math.min(x + 14, rect.width - 160) + 'px';
+    // Measured from the box the tooltip is positioned inside, so it sits
+    // by the cursor in every page layout; flips left near the screen edge.
+    var box = (tooltip.offsetParent || document.body).getBoundingClientRect();
+    var tw = tooltip.offsetWidth || 160;
+    var x = e.clientX - box.left, y = e.clientY - box.top;
+    tooltip.style.left = ((e.clientX + 14 + tw > window.innerWidth - 8) ? x - 14 - tw : x + 14) + 'px';
     tooltip.style.top = (y - 10) + 'px';
   }
 

@@ -1,4 +1,4 @@
-{% extends "v2/base.html" %}
+{% extends "base.html" %}
 {% block title %}Ka-Ching! &middot; Insights{% endblock %}
 
 {% block extra_style %}
@@ -571,11 +571,15 @@
     guide.setAttribute('x1', cx); guide.setAttribute('x2', cx); guide.style.display = '';
   }
   function positionTooltip(e) {
-    var rect = document.querySelector('.main').getBoundingClientRect();
-    var cursorX = e.clientX - rect.left;
-    var cursorY = e.clientY - rect.top;
+    // Measure from whatever the tooltip is positioned inside (not a fixed
+    // element), so it sits next to the cursor whatever the page layout -
+    // centred, three columns or side panel.
+    var box = (tooltip.offsetParent || document.body).getBoundingClientRect();
+    var cursorX = e.clientX - box.left;
+    var cursorY = e.clientY - box.top;
     var tw = tooltip.offsetWidth || 220;
-    var x = (cursorX + 14 + tw > rect.width) ? cursorX - 14 - tw : cursorX + 14;
+    // flip to the left of the cursor if it would run off the screen
+    var x = (e.clientX + 14 + tw > window.innerWidth - 8) ? cursorX - 14 - tw : cursorX + 14;
     tooltip.style.left = x + 'px';
     tooltip.style.top = (cursorY - 10) + 'px';
   }

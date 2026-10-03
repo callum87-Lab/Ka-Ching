@@ -1,7 +1,7 @@
-{% extends "v2/base.html" %}
+{% extends "base.html" %}
 {% block title %}Ka-Ching! &middot; Price creep{% endblock %}
 
-{% block head_script %}{% include "v2/_category_chips_head.html" %}{% endblock %}
+{% block head_script %}{% include "_category_chips_head.html" %}{% endblock %}
 
 {% block extra_style %}
   .plain-stat { grid-column: span 3; }
@@ -68,7 +68,7 @@
   <p>Which series are getting pricier, and by how much</p>
 </div>
 
-{% include "v2/_category_chips.html" %}
+{% include "_category_chips.html" %}
 
 {% if all_series_stats %}
 <div class="grid">
@@ -324,10 +324,12 @@
     positionTip(e);
   }
   function positionTip(e) {
-    var rect = svg.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    var y = e.clientY - rect.top;
-    tooltip.style.left = Math.min(x + 14, rect.width - 140) + 'px';
+    // Measured from the box the tooltip is positioned inside, so it sits
+    // by the cursor in every page layout; flips left near the screen edge.
+    var box = (tooltip.offsetParent || document.body).getBoundingClientRect();
+    var tw = tooltip.offsetWidth || 160;
+    var x = e.clientX - box.left, y = e.clientY - box.top;
+    tooltip.style.left = ((e.clientX + 14 + tw > window.innerWidth - 8) ? x - 14 - tw : x + 14) + 'px';
     tooltip.style.top = (y - 10) + 'px';
   }
 })();
