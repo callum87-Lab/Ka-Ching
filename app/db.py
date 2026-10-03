@@ -1,3 +1,4 @@
+import contextvars
 import os
 import sqlite3
 import uuid
@@ -126,9 +127,79 @@ MIGRATIONS = {
 }
 
 
+# One database connection per page load. Every helper that renders part
+# of a page (budget box, bell count, login check, layout settings...) used
+# to open its own connection - 14 to 21 per page. Inside a request, get_db()
+# now hands out the same connection; its close() is a no-op and the real
+# connection is closed when the request finishes. Outside a request (the
+# daily scheduler, startup) it behaves exactly as before.
+_request_scope = contextvars.ContextVar("kaching_request_scope", default=None)
+
+
+class _SharedConnection:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def close(self):
+        pass  # closed once, at the end of the request
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+    def __enter__(self):
+        return self._conn.__enter__()
+
+    def __exit__(self, *exc):
+        return self._conn.__exit__(*exc)
+
+
+def begin_request():
+    """Start a request scope (called by the request middleware)."""
+    return _request_scope.set({"conn": None, "cache": {}})
+
+
+def end_request(token):
+    scope = _request_scope.get()
+    if scope and scope["conn"] is not None:
+        try:
+            scope["conn"].close()
+        except Exception:
+            pass
+    _request_scope.reset(token)
+
+
+def reset_request_connection():
+    """Drop this request's shared connection (e.g. after the database file
+    has been replaced by a restore), so the next get_db() opens a fresh one."""
+    scope = _request_scope.get()
+    if scope and scope["conn"] is not None:
+        try:
+            scope["conn"].close()
+        except Exception:
+            pass
+        scope["conn"] = None
+        scope["cache"].clear()
+
+
+def request_cache():
+    """A dict that lives for the current request only (None outside one),
+    for values read many times per page - settings, alert counts, the budget."""
+    scope = _request_scope.get()
+    return scope["cache"] if scope else None
+
+
 def get_db():
+    scope = _request_scope.get()
+    if scope is not None:
+        if scope["conn"] is None:
+            scope["conn"] = _connect(check_same_thread=False)
+        return _SharedConnection(scope["conn"])
+    return _connect()
+
+
+def _connect(check_same_thread=True):
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, timeout=15.0)
+    conn = sqlite3.connect(DB_PATH, timeout=15.0, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     # WAL lets readers (e.g. the dashboard loading) and a writer (e.g. a
@@ -251,6 +322,8 @@ def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
     _migrate(conn)
+    # Older import screens saved the word "None" as a note; clear it.
+    conn.execute("UPDATE items SET note = NULL WHERE note = 'None'")
     _backfill_sync_columns(conn)
     _seed_categories(conn)
     _backfill_categories(conn)

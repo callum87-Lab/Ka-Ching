@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; {{ heading }}{% endblock %}
+
+{% block extra_style %}
+  .page-head-with-close { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+  .close-x-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
+  .close-x-btn:hover { color: var(--text); border-color: var(--border-strong); }
+
+  .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; width: 100%; max-width: 100%; box-sizing: border-box; }
+  .field-input:focus { outline: none; border-color: var(--neon-blue); }
+  .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+  .notif-toggle-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); margin-bottom: 16px; cursor: pointer; }
+  .toggle-switch { width: 32px; height: 18px; border-radius: 999px; background: rgba(255,255,255,0.08); position: relative; cursor: pointer; flex: 0 0 auto; }
+  .toggle-switch.on { background: var(--neon-blue); }
+  .toggle-switch::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition: left 0.15s ease; }
+  .toggle-switch.on::after { left: 16px; }
+
+  .submit-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .warn-hint { font-size: 13.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5; max-width: none; }
+
+  .delay-row { display: flex; gap: 10px; margin-top: 12px; }
+  .delay-btn { padding: 8px 18px; border-radius: 999px; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .history-row { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13.5px; flex-wrap: wrap; }
+  .history-row:first-of-type { border-top: none; }
+  .history-date { color: var(--text-dim); width: 78px; flex: 0 0 auto; font-family: var(--font-mono); }
+  .history-field { color: var(--text-muted); font-weight: 600; }
+  .history-old { color: var(--text-dim); text-decoration: line-through; }
+  .history-new { color: var(--neon-green); }
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head-with-close">
+  <div class="page-head" style="margin-bottom:0;">
+    <h1>{{ heading }}</h1>
+    <p>{% if item %}Manually-edited items are protected from being overwritten by a later re-import{% else %}For anything Ka-Ching! can't parse automatically{% endif %}</p>
+  </div>
+  <a href="/" class="close-x-btn">&times;</a>
+</div>
+
+<div class="grid">
+  <div class="card" style="grid-column: span 7;">
+    <form method="post" action="{{ form_action }}">
+      <input type="hidden" name="next" value="{{ form_next }}">
+      <label class="field-label"><span>Name</span><input class="field-input" type="text" name="name" required value="{{ item.name if item else '' }}" placeholder="e.g. Batman #1 or Pokémon booster box"></label>
+
+      <div class="settings-form-grid">
+        <label class="field-label"><span>Price</span><input class="field-input" type="number" name="price" step="0.01" min="0" max="100000" required value="{{ item.price if item else '' }}"></label>
+        <label class="field-label"><span>Release date</span><input class="field-input" type="date" name="release_date" required value="{{ item.release_date if item else '' }}"></label>
+      </div>
+
+      <div class="settings-form-grid">
+        <label class="field-label" style="margin-bottom:0;"><span>Source / retailer</span>
+          <input class="field-input" type="text" name="source" list="known-sources" required value="{{ item.source if item else 'Forbidden Planet' }}">
+          <datalist id="known-sources">
+            {% for s in all_sources %}
+            <option value="{{ s }}">
+            {% endfor %}
+          </datalist>
+        </label>
+        <label class="field-label" style="margin-bottom:0;"><span>Category</span>
+          {% set current_cat = item.category_id if item and item.category_id else default_category_id() %}
+          {% set current_cat_name = (all_categories() | selectattr('id', 'equalto', current_cat) | map(attribute='name') | first) or '' %}
+          <input type="text" class="field-input category-input" name="category_id"
+                 value="{{ current_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60">
+        </label>
+      </div>
+
+      <label class="field-label"><span>Tracking number <span style="color:var(--text-dim); font-weight:400;">(optional)</span></span><input class="field-input" type="text" name="tracking_number" value="{{ item.tracking_number if item and item.tracking_number else '' }}" placeholder="e.g. NP678811691GB"></label>
+
+      <label class="field-label"><span>Note <span style="color:var(--text-dim); font-weight:400;">(optional)</span></span><textarea class="field-input" name="note" rows="2" placeholder="e.g. release date not yet confirmed">{{ item.note if item and item.note else '' }}</textarea></label>
+
+      <label class="notif-toggle-row">
+        <span class="toggle-switch {{ 'on' if item and item.charge_status == 'charged' else '' }}" id="already-paid-toggle"></span>
+        <input type="checkbox" name="already_paid" value="yes" {{ 'checked' if item and item.charge_status == 'charged' else '' }} style="display:none;" id="already-paid-checkbox">
+        <span>Already paid</span>
+      </label>
+
+      <button type="submit" class="submit-btn">{{ submit_label }}</button>
+    </form>
+  </div>
+
+  <div style="grid-column: span 5; display:flex; flex-direction:column; gap:16px;">
+    {% if item and item.release_date %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:6px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4l2 2"/></svg></span>Delay this item</div>
+      <p class="warn-hint">Manufacturer pushed this back? Currently due <b style="color:var(--text); font-family:var(--font-mono);">{{ item.release_date }}</b> &mdash; pick how long it's been delayed by, rather than opening a date picker for the common case.</p>
+      <div class="delay-row">
+        <form method="post" action="/items/{{ item.id }}/delay">
+          <input type="hidden" name="days" value="30">
+          <input type="hidden" name="next" value="/items/{{ item.id }}/edit">
+          <button type="submit" class="delay-btn">+30 days</button>
+        </form>
+        <form method="post" action="/items/{{ item.id }}/delay">
+          <input type="hidden" name="days" value="60">
+          <input type="hidden" name="next" value="/items/{{ item.id }}/edit">
+          <button type="submit" class="delay-btn">+60 days</button>
+        </form>
+        <form method="post" action="/items/{{ item.id }}/delay">
+          <input type="hidden" name="days" value="90">
+          <input type="hidden" name="next" value="/items/{{ item.id }}/edit">
+          <button type="submit" class="delay-btn">+90 days</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if edit_history %}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Edit history</div>
+      {% for h in edit_history %}
+      <div class="history-row">
+        <span class="history-date">{{ h.date_label }}</span>
+        <span class="history-field">{{ h.field_name.replace('_', ' ') }}:</span>
+        <span class="history-old">{{ h.old_value if h.old_value else '(blank)' }}</span>
+        <span>&rarr;</span>
+        <span class="history-new">{{ h.new_value if h.new_value else '(blank)' }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_script %}
+document.getElementById('already-paid-toggle').addEventListener('click', function () {
+  this.classList.toggle('on');
+  document.getElementById('already-paid-checkbox').checked = this.classList.contains('on');
+});
+{% endblock %}

@@ -48,11 +48,20 @@ DEFAULTS = {
 
 
 def get_setting(cur, key, default=None):
-    cur.execute("SELECT value FROM settings WHERE key = ?", (key,))
-    row = cur.fetchone()
-    if row is None or row["value"] is None:
+    # Settings are read many times per page; within one request each is
+    # read from the database once (db.request_cache), and writes update it.
+    cache = db.request_cache()
+    if cache is not None and ("setting", key) in cache:
+        value = cache[("setting", key)]
+    else:
+        cur.execute("SELECT value FROM settings WHERE key = ?", (key,))
+        row = cur.fetchone()
+        value = None if row is None else row["value"]
+        if cache is not None:
+            cache[("setting", key)] = value
+    if value is None:
         return DEFAULTS.get(key, default)
-    return row["value"]
+    return value
 
 
 def get_all_settings(cur):
@@ -65,6 +74,12 @@ def set_setting(cur, key, value):
         "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         (key, value),
     )
+    cache = db.request_cache()
+    if cache is not None:
+        cache[("setting", key)] = value
+        # anything worked out from settings this request is now stale
+        for k in [k for k in cache if k and k[0] != "setting"]:
+            del cache[k]
 
 
 def save_settings(form_values: dict):
@@ -207,9 +222,9 @@ def check_and_notify_tomorrow(force: bool = False):
     lines = []
     for src, its in sorted(by_source.items()):
         sub = sum(i["price"] for i in its)
-        lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:.2f}")
+        lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:,.2f}")
     message = "\n".join(lines)
-    title = f"Tomorrow: {len(items)} item{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
+    title = f"Tomorrow: {len(items)} item{'s' if len(items) != 1 else ''}, {currency_symbol}{total:,.2f}"
 
     result = send_via_configured_provider(cur, title, message)
     conn.close()
@@ -262,9 +277,9 @@ def check_and_notify_week(force: bool = False):
     lines = []
     for src, its in sorted(by_source.items()):
         sub = sum(i["price"] for i in its)
-        lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:.2f}")
+        lines.append(f"{src}: {len(its)} item(s), {currency_symbol}{sub:,.2f}")
     message = "\n".join(lines)
-    title = f"This week: {len(items)} item{'s' if len(items) != 1 else ''}, {currency_symbol}{total:.2f}"
+    title = f"This week: {len(items)} item{'s' if len(items) != 1 else ''}, {currency_symbol}{total:,.2f}"
 
     result = send_via_configured_provider(cur, title, message)
     conn.close()

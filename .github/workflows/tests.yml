@@ -1,0 +1,28 @@
+# Runs the test suite and a dependency vulnerability check on every pull
+# request and every change to main. Read-only: it can't change the repo.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements-dev.txt
+      - name: Run the tests
+        run: python -m pytest -q
+      - name: Check dependencies for known vulnerabilities
+        run: pip-audit -r requirements.txt

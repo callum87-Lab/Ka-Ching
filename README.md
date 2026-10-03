@@ -726,6 +726,8 @@ Ka-Ching! keeps its dependencies deliberately few:
 - [CONTRIBUTING.md](CONTRIBUTING.md) - how to contribute
 - [MAINTAINERS.md](MAINTAINERS.md) - who maintains the project and what they look after
 - [INTERFACES.md](INTERFACES.md) - every way data gets in or out of the app
+- [ARCHITECTURE.md](ARCHITECTURE.md) - how the app is put together, who uses it and how data flows
+- [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md) - the likely security risks and how each is handled
 - [CHANGELOG.md](CHANGELOG.md) - what changed in each release
 
 ## Contributing a new shop's parser
