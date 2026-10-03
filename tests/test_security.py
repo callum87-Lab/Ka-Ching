@@ -80,3 +80,18 @@ def test_login_cookie_secure_behind_https_proxy(client):
     proxied = anon.post("/login", data={"password": "pass-word-1", "next": "/"},
                         headers={"x-forwarded-proto": "https"}, follow_redirects=False)
     assert "secure" in proxied.headers["set-cookie"].lower()
+
+
+@pytest.mark.parametrize("path", ["/v2//evil.example", "/classic//evil.example", "/v2/%2Fevil.example",
+                                  "/classic/%5Cevil.example", "/v2/%5C%5Cevil.example"])
+def test_old_address_redirects_stay_on_site(client, path):
+    loc = client.get(path, follow_redirects=False).headers["location"]
+    assert loc.startswith("/") and not loc.startswith("//") and "\\" not in loc
+
+
+@pytest.mark.parametrize("field_route", ["/items/new", "/import/confirm"])
+def test_raw_form_next_cannot_leave_site(client, seeded, field_route):
+    from urllib.parse import urlparse
+    r = client.post(field_route, data={"next": "//evil.example"}, follow_redirects=False)
+    loc = r.headers.get("location", "/")
+    assert not urlparse(loc).netloc and not loc.startswith("//"), loc

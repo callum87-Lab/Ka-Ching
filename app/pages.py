@@ -1875,7 +1875,7 @@ def classic_redirect(request: Request, rest: str = ""):
     """The old interface was kept at /classic/ for v3.0 only and is gone in
     v3.1; old links land on the same page in the current interface."""
     q = request.url.query
-    return RedirectResponse(url="/" + rest + ("?" + q if q else ""), status_code=301)
+    return RedirectResponse(url=safe_redirect("/" + rest.lstrip("/\\") + ("?" + q if q else ""), "/"), status_code=301)
 
 
 @app.get("/v2")
@@ -1892,7 +1892,7 @@ def v2_redirect(rest: str, request: Request):
     it's the main UI now, so old /v2/ links go to the same page without
     the prefix."""
     q = request.url.query
-    return RedirectResponse(url="/" + rest + ("?" + q if q else ""), status_code=301)
+    return RedirectResponse(url=safe_redirect("/" + rest.lstrip("/\\") + ("?" + q if q else ""), "/"), status_code=301)
 
 
 @app.get("/")

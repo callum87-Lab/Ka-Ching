@@ -239,7 +239,7 @@ async def create_items(request: Request):
     order_number = (form.get("order_number") or "").strip() or None
     shipping_cost_raw = (form.get("shipping_cost") or "").strip()
     tracking_number = (form.get("tracking_number") or "").strip() or None
-    next_url = form.get("next") or "/"
+    next_url = safe_redirect(form.get("next"), "/")
 
     today = date.today()
     release_iso = _parse_item_form_date(release_date, today)
@@ -469,7 +469,7 @@ def import_preview(request: Request, order_text: str = Form(...), shop_hint: str
 async def import_confirm(request: Request):
     form = await request.form()
     parser_type = form.get("parser_type", "generic")
-    next_url = form.get("next") or "/"
+    next_url = safe_redirect(form.get("next"), "/")
 
     if parser_type == "release_date_email":
         updates = json.loads(form.get("release_updates_json", "[]"))
@@ -525,7 +525,7 @@ async def import_confirm(request: Request):
         })
 
     if not kept_items:
-        return RedirectResponse(url=(form.get("next") or "/items/new"), status_code=303)
+        return RedirectResponse(url=safe_redirect(form.get("next"), "/items/new"), status_code=303)
 
     # Resolve each row's chosen category once, up front, for both paths below.
     _cat_conn = db.get_db()
