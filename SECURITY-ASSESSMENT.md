@@ -1,8 +1,9 @@
 # Security assessment
 
-What's worth protecting in Ka-Ching!, the ways it could realistically be
-attacked, how likely and how damaging each one is, what already defends
-against it, and what's still to do. Written from the code itself and
+A threat model and attack surface analysis for Ka-Ching!: what's worth
+protecting, every way in, the ways it could realistically be attacked, how
+likely and how damaging each one is, what defends against it, and what's
+still to do. Written from the code itself and
 re-checked with every release.
 
 - **Version assessed:** v3.2 (in development)
@@ -40,6 +41,26 @@ from the internet. See [ARCHITECTURE.md](ARCHITECTURE.md).
    build step.
 5. **Someone who can reach it from the internet**, if it's exposed beyond
    the home network.
+
+## Attack surface and critical paths
+
+Everything that accepts input from outside the app (full list in
+[INTERFACES.md](INTERFACES.md)), and the code paths that matter most if
+something goes wrong:
+
+| Entry point | Who can reach it | Critical path it leads to | Main protections |
+| --- | --- | --- | --- |
+| Web pages and forms (`/`, `/items/...`, `/settings/...`) | Anyone on the network; the login limits this to the owner | Changing or deleting items; changing settings; factory reset | Optional login, cross-site request blocking, server-side checks on every value, escaping of everything shown |
+| Paste import (`/import`, `/import/confirm`) | As above | `parser.py` reading untrusted text; saving items | 1 MB cap, patterns that can't backtrack, a review screen before anything is saved, duplicate skipping |
+| Backup restore (`/settings/restore`) | As above | Replacing the whole database | Size limit, SQLite header check, SQLite backup API, a copy of the previous data kept first |
+| Sign-in (`/login`) | Anyone on the network | Gaining a session | Hashed password, 12+ characters, common passwords refused, lockout after 5 tries, server-side sessions |
+| Calendar feed (`/calendar/export.ics`) | Calendar apps | Reading release dates (read-only) | Private key in the link while the login is on |
+| Phone sync API (`/api/sync`) | The Android app | Creating and changing items | Off unless enabled twice (environment variable and setting); sync key required |
+| Outbound notifications | Only the service you configure | Sending messages out | Only ever contacts the configured provider |
+| Dependencies and the build | The supply chain | Everything | Pinned versions, pip-audit, dependency review, CodeQL, pinned actions, signed releases with an SBOM |
+
+The threat model below follows each of these paths: who could misuse it,
+how, and what stops them.
 
 ## Threats
 

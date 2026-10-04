@@ -722,12 +722,13 @@ Ka-Ching! keeps its dependencies deliberately few:
 
 ## Project documents
 
-- [SECURITY.md](SECURITY.md) - reporting a vulnerability, and how it's handled
+- [SECURITY.md](SECURITY.md) - reporting a vulnerability, supported versions, verifying a release, and the scanning and secrets policies
 - [CONTRIBUTING.md](CONTRIBUTING.md) - how to contribute
 - [MAINTAINERS.md](MAINTAINERS.md) - who maintains the project and what they look after
 - [INTERFACES.md](INTERFACES.md) - every way data gets in or out of the app
 - [ARCHITECTURE.md](ARCHITECTURE.md) - how the app is put together, who uses it and how data flows
-- [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md) - the likely security risks and how each is handled
+- [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md) - threat model and attack surface: the likely risks and how each is handled
+- [vex.openvex.json](vex.openvex.json) - dependency vulnerabilities that don't affect Ka-Ching!, with the reasons (currently none)
 - [CHANGELOG.md](CHANGELOG.md) - what changed in each release
 
 ## Contributing a new shop's parser

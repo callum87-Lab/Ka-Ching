@@ -1,0 +1,26 @@
+# Checks every pull request that changes dependencies: blocks it if a new or
+# updated dependency has a known vulnerability (moderate or worse), is flagged
+# as malware, or uses a licence not on the allowed list below. Policy:
+# SECURITY.md, "Dependency and code scanning policy".
+name: Dependency review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: moderate
+          allow-licenses: >-
+            MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, PSF-2.0, Python-2.0,
+            MPL-2.0, LGPL-2.1-or-later, LGPL-3.0-or-later, GPL-3.0-or-later,
+            AGPL-3.0-only, AGPL-3.0-or-later, Unlicense, 0BSD, Zlib
