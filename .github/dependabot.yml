@@ -1,15 +1,22 @@
 # Weekly check for newer versions of the Python packages, the GitHub
-# Actions used by the workflows, and the Docker base image.
+# Actions used by the workflows, and the Docker base image. Updates of the
+# same kind arrive together in one pull request (e.g. all CodeQL parts at once).
 version: 2
 updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      python-packages:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
   - package-ecosystem: docker
     directory: "/"
     schedule:

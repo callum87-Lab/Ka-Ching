@@ -1,4 +1,10 @@
-[![OpenSSF Baseline](https://www.bestpractices.dev/projects/15163/baseline)](https://www.bestpractices.dev/en/projects/15163/baseline-1)
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/15163/baseline)](https://www.bestpractices.dev/projects/15163)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/callum87-Lab/Ka-Ching/badge)](https://scorecard.dev/viewer/?uri=github.com/callum87-Lab/Ka-Ching)
+[![SLSA Build Level 2](https://img.shields.io/badge/SLSA-Build%20Level%202-brightgreen)](SECURITY.md#verifying-a-release)
+[![Tests](https://github.com/callum87-Lab/Ka-Ching/actions/workflows/tests.yml/badge.svg)](https://github.com/callum87-Lab/Ka-Ching/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/callum87-Lab/Ka-Ching/actions/workflows/codeql.yml/badge.svg)](https://github.com/callum87-Lab/Ka-Ching/actions/workflows/codeql.yml)
+[![Latest release](https://img.shields.io/github/v/release/callum87-Lab/Ka-Ching)](https://github.com/callum87-Lab/Ka-Ching/releases/latest)
+[![Licence: AGPL-3.0](https://img.shields.io/github/license/callum87-Lab/Ka-Ching)](LICENSE)
 ![Ka-Ching!](app/static/img/readme-banner.png)
 
 # Ka-Ching!
