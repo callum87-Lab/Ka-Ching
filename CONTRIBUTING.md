@@ -51,7 +51,7 @@ review** and **Sign-off** checks run at the same time.
 **Running them yourself** (Python 3.12):
 
 ```bash
-pip install -r requirements-dev.txt
+pip install --require-hashes -r requirements-dev.txt
 python -m pytest
 ```
 
@@ -63,6 +63,11 @@ throwaway database. The same command also runs in CI, plus
 changes behaviour or fixes a bug must add or update tests in `tests/` that
 cover it - a bug fix should include a test that fails without the fix.
 Pull requests that only change documentation or styling are the exception.
+
+**Changing dependencies:** edit `requirements.in` (or `requirements-dev.in`),
+then regenerate the locked files with
+`pip-compile --generate-hashes requirements.in` (and the same for
+`requirements-dev.in`) - never edit the `.txt` files by hand.
 
 ## Sign-off (Developer Certificate of Origin)
 
