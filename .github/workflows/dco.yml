@@ -11,6 +11,9 @@ permissions:
 
 jobs:
   sign-off:
+    # Dependabot's automatic dependency updates can't add a sign-off line;
+    # they're exempt (the pull request author can't be faked).
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
