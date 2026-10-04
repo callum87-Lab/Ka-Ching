@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Calendar{% endblock %}
+
+{% block extra_style %}
+  .cal-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .month-nav { display: flex; align-items: center; gap: 8px; }
+  .month-nav-btn { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-raised); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); cursor: pointer; }
+  .month-nav-today { font-size: 11px; font-weight: 700; color: var(--neon-blue); background: rgba(47,216,255,0.10); border: 1px solid rgba(47,216,255,0.3); border-radius: 999px; padding: 4px 10px; cursor: pointer; margin-left: 2px; }
+  .export-btn { display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-muted); }
+  .export-btn svg { width: 13px; height: 13px; }
+  .cal-day { border-radius: 10px; border: 1px solid var(--border); background: var(--surface-raised); min-height: 76px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .cal-day-empty { border-color: transparent; background: transparent; }
+  .cal-day.cal-has-items { cursor: pointer; }
+  .cal-day.cal-has-items:hover { border-color: var(--neon-blue); }
+  .cal-day.cal-today { border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(47,216,255,0.25); }
+  .cal-day-num { font-size: 12.5px; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; }
+  .cal-day-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; flex: 0 0 auto; }
+  .cal-today .cal-day-num { color: var(--neon-blue); }
+  .cal-day-total { font-size: 13px; font-weight: 700; margin-top: auto; }
+  .cal-day-count { font-size: 10.5px; color: var(--text-dim); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 4px; }
+  .cal-weekday { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); text-align: center; padding-bottom: 4px; }
+  .cal-hint { font-size: 12px; color: var(--text-dim); margin-top: 14px; line-height: 1.5; max-width: 62ch; }
+
+  .mini-cal-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+  .mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 18px; }
+  .mini-cal-grid span { text-align: center; font-size: 11px; color: var(--text-dim); padding: 5px 0; border-radius: 6px; }
+  .mini-cal-grid span.weekday-head { font-weight: 700; color: var(--text-muted); }
+  .mini-cal-grid a { display: block; text-align: center; font-size: 11px; color: var(--text-muted); padding: 5px 0; border-radius: 6px; cursor: pointer; }
+  .mini-cal-grid a:hover { background: rgba(255,255,255,0.06); }
+  .mini-cal-grid a.has-items { color: var(--neon-blue); font-weight: 700; position: relative; }
+  .mini-cal-grid a.has-items::after { content:""; position:absolute; bottom:1px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--neon-blue); }
+  .mini-cal-grid .today-cell { background: var(--neon-blue); color: #06111f; font-weight: 700; border-radius: 6px; }
+  .mini-cal-grid a.today-cell.has-items { color: #06111f; }
+  .mini-cal-grid a.today-cell.has-items::after { background: #06111f; }
+  /* Day picked to filter the releases card */
+  .mini-cal-grid a.day-selected { box-shadow: inset 0 0 0 1.5px var(--neon-blue); background: rgba(47,216,255,0.14); }
+  .mini-cal-grid a.today-cell.day-selected { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--neon-blue); background: var(--neon-blue); }
+  .cal-day.cal-selected { border-color: var(--neon-blue); box-shadow: inset 0 0 0 1px var(--neon-blue), 0 0 12px rgba(47,216,255,0.35); background: rgba(47,216,255,0.10); }
+  .day-filter-clear[hidden] { display: none; }
+  .day-group.day-filter-first { border-top: none; padding-top: 4px; }
+  .mini-cal-legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .shop-legend-row { display: flex; align-items: center; gap: 7px; font-size: 13px; margin-bottom: 5px; }
+  .shop-legend-name { color: var(--text-muted); flex: 1; }
+  .shop-legend-pct { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-dim); }
+  .shop-legend-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 12px; }
+  .shop-legend-bar div { height: 100%; border-radius: 3px; }
+
+  .heatmap-card { grid-column: span 12; }
+  .heatmap-months { display: flex; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+  .heatmap-months span { flex: 1; }
+  .heatmap-daylabels { display: flex; flex-direction: column; gap: 4px; margin-right: 8px; }
+  .heatmap-daylabels span { font-size: 10px; color: var(--text-dim); height: 14px; line-height: 14px; }
+  .heatmap-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 14px); gap: 3px; width: 100%; min-width: 0; }
+  .heatmap-cell { width: 14px; height: 14px; border-radius: 3px; background: rgba(255,255,255,0.05); cursor: default; }
+  .heatmap-cell[title] { cursor: default; }
+  .heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 10px; font-size: 11px; color: var(--text-dim); }
+  .heatmap-legend .heatmap-cell { width: 10px; height: 10px; }
+
+  .list-card { grid-column: span 12; }
+  .list-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .list-title { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 700; }
+  .day-group { border-top: 1px solid var(--border); padding: 12px 0; }
+  .day-group:first-of-type { border-top: none; padding-top: 4px; }
+  .day-group-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; cursor: pointer; }
+  .day-group-ship { font-size: 12px; color: var(--text-dim); margin-right: 10px; white-space: nowrap; }
+  @media (max-width: 480px) { .day-group-ship { display: none; } }
+  .day-group-label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+  .day-group-label .paid-tag { font-size: 11px; color: var(--neon-green); text-transform: none; font-weight: 600; }
+  .day-group-right { display: flex; align-items: center; gap: 10px; }
+  .day-group-total { font-size: 13.5px; font-weight: 700; }
+  .day-group-arrow { color: var(--text-dim); font-size: 11px; transition: transform 0.15s ease; display: inline-block; }
+  .day-group:not(.expanded) .day-group-arrow { transform: rotate(-90deg); }
+  .day-group-body { margin-top: 10px; }
+  .day-group:not(.expanded) .day-group-body { display: none; }
+
+  .source-subgroup { margin-bottom: 8px; }
+  .source-subgroup:last-child { margin-bottom: 0; }
+  .source-label { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; padding: 6px 0; }
+  .source-label .src-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .source-subtotal { margin-left: auto; font-weight: 700; }
+  .ro-item-row { display: grid; grid-template-columns: 1fr 90px 26px; align-items: center; gap: 12px; padding: 7px 0 7px 20px; font-size: 13.5px; }
+  .ro-item-row .mono { text-align: right; }
+  .ro-item-row.is-paid { opacity: 0.6; }
+  .ro-item-row .paid-tag-inline { font-size: 11.5px; color: var(--neon-green); background: rgba(60,242,166,0.10); padding: 2px 7px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
+  .ro-row-menu-wrap { position: relative; display: flex; justify-content: flex-end; }
+  .ro-row-menu-btn { width: 22px; height: 22px; border-radius: 7px; background: transparent; border: none; padding: 0; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .ro-row-menu-btn:hover { background: var(--surface-raised); }
+  .ro-row-menu-drawer-fixed { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; min-width: 90px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); }
+  .ro-row-menu-drawer-fixed a { display: block; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; }
+  .ro-row-menu-drawer-fixed a:hover { background: rgba(255,255,255,0.05); }
+  .ro-row-menu-template { display: none; }
+  .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .empty-note { font-size: 12px; color: var(--text-dim); padding: 6px 4px; }
+  .big-cal-head { display: none; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .big-cal-title { font-size: 16px; font-weight: 700; flex: 1 1 auto; text-align: center; }
+  .cal-export-bottom { display: none; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 4px 0 20px; }
+  @media (max-width: 900px) {
+    /* Phone: equal day columns showing just the number and dot; tapping a
+       day still filters the releases list below for the detail. */
+    .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .cal-day { min-height: 44px; padding: 6px 4px; align-items: center; justify-content: center; }
+    .cal-day-total, .cal-day-count { display: none; }
+    .cal-day-num { font-size: 13px; display: flex; flex-direction: column-reverse; align-items: center; gap: 3px; }
+    .cal-weekday { font-size: 10.5px; text-align: center; }
+    /* Month control sits on the calendar itself; the mini calendar (a
+       duplicate on a phone) is hidden, its shop breakdown moves below. */
+    .cal-topbar { display: none; }
+    .big-cal-head { display: flex; }
+    .cal-main-grid > .big-cal-card { order: 1; }
+    .cal-main-grid > .mini-cal-card { order: 2; }
+    .mini-cal-card .mini-cal-head, .mini-cal-card .mini-cal-grid { display: none; }
+    .mini-cal-card .mini-cal-legend-title { border-top: none; padding-top: 0; }
+    .cal-export-bottom { display: flex; }
+  }
+{% endblock %}
+
+{% block content %}
+
+<div class="cal-topbar">
+  <div class="month-nav">
+    <a class="month-nav-btn" href="?month={{ prev_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}">&larr;</a>
+    <span style="font-size:16px; font-weight:700;">{{ viewed_month_label }}</span>
+    <a class="month-nav-btn" href="?month={{ next_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}">&rarr;</a>
+    {% if not is_current_month %}
+    <a class="month-nav-today" href="?{% if active_source %}source={{ active_source }}{% endif %}">Today</a>
+    {% endif %}
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="export-btn" href="/calendar/export.ics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download .ics</a>
+    <a class="export-btn" href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics{% if calendar_feed_key() %}?key={{ calendar_feed_key() }}{% endif %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>Subscribe (live)</a>
+  </div>
+</div>
+
+<div class="tab-row" data-shop-tabs>
+  <a class="tab-pill {{ 'active' if not active_source else '' }}" href="?month={{ viewed_month_param }}">All shops</a>
+  {% for s in filter_tab_sources %}
+  <a class="tab-pill {{ 'active' if active_source == s else '' }}" href="?month={{ viewed_month_param }}&source={{ s }}">{{ s }}</a>
+  {% endfor %}
+</div>
+
+<div class="grid cal-main-grid">
+  <div class="card mini-cal-card" data-card="cal.mini" data-phone-after="cal.big" style="grid-column: span 3;">
+    <div class="mini-cal-head">
+      <a class="month-nav-btn" href="?month={{ prev_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}">&lsaquo;</a>
+      <span>{{ viewed_month_label }}</span>
+      <a class="month-nav-btn" href="?month={{ next_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}">&rsaquo;</a>
+    </div>
+    <div class="mini-cal-grid">
+      <span class="weekday-head">M</span><span class="weekday-head">T</span><span class="weekday-head">W</span><span class="weekday-head">T</span><span class="weekday-head">F</span><span class="weekday-head">S</span><span class="weekday-head">S</span>
+      {% for week in weeks %}
+        {% for day in week %}
+          {% if day is none %}
+          <span></span>
+          {% elif day.is_today %}
+          {% if day.count > 0 %}<a class="today-cell has-items" href="#agenda-{{ day.date_iso }}" data-day="{{ day.date_iso }}">{{ day.day }}</a>{% else %}<span class="today-cell">{{ day.day }}</span>{% endif %}
+          {% elif day.count > 0 %}
+          <a class="has-items" href="#agenda-{{ day.date_iso }}" data-day="{{ day.date_iso }}">{{ day.day }}</a>
+          {% else %}
+          <span>{{ day.day }}</span>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+
+    <div class="mini-cal-legend-title">Spend by shop, {{ viewed_month_label }}</div>
+    {% if shop_legend %}
+      {% for s in shop_legend %}
+      <div class="shop-legend-row">
+        <span style="width:8px; height:8px; border-radius:50%; background:{{ s.color }}; flex:0 0 auto;"></span>
+        <span class="shop-legend-name">{{ s.source }}</span>
+        <span class="shop-legend-pct">{{ s.pct }}%</span>
+      </div>
+      <div class="shop-legend-bar"><div style="width:{{ s.pct }}%; background:{{ s.color }};"></div></div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-note">Nothing tracked this month.</div>
+    {% endif %}
+  </div>
+
+  <div class="card big-cal-card" data-card="cal.big" style="grid-column: span 9;">
+    <div class="big-cal-head">
+      <a class="month-nav-btn" href="?month={{ prev_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}" aria-label="Previous month">&larr;</a>
+      <span class="big-cal-title">{{ viewed_month_label }}</span>
+      <a class="month-nav-btn" href="?month={{ next_month_param }}{% if active_source %}&source={{ active_source }}{% endif %}" aria-label="Next month">&rarr;</a>
+      {% if not is_current_month %}<a class="month-nav-today" href="?{% if active_source %}source={{ active_source }}{% endif %}">Today</a>{% endif %}
+    </div>
+    <div class="cal-grid">
+      <div class="cal-weekday">Mon</div><div class="cal-weekday">Tue</div><div class="cal-weekday">Wed</div><div class="cal-weekday">Thu</div><div class="cal-weekday">Fri</div><div class="cal-weekday">Sat</div><div class="cal-weekday">Sun</div>
+      {% for week in weeks %}
+        {% for day in week %}
+          {% if day is none %}
+          <div class="cal-day cal-day-empty"></div>
+          {% else %}
+          <div class="cal-day {{ 'cal-has-items' if day.count > 0 else '' }} {{ 'cal-today' if day.is_today else '' }}" {% if day.count > 0 %}data-day="{{ day.date_iso }}" role="button" tabindex="0"{% endif %}>
+            <span class="cal-day-num">{% if day.count > 0 %}<span class="cal-day-dot" style="background: rgba(47,216,255,{{ 0.25 + day.intensity * 0.75 }});"></span>{% endif %}{{ day.day }}</span>
+            {% if day.count > 0 %}
+            <span class="cal-day-total mono">{{ currency() }}{{ "{:,.2f}".format(day.total) }}</span>
+            <span class="cal-day-count">{{ day.count }} issue{{ "s" if day.count != 1 else "" }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+    <p class="cal-hint">Blank days are release-free. The dot marks a day with something due &mdash; brighter means more spent that day. Tap any marked day to show just that day's releases below &mdash; tap it again for the whole month.</p>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card heatmap-card" data-card="cal.heatmap">
+    <div class="card-head">
+      <div class="card-title"><span class="card-icon-badge" style="background:rgba(60,242,166,0.14);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon-green)" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Activity</div>
+    </div>
+    <div style="display:flex;">
+      <div class="heatmap-daylabels" style="flex:0 0 auto;"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+      <div style="flex:1 1 auto; min-width:0;">
+        <div class="heatmap-months" id="heatmap-months"></div>
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+      </div>
+    </div>
+    <div class="heatmap-legend">
+      Less
+      <span class="heatmap-cell" style="background:rgba(255,255,255,0.05);"></span>
+      <span class="heatmap-cell" style="background:rgba(47,216,255,0.22);"></span>
+      <span class="heatmap-cell" style="background:rgba(47,216,255,0.45);"></span>
+      <span class="heatmap-cell" style="background:rgba(47,216,255,0.7);"></span>
+      <span class="heatmap-cell" style="background:var(--neon-blue);"></span>
+      More
+    </div>
+    <p class="cal-hint">Each square is a day &mdash; darker means more tracked spend, so recurring pull-day rhythms (and quiet stretches) show up at a glance.</p>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card list-card" data-card="cal.list">
+    <div class="list-card-head">
+      <div class="list-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span id="releases-title" data-month-title="{{ viewed_month_label }} releases">{{ viewed_month_label }} releases</span></div>
+      <button type="button" class="tab-pill day-filter-clear" id="day-filter-clear" hidden>Show whole month</button>
+    </div>
+    {% if agenda_groups %}
+      {% for group in agenda_groups %}
+      <div class="day-group" id="agenda-{{ group.date }}">
+        <div class="day-group-head">
+          <div class="day-group-label">{{ group.date_label }}{% if group.all_paid %} <span class="paid-tag">&middot; paid</span>{% endif %}</div>
+          <div class="day-group-right">{% if group.shipping %}<span class="day-group-ship">{{ currency() }}{{ "{:,.2f}".format(group.subtotal) }} + {{ currency() }}{{ "{:,.2f}".format(group.shipping) }} ship</span>{% endif %}<span class="day-group-total mono">{{ currency() }}{{ "{:,.2f}".format(group.subtotal + (group.shipping or 0)) }}</span><span class="day-group-arrow">&#9662;</span></div>
+        </div>
+        <div class="day-group-body">
+          {% for sg in group.source_groups %}
+          <div class="source-subgroup">
+            <div class="source-label"><span class="src-dot" style="background:{{ sg.color }};"></span>{{ sg.source }}<span class="source-subtotal mono">{{ currency() }}{{ "{:,.2f}".format(sg.subtotal) }}</span></div>
+            {% for item in sg.entries %}
+            <div class="ro-item-row {{ 'is-paid' if item.charge_status == 'charged' else '' }}">
+              <span>{{ item.name }}{% if item.charge_status == 'charged' %}<span class="paid-tag-inline">paid</span>{% endif %}</span>
+              <span class="mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
+              <div class="ro-row-menu-wrap">
+                <button class="ro-row-menu-btn" data-menu-id="ro-menu-{{ item.id }}">&#8942;</button>
+                <template class="ro-row-menu-template" id="ro-menu-{{ item.id }}"><a href="/items/{{ item.id }}/edit">Edit</a></template>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-note">Nothing releasing in {{ viewed_month_label }}.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="cal-export-bottom">
+  <a class="export-btn" href="/calendar/export.ics">Download .ics</a>
+  <a class="export-btn" href="webcal://{{ request.url.hostname }}{% if request.url.port %}:{{ request.url.port }}{% endif %}/calendar/export.ics{% if calendar_feed_key() %}?key={{ calendar_feed_key() }}{% endif %}">Subscribe (live)</a>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+
+// Clicking a day (mini or big calendar) filters the releases card to that
+// day; clicking it again, or "Show whole month", clears it. Not remembered.
+(function () {
+  var card = document.querySelector('.list-card');
+  var title = document.getElementById('releases-title');
+  var clearBtn = document.getElementById('day-filter-clear');
+  if (!card || !title || !clearBtn) return;
+  var groups = Array.prototype.slice.call(card.querySelectorAll('.day-group'));
+  var selected = null;
+
+  function dayLabel(iso) {
+    // Same style as the day-group labels, e.g. "Wed 9 Sep"
+    var d = new Date(iso + 'T00:00:00');
+    var wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    return wd + ' ' + d.getDate() + ' ' + mo;
+  }
+
+  function apply(iso, scroll) {
+    selected = iso;
+    document.querySelectorAll('[data-day]').forEach(function (el) {
+      var on = el.dataset.day === iso;
+      el.classList.toggle(el.classList.contains('cal-day') ? 'cal-selected' : 'day-selected', on);
+      if (el.classList.contains('cal-day')) el.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var firstShown = true;
+    groups.forEach(function (g) {
+      var show = !iso || g.id === 'agenda-' + iso;
+      g.style.display = show ? '' : 'none';
+      g.classList.toggle('day-filter-first', !!iso && show && firstShown);
+      if (show) firstShown = false;
+      // Open the picked day's group for this view only (not saved), and put
+      // back any group opened that way once it's no longer the picked day.
+      if (iso && show) {
+        if (!g.classList.contains('expanded')) { g.classList.add('expanded'); g.dataset.autoOpen = '1'; }
+      } else if (g.dataset.autoOpen === '1') {
+        g.classList.remove('expanded'); delete g.dataset.autoOpen;
+      }
+    });
+    title.textContent = iso ? 'Releases on ' + dayLabel(iso) : title.dataset.monthTitle;
+    clearBtn.hidden = !iso;
+  }
+
+  function pick(iso) { apply(selected === iso ? null : iso, true); }
+  // Opening/closing a group by hand makes it the user's own choice again.
+  groups.forEach(function (g) {
+    var head = g.querySelector('.day-group-head');
+    if (head) head.addEventListener('click', function () { delete g.dataset.autoOpen; });
+  });
+
+  document.querySelectorAll('.mini-cal-grid a[data-day]').forEach(function (a) {
+    a.addEventListener('click', function (e) { e.preventDefault(); pick(a.dataset.day); });
+  });
+  document.querySelectorAll('.cal-day[data-day]').forEach(function (el) {
+    el.addEventListener('click', function () { pick(el.dataset.day); });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(el.dataset.day); }
+    });
+  });
+  clearBtn.addEventListener('click', function () { apply(null, false); });
+})();
+
+(function () {
+  var grid = document.getElementById('heatmap-grid');
+  var monthsRow = document.getElementById('heatmap-months');
+  if (!grid) return;
+
+  var dailyTotals = {{ heatmap_daily_json|json_script }};
+  var heatmapStart = new Date('{{ heatmap_start }}T00:00:00');
+  var maxTotal = 0;
+  Object.keys(dailyTotals).forEach(function (d) { if (dailyTotals[d] > maxTotal) maxTotal = dailyTotals[d]; });
+
+  var levels = [
+    'rgba(255,255,255,0.05)',
+    'rgba(47,216,255,0.22)',
+    'rgba(47,216,255,0.45)',
+    'rgba(47,216,255,0.7)',
+    'var(--neon-blue)'
+  ];
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function isoDate(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function render(weeks) {
+    grid.innerHTML = '';
+    monthsRow.innerHTML = '';
+    grid.style.gridTemplateColumns = 'repeat(' + weeks + ', minmax(0, 1fr))';
+
+    var totalDays = weeks * 7;
+    var rangeStart = new Date();
+    rangeStart.setDate(rangeStart.getDate() - (totalDays - 1));
+    if (rangeStart < heatmapStart) rangeStart = new Date(heatmapStart);
+
+    var lastMonth = -1;
+    for (var w = 0; w < weeks; w++) {
+      var colDate = new Date(rangeStart);
+      colDate.setDate(colDate.getDate() + w * 7);
+      var lbl = document.createElement('span');
+      if (colDate.getMonth() !== lastMonth) {
+        lbl.textContent = monthNames[colDate.getMonth()];
+        lastMonth = colDate.getMonth();
+      }
+      monthsRow.appendChild(lbl);
+    }
+
+    for (var i = 0; i < totalDays; i++) {
+      var d = new Date(rangeStart);
+      d.setDate(d.getDate() + i);
+      var cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      if (d <= new Date()) {
+        var key = isoDate(d);
+        var val = dailyTotals[key] || 0;
+        var level = 0;
+        if (val > 0 && maxTotal > 0) {
+          var frac = val / maxTotal;
+          level = frac > 0.75 ? 4 : frac > 0.5 ? 3 : frac > 0.25 ? 2 : 1;
+        }
+        cell.style.background = levels[level];
+        if (val > 0) cell.title = key + ': {{ currency() }}' + val.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  render(52);
+})();
+
+document.querySelectorAll('.ro-row-menu-btn').forEach(function (btn) {
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var openNow = btn.dataset.open === '1';
+    document.querySelectorAll('.ro-row-menu-drawer-fixed').forEach(function (d) { d.remove(); });
+    document.querySelectorAll('.ro-row-menu-btn').forEach(function (b) { b.dataset.open = '0'; });
+    if (openNow) return;
+    var tpl = document.getElementById(btn.dataset.menuId);
+    if (!tpl) return;
+    var rect = btn.getBoundingClientRect();
+    var drawer = document.createElement('div');
+    drawer.className = 'ro-row-menu-drawer-fixed';
+    drawer.innerHTML = tpl.innerHTML;
+    document.body.appendChild(drawer);
+    var dw = drawer.offsetWidth;
+    var left = rect.right - dw;
+    if (left < 8) left = 8;
+    var top = rect.bottom + 4;
+    if (top + drawer.offsetHeight > window.innerHeight - 8) top = rect.top - drawer.offsetHeight - 4;
+    drawer.style.left = left + 'px';
+    drawer.style.top = top + 'px';
+    btn.dataset.open = '1';
+  });
+});
+document.addEventListener('click', function () {
+  document.querySelectorAll('.ro-row-menu-drawer-fixed').forEach(function (d) { d.remove(); });
+  document.querySelectorAll('.ro-row-menu-btn').forEach(function (b) { b.dataset.open = '0'; });
+});
+{% endblock %}

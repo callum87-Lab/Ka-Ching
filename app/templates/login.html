@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in &middot; Ka-Ching!</title>
+<link rel="icon" type="image/png" href="/static/img/logo.png?v={{ app_version }}">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#0a1224">
+<link rel="apple-touch-icon" href="/static/img/icon-192.png?v={{ app_version }}">
+<style>
+  :root { --bg: #060a17; --surface: #101a30; --raised: #16213d; --border: rgba(94,156,255,0.14); --border-strong: rgba(94,156,255,0.30);
+    --text: #e7ecfa; --muted: #7c89ad; --dim: #566089; --blue: #2fd8ff; --pink: #ff4d8d; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(circle at 50% 0%, rgba(47,216,255,0.10), transparent 55%), var(--bg);
+    color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .box { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 30px 26px 26px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
+  .logo { width: 150px; height: auto; filter: drop-shadow(0 0 14px rgba(47,216,255,0.45)); }
+  .sub { color: var(--muted); font-size: 14px; margin: 10px 0 20px; }
+  input[type=password] { width: 100%; background: var(--raised); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 15px; font-family: inherit; outline: none; }
+  input[type=password]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,216,255,0.15); }
+  .remember { display: flex; align-items: center; gap: 9px; margin: 14px 2px 18px; font-size: 13.5px; color: var(--muted); cursor: pointer; text-align: left; }
+  .remember input { width: 16px; height: 16px; accent-color: var(--blue); }
+  button { width: 100%; height: 42px; border: none; border-radius: 999px; background: var(--blue); color: #04121a; font-weight: 700; font-size: 14.5px; font-family: inherit; cursor: pointer; }
+  .pw-wrap { position: relative; display: block; }
+  .pw-wrap input { padding-right: 66px; }
+  .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: auto; height: auto; background: none;
+    color: var(--blue); font-size: 13px; font-weight: 600; padding: 6px 8px; border-radius: 8px; }
+  .pw-eye:hover { box-shadow: none; background: rgba(47,216,255,0.1); }
+  button:hover { box-shadow: 0 0 18px rgba(47,216,255,0.55); }
+  button:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+  .err { color: var(--pink); background: rgba(255,77,141,0.08); border: 1px solid rgba(255,77,141,0.35); border-radius: 12px; padding: 9px 12px; font-size: 13px; margin: 0 0 14px; }
+</style>
+</head>
+<body>
+  <form class="box" method="post" action="/login">
+    <img class="logo" src="/static/img/logo.png?v={{ app_version }}" alt="Ka-Ching!">
+    <div class="sub">Enter your password to continue</div>
+    {% if locked or error == 'locked' %}<div class="err">Too many wrong tries. Wait a minute, then try again.</div>
+    {% elif error == 'wrong' %}<div class="err">That password isn't right.</div>{% endif %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <span class="pw-wrap"><input type="password" name="password" id="pw" placeholder="Password" autocomplete="current-password" autofocus required><button type="button" class="pw-eye" id="pw-eye" aria-label="Show password">Show</button></span>
+    <label class="remember"><input type="checkbox" name="remember" value="1" checked> Keep me signed in for 30 days on this device</label>
+    <button type="submit"{% if locked %} disabled{% endif %}>Sign in</button>
+  </form>
+{% if locked or error == 'locked' %}
+<script>
+// The lock lasts a minute; let them try again after that without a reload
+setTimeout(function () {
+  var b = document.querySelector('button[type=submit]'); if (b) b.disabled = false;
+  var e = document.querySelector('.err'); if (e) e.textContent = 'You can try again now.';
+}, 61000);
+</script>
+{% endif %}
+<script>
+document.getElementById('pw-eye').addEventListener('click', function () {
+  var i = document.getElementById('pw'), shown = i.type === 'text';
+  i.type = shown ? 'password' : 'text';
+  this.textContent = shown ? 'Show' : 'Hide';
+  this.setAttribute('aria-label', shown ? 'Show password' : 'Hide password');
+});
+</script>
+</body>
+</html>

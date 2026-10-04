@@ -37,8 +37,32 @@ A pull request is merged when it:
   English, no jargon), and the same size for buttons and pills.
 - **Adds no new dependencies** unless they're clearly needed - see
   "Dependencies" in the README.
-- **Passes the automated checks**, once they exist for this repository.
+- **Includes tests** for what it adds or fixes, and **passes every
+  automated check** (tests, CodeQL, dependency review, sign-off).
 - **Is signed off** on every commit (below).
+
+## Tests
+
+**When they run:** automatically on every pull request and every change to
+`main`, by the **Tests** workflow (`.github/workflows/tests.yml`). A pull
+request can't be merged until they pass. The **CodeQL**, **Dependency
+review** and **Sign-off** checks run at the same time.
+
+**Running them yourself** (Python 3.12):
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+They take a few seconds and never touch real data - each test uses its own
+throwaway database. The same command also runs in CI, plus
+`pip-audit -r requirements.txt` for known vulnerabilities in dependencies.
+
+**Tests are required for changes.** Every pull request that adds a feature,
+changes behaviour or fixes a bug must add or update tests in `tests/` that
+cover it - a bug fix should include a test that fails without the fix.
+Pull requests that only change documentation or styling are the exception.
 
 ## Sign-off (Developer Certificate of Origin)
 

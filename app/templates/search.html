@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Ka-Ching! &middot; Search{% endblock %}
+
+{% block extra_style %}
+  .search-box-big { grid-column: span 12; }
+  .search-input-big { width: 100%; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-size: 15px; font-family: inherit; }
+  .search-input-big:focus { outline: none; border-color: var(--neon-blue); }
+  .search-input-big::placeholder { color: var(--text-dim); }
+  .filter-toggle-btn { display: flex; align-items: center; gap: 8px; padding: 13px 20px; border-radius: 999px; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-muted); font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .filter-toggle-btn svg { width: 15px; height: 15px; }
+  .filter-menu { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; min-width: 160px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); }
+  .filter-menu a { display: block; text-align: left; background: none; border: none; color: var(--text); font-size: 13.5px; padding: 9px 11px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; }
+  .filter-menu a:hover { background: rgba(255,255,255,0.05); }
+  .filter-menu a.active { color: var(--neon-blue); }
+
+  .filter-card { grid-column: span 12; }
+  .settings-form-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+  .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; color-scheme: dark; }
+  .field-input:focus { outline: none; border-color: var(--neon-blue); }
+  .search-submit-btn { width: 100%; padding: 10px; border-radius: 10px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+  .search-submit-btn:hover { box-shadow: 0 0 16px rgba(47,216,255,0.5); }
+
+  .preset-row { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--border); }
+  .preset-pill { padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--surface-raised); border: 1px solid var(--border); cursor: pointer; }
+  .preset-pill.clear { color: var(--neon-pink); border-color: rgba(255,77,141,0.3); }
+
+  .totals-bar { grid-column: span 12; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; font-size: 12.5px; }
+  .totals-bar .match-count { color: var(--text-muted); }
+  .totals-bar .match-count b { color: var(--text); font-family: var(--font-mono); }
+  .totals-bar .spent-figure { color: var(--text-muted); }
+  .totals-bar .spent-figure b { color: var(--neon-blue); font-family: var(--font-mono); }
+  .totals-bar .remaining-figure { color: var(--text-muted); }
+  .totals-bar .remaining-figure b { color: var(--neon-pink); font-family: var(--font-mono); }
+  .totals-bar .cancelled-note { color: var(--text-dim); }
+  .csv-btn { margin-left: auto; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-muted); text-decoration: none; }
+  .csv-btn svg { width: 13px; height: 13px; }
+  .results-card { grid-column: span 12; }
+  .search-result-row { display: grid; grid-template-columns: 24px 1fr 130px 90px 18px 26px; align-items: center; gap: 12px; padding: 9px 4px; border-top: 1px solid var(--border); position: relative; z-index: 0; }
+  .search-result-row:first-of-type { border-top: none; }
+  .search-result-row.is-cancelled .row-name { color: var(--text-dim); }
+  .cancelled-tag { font-size: 10px; color: var(--neon-pink); background: rgba(255,77,141,0.10); padding: 2px 7px; border-radius: 999px; margin-right: 8px; font-weight: 600; }
+  .result-meta { grid-column: 2 / 6; font-size: 11px; color: var(--text-dim); padding: 0 0 10px 0; }
+  .result-meta a { color: var(--neon-blue); }
+  .result-note { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 2px; }
+
+  .paid-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; display: flex; align-items: center; justify-content: center; color: transparent; flex: 0 0 auto; }
+  .paid-check.checked { background: var(--neon-green); border-color: var(--neon-green); color: #06111f; box-shadow: 0 0 7px rgba(60,242,166,0.4); }
+  .paid-check svg { width: 11px; height: 11px; }
+  .row-name { font-size: 13.5px; }
+  .row-tracking { font-size: 11px; color: var(--neon-blue); }
+  .row-price { font-size: 13.5px; font-weight: 600; text-align: right; }
+  .row-check { width: 14px; height: 14px; border-radius: 4px; accent-color: var(--neon-blue); }
+
+  .row-menu-wrap { position: relative; display: flex; justify-content: flex-end; }
+  .row-menu-btn { width: 22px; height: 22px; border-radius: 7px; background: transparent; border: 1px solid transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .row-menu-btn:hover { background: var(--surface-raised); border-color: var(--border); }
+  .row-actions-drawer { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); min-width: 104px; }
+  .row-actions-drawer a, .row-actions-drawer button { text-align: left; background: none; border: none; color: var(--text); font-size: 12px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; display: block; }
+  .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: rgba(255,255,255,0.05); }
+  .row-actions-drawer .danger:hover { color: var(--neon-pink); }
+
+  .search-pagination { grid-column: span 12; display: flex; align-items: center; justify-content: center; gap: 16px; }
+  .search-empty { grid-column: span 12; text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
+  .warn-action-btn { font-size: 11.5px; font-weight: 600; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; }
+  @media (max-width: 900px) {
+    .settings-form-grid-4 { grid-template-columns: 1fr 1fr; }
+    .search-result-row { grid-template-columns: 24px 1fr 72px 18px 26px; gap: 8px; }
+    .search-result-row > .row-tracking, .search-result-row.is-cancelled > div:nth-child(3) { display: none; }
+    .search-result-row.is-cancelled > form { grid-column: 4 / 6 !important; }
+  }
+  @media (max-width: 480px) { .settings-form-grid-4 { grid-template-columns: 1fr; } }
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+  <h1>Search</h1>
+  <p>Search across everything you've ever tracked</p>
+</div>
+
+<form method="get" action="/search">
+  <div class="grid">
+    <div class="search-box-big" style="display:flex; align-items:center; gap:10px;">
+      <input type="text" name="q" class="search-input-big" placeholder="Search by item name..." value="{{ q }}" style="flex:1;">
+      <button type="button" class="filter-toggle-btn" id="filter-toggle-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filter
+      </button>
+      <template id="filter-menu-template">
+        <a data-quickview="month">This Month</a>
+        <a data-quickview="year">This Year</a>
+        <a data-quickview="expensive">Most expensive</a>
+        <a data-quickview="cheapest">Cheapest</a>
+      </template>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card filter-card">
+      <div class="settings-form-grid-4">
+        <label class="field-label"><span>Shop</span>
+          <select class="field-input" name="source">
+            <option value="">All shops</option>
+            {% for s in all_sources %}
+            <option value="{{ s }}" {{ 'selected' if active_source == s else '' }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field-label"><span>Status</span>
+          <select class="field-input" name="status">
+            <option value="all" {{ 'selected' if active_status == 'all' else '' }}>All</option>
+            <option value="paid" {{ 'selected' if active_status == 'paid' else '' }}>Paid</option>
+            <option value="unpaid" {{ 'selected' if active_status == 'unpaid' else '' }}>Unpaid</option>
+            <option value="cancelled" {{ 'selected' if active_status == 'cancelled' else '' }}>Cancelled</option>
+          </select>
+        </label>
+        <label class="field-label"><span>Sort</span>
+          <select class="field-input" name="sort">
+            {% for key, opt in sort_options.items() %}
+            <option value="{{ key }}" {{ 'selected' if active_sort == key else '' }}>{{ opt[1] }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field-label"><span>Tracking</span>
+          <select class="field-input" name="has_tracking">
+            <option value="" {{ 'selected' if not active_has_tracking else '' }}>Any</option>
+            <option value="yes" {{ 'selected' if active_has_tracking == 'yes' else '' }}>Has tracking</option>
+            <option value="no" {{ 'selected' if active_has_tracking == 'no' else '' }}>No tracking yet</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="settings-form-grid-4">
+        <label class="field-label"><span>From</span><input class="field-input" type="date" name="start_date" id="search-start-date" value="{{ start_date }}"></label>
+        <label class="field-label"><span>To</span><input class="field-input" type="date" name="end_date" id="search-end-date" value="{{ end_date }}"></label>
+        <label class="field-label"><span>Min price</span><input class="field-input" type="number" step="0.01" min="0" name="min_price" value="{{ min_price }}" placeholder="0.00"></label>
+        <label class="field-label"><span>Max price</span><input class="field-input" type="number" step="0.01" min="0" name="max_price" value="{{ max_price }}" placeholder="0.00"></label>
+      </div>
+      <div style="max-width:220px; margin-bottom:14px;">
+        <button type="submit" class="search-submit-btn">Search</button>
+      </div>
+
+      <div class="preset-row">
+        <button type="button" class="preset-pill clear" id="search-clear-btn">Clear</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if has_filter %}
+  {% if results %}
+  <div class="grid">
+    <div class="totals-bar">
+      <span class="match-count"><b>{{ match_count }}</b> match{{ "es" if match_count != 1 else "" }}{% if total_pages > 1 %} &middot; page <b>{{ current_page }}</b> of <b>{{ total_pages }}</b>{% endif %}</span>
+      <span class="spent-figure">Spent: <b>{{ currency() }}{{ "{:,.2f}".format(spent) }}</b></span>
+      <span class="remaining-figure">Still due: <b>{{ currency() }}{{ "{:,.2f}".format(remaining) }}</b></span>
+      {% if cancelled_count %}
+      <span class="cancelled-note">+ {{ cancelled_count }} cancelled ({{ currency() }}{{ "{:,.2f}".format(cancelled_total) }}, not counted above)</span>
+      {% endif %}
+      <a class="csv-btn" href="/search/export.csv?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download CSV</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card results-card">
+      {% for item in results %}
+      {% if item.status == 'cancelled' %}
+      <div class="search-result-row is-cancelled">
+        <div></div>
+        <div class="row-name"><span class="cancelled-tag">Cancelled</span>{{ item.name }}</div>
+        <div></div>
+        <div class="row-price mono muted">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
+        <form method="post" action="/items/{{ item.id }}/mark" style="grid-column: 5 / 7; display:flex; justify-content:flex-end;">
+          <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+          <input type="hidden" name="action" value="undo">
+          <button type="submit" class="warn-action-btn">Undo</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="search-result-row">
+        <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
+          <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+          <input type="hidden" name="action" value="{{ 'undo' if item.charge_status == 'charged' else 'paid' }}">
+          <button type="submit" class="paid-check {{ 'checked' if item.charge_status == 'charged' else '' }}" title="{{ 'Mark as unpaid' if item.charge_status == 'charged' else 'Mark as paid' }}">
+            {% if item.charge_status == 'charged' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>{% endif %}
+          </button>
+        </form>
+        <div class="row-name">{{ item.name }}</div>
+        <div class="row-tracking">{% if item.tracking_number %}&#128230; {{ item.tracking_number }}{% endif %}</div>
+        <div class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
+        <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
+        <div class="row-menu-wrap">
+          <button type="button" class="row-menu-btn" data-drawer-template="drawer-{{ item.id }}">&#8942;</button>
+        </div>
+        <template id="drawer-{{ item.id }}" class="drawer-template">
+          <a href="/items/{{ item.id }}/edit">Edit</a>
+          <form method="post" action="/items/{{ item.id }}/mark">
+            <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+            <input type="hidden" name="action" value="cancel">
+            <button type="submit">Cancel</button>
+          </form>
+          <form method="post" action="/items/{{ item.id }}/mark" onsubmit="return confirm('Remove this permanently? This cannot be undone.');">
+            <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+            <input type="hidden" name="action" value="remove">
+            <button type="submit" class="danger">Remove</button>
+          </form>
+        </template>
+      </div>
+      {% endif %}
+      <div class="result-meta">
+        {{ item.release_date_label }}
+        &middot; <span style="color: {{ item.source_color }};">{{ item.source }}</span>
+        {% if item.order_number %}
+        &middot; <a href="/search?q={{ item.order_number }}">order #{{ item.order_number }}</a>
+        {% endif %}
+        {% if item.note %}
+        <div class="result-note">{{ item.note }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="grid">
+    <div class="search-pagination">
+      {% if current_page > 1 %}
+      <a class="warn-action-btn" href="/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page - 1 }}">&larr; Prev</a>
+      {% endif %}
+      <span class="muted" style="font-size:12px;">Page {{ current_page }} of {{ total_pages }}</span>
+      {% if current_page < total_pages %}
+      <a class="warn-action-btn" href="/search?q={{ q }}&source={{ active_source }}&status={{ active_status }}&start_date={{ start_date }}&end_date={{ end_date }}&sort={{ active_sort }}&has_tracking={{ active_has_tracking }}&page={{ current_page + 1 }}">Next &rarr;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="grid"><div class="search-empty">No matches for these filters.</div></div>
+  {% endif %}
+{% else %}
+<div class="grid"><div class="search-empty">Type a name, pick a shop, or set a date range to start.</div></div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_script %}
+document.getElementById('search-clear-btn').addEventListener('click', function () {
+  window.location.href = '/search';
+});
+
+(function () {
+  var btn = document.getElementById('filter-toggle-btn');
+  var tpl = document.getElementById('filter-menu-template');
+
+  function applyQuickview(key) {
+    var form = btn.closest('form');
+    if (key === 'month' || key === 'year') {
+      var now = new Date();
+      var y = now.getFullYear(), m = now.getMonth();
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+      var start, end;
+      if (key === 'month') {
+        start = y + '-' + pad(m + 1) + '-01';
+        end = y + '-' + pad(m + 1) + '-' + pad(new Date(y, m + 1, 0).getDate());
+      } else {
+        start = y + '-01-01';
+        end = y + '-12-31';
+      }
+      document.getElementById('search-start-date').value = start;
+      document.getElementById('search-end-date').value = end;
+    } else if (key === 'expensive') {
+      document.querySelector('select[name="sort"]').value = 'price_desc';
+    } else if (key === 'cheapest') {
+      document.querySelector('select[name="sort"]').value = 'price_asc';
+    }
+    form.submit();
+  }
+
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var openNow = btn.dataset.open === '1';
+    document.querySelectorAll('.filter-menu').forEach(function (m) { m.remove(); });
+    btn.classList.remove('active');
+    btn.dataset.open = '0';
+    if (openNow) return;
+
+    var menu = document.createElement('div');
+    menu.className = 'filter-menu';
+    menu.innerHTML = tpl.innerHTML;
+    document.body.appendChild(menu);
+    var rect = btn.getBoundingClientRect();
+    var mw = menu.offsetWidth;
+    var left = rect.right - mw;
+    if (left < 8) left = 8;
+    menu.style.left = left + 'px';
+    menu.style.top = (rect.bottom + 6) + 'px';
+
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        menu.remove();
+        btn.classList.remove('active');
+        btn.dataset.open = '0';
+        applyQuickview(a.dataset.quickview);
+      });
+    });
+
+    btn.classList.add('active');
+    btn.dataset.open = '1';
+  });
+
+  document.addEventListener('click', function () {
+    document.querySelectorAll('.filter-menu').forEach(function (m) { m.remove(); });
+    btn.classList.remove('active');
+    btn.dataset.open = '0';
+  });
+})();
+{% endblock %}
