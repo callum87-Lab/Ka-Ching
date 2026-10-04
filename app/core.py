@@ -276,32 +276,135 @@ def login_enabled():
     return bool(stored)
 
 
+SESSION_PLAIN_HOURS = 24      # "keep me signed in" unticked: ends with the browser, or after a day
+
+
+def _now_ts():
+    return int(datetime.now(timezone.utc).timestamp())
+
+
+def _load_sessions(cur):
+    try:
+        data = json.loads(notifications.get_setting(cur, "login_sessions", "{}") or "{}")
+    except (ValueError, TypeError):
+        return {}
+    now = _now_ts()
+    return {sid: exp for sid, exp in data.items() if isinstance(exp, int) and exp > now}
+
+
+def _save_sessions(cur, sessions):
+    notifications.set_setting(cur, "login_sessions", json.dumps(sessions))
+
+
 def _session_value(remember):
+    """Start a new signed-in session. Each session has its own random id,
+    recorded on the server, so signing out ends it for good - a copied
+    cookie stops working too (OWASP ASVS 3.3.1)."""
     _, secret, version = _login_settings()
-    expiry = int(datetime.now(timezone.utc).timestamp()) + LOGIN_REMEMBER_DAYS * 86400 if remember else 0
-    body = f"{expiry}.{version}"
+    expiry = _now_ts() + (LOGIN_REMEMBER_DAYS * 86400 if remember else SESSION_PLAIN_HOURS * 3600)
+    sid = secrets.token_urlsafe(18)
+    conn = db.get_db()
+    cur = conn.cursor()
+    sessions = _load_sessions(cur)
+    sessions[sid] = expiry
+    _save_sessions(cur, sessions)
+    conn.commit()
+    conn.close()
+    body = f"{expiry}.{version}.{sid}"
     sig = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
     return f"{body}.{sig}"
 
 
-def _session_valid(value):
+def _session_parts(value):
     try:
-        expiry, version, sig = (value or "").split(".")
+        expiry, version, sid, sig = (value or "").split(".")
+        return int(expiry), version, sid, sig
     except ValueError:
+        return None
+
+
+def _session_valid(value):
+    parts = _session_parts(value)
+    if not parts:
         return False
+    expiry, version, sid, sig = parts
     _, secret, current = _login_settings()
-    good = hmac.new(secret.encode(), f"{expiry}.{version}".encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(sig, good) or version != current:
+    good = hmac.new(secret.encode(), f"{expiry}.{version}.{sid}".encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, good) or version != current or expiry <= _now_ts():
         return False
-    return int(expiry) == 0 or int(expiry) > int(datetime.now(timezone.utc).timestamp())
+    conn = db.get_db()
+    known = sid in _load_sessions(conn.cursor())
+    conn.close()
+    return known
+
+
+def _end_session(value):
+    """Sign this session out on the server."""
+    parts = _session_parts(value)
+    if not parts:
+        return
+    conn = db.get_db()
+    cur = conn.cursor()
+    sessions = _load_sessions(cur)
+    if sessions.pop(parts[2], None) is not None:
+        _save_sessions(cur, sessions)
+        conn.commit()
+    conn.close()
+
+
+def _end_all_sessions(cur):
+    _save_sessions(cur, {})
+
+
+# The most common passwords (from public breach analyses), refused for the
+# login - checked here, with no internet lookup (OWASP ASVS 2.1.7).
+COMMON_PASSWORDS = frozenset("""
+123456 123456789 12345678 password qwerty123 qwerty 1q2w3e4r 12345 1234567 1234567890 111111 123123
+000000 abc123 password1 iloveyou 1234 qwertyuiop 123321 654321 666666 121212 dragon monkey letmein
+football baseball welcome welcome1 admin admin123 administrator login princess sunshine master shadow
+superman batman trustno1 passw0rd password123 qwerty1 starwars whatever freedom michael charlie
+hello123 hello 1qaz2wsx zaq12wsx asdfghjkl asdfgh qazwsx 987654321 7777777 888888 55555 aaaaaa
+123qwe 1q2w3e 1qazxsw2 changeme letmein1 football1 liverpool chelsea arsenal manchester password12
+p@ssw0rd p@ssword pa55word secret secret123 summer2024 summer2025 summer2026 winter2025 spring2026
+autumn2026 london1 kaching kaching123 kaching1 comics comicbook marvel123 starwars1 jedi123 skywalker
+yoda123 darthvader 0987654321 1111111111 123456a a123456 abcd1234 abcdef abcdefg abcdefgh 12345a
+iloveyou1 lovely loveme mustang access computer internet killer pokemon pikachu minecraft fortnite
+football123 password1234 qwerty12345 123456789a qwertyui 11111111 00000000 12341234 147258369
+""".split())
+
+
+def password_problem(password):
+    """Why a new password isn't good enough, or None (OWASP ASVS 2.1.1/2.1.7)."""
+    if len(password) < 12:
+        return "too-short"
+    lowered = password.lower()
+    if lowered in COMMON_PASSWORDS or len(set(lowered)) <= 2 or lowered.rstrip("0123456789!?.") in COMMON_PASSWORDS:
+        return "too-common"
+    return None
+
+
+def notify_login_change(cur, what):
+    """Tell the owner when the login's details change, if notifications are
+    set up (OWASP ASVS 2.2.3). Never stops the change if sending fails."""
+    if notifications.get_setting(cur, "notify_provider", "none") in ("", "none"):
+        return
+    try:
+        notifications.send_via_configured_provider(cur, "Ka-Ching! sign-in changed",
+                                                   f"The Ka-Ching! login was {what}. If this wasn't you, check Settings → Security.")
+    except Exception:
+        logger.exception("LOGIN: couldn't send the change notification")
+
+
+def _is_https(request):
+    return request.url.scheme == "https" or \
+        request.headers.get("x-forwarded-proto", "").split(",")[0].strip() == "https"
 
 
 def _set_session_cookie(response, remember, request=None):
     kwargs = {"httponly": True, "samesite": "lax", "path": "/"}
     # Over HTTPS (directly, or behind a reverse proxy that says so) the
     # cookie is marked secure, so a browser never sends it over plain HTTP.
-    if request is not None and (request.url.scheme == "https"
-                                or request.headers.get("x-forwarded-proto", "").split(",")[0].strip() == "https"):
+    if request is not None and _is_https(request):
         kwargs["secure"] = True
     if remember:
         kwargs["max_age"] = LOGIN_REMEMBER_DAYS * 86400
@@ -411,6 +514,13 @@ async def security_middleware(request: Request, call_next):
     response = await call_next(request)
     for name, value in _SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
+    # Pages, exports and backups hold personal data: never keep a copy in
+    # the browser's cache (OWASP ASVS 8.2.1). Icons and the like can be.
+    if not request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-store"
+    # Reached over HTTPS: tell the browser to always use HTTPS here (ASVS 14.4.5)
+    if _is_https(request):
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
     return response
 
 

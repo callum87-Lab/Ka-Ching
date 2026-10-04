@@ -121,13 +121,21 @@
   .catlimit-input { display: flex; align-items: center; gap: 6px; flex: 0 0 140px; }
   .catlimit-input .field-input { width: 120px; }
   @media (max-width: 900px) { .catlimit-list { grid-template-columns: 1fr; } }
-  .sec-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; margin-top: 14px; }
+  .sec-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; margin-top: 14px; }
+  .sec-form > .submit-btn, .sec-form > .btn-secondary { margin-top: 26px; }
   .sec-form .submit-btn, .sec-form .btn-secondary { justify-self: start; }
   .sec-off { grid-template-columns: minmax(0, 1fr) auto; max-width: 560px; padding-top: 14px; border-top: 1px solid var(--border); }
   .sec-msg { border-radius: 12px; padding: 10px 14px; font-size: 13.5px; margin: 8px 0 6px; }
   .sec-msg.good { background: rgba(60,242,166,0.08); border: 1px solid rgba(60,242,166,0.35); color: var(--neon-green); }
   .sec-msg.bad { background: rgba(255,77,141,0.08); border: 1px solid rgba(255,77,141,0.35); color: var(--neon-pink); }
   @media (max-width: 900px) { .sec-form, .sec-off { grid-template-columns: 1fr; } }
+  .pw-wrap { position: relative; display: block; }
+  .pw-wrap .field-input { width: 100%; padding-right: 64px; }
+  .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none;
+    color: var(--neon-blue); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 6px 8px; }
+  .pw-meter { display: flex; align-items: center; gap: 10px; margin-top: 7px; min-height: 16px; }
+  .pw-meter i { display: block; height: 5px; width: 0; border-radius: 99px; transition: width 0.2s ease; flex: 0 0 auto; max-width: 60%; }
+  .pw-meter b { font-size: 12px; font-weight: 600; color: var(--text-muted); }
 {% endblock %}
 
 {% block content %}
@@ -425,12 +433,13 @@
       <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Security</div>
       {% set _sec = request.query_params.get('security') %}
       {% if _sec %}
-      <div class="sec-msg {{ 'bad' if _sec in ('wrong-current','too-short','mismatch','managed') else 'good' }}">
+      <div class="sec-msg {{ 'bad' if _sec in ('wrong-current','too-short','too-common','mismatch','managed') else 'good' }}">
         {% if _sec == 'on' %}Login is on. This browser stays signed in; other devices will be asked for the password.
         {% elif _sec == 'changed' %}Password changed. Every other device has been signed out.
         {% elif _sec == 'off' %}Login is off. Anyone who can reach Ka-Ching! can open it again.
         {% elif _sec == 'wrong-current' %}That current password isn't right, so nothing was changed.
-        {% elif _sec == 'too-short' %}Use at least 6 characters.
+        {% elif _sec == 'too-short' %}Use at least 12 characters &mdash; a few unrelated words make a strong, memorable password.
+        {% elif _sec == 'too-common' %}That password is one of the most commonly used, so it's easy to guess. Pick something else.
         {% elif _sec == 'mismatch' %}The two new passwords didn't match.
         {% elif _sec == 'managed' %}The password is set in docker-compose, so it can't be changed here.{% endif %}
       </div>
@@ -439,16 +448,16 @@
       <p class="warn-hint">Login is <b style="color:var(--text);">on</b> and <b style="color:var(--text);">managed in docker-compose</b> (<span class="mono">KACHING_PASSWORD</span>) &mdash; it can't be turned off from here while that line is set.</p>
       <p class="warn-hint">Recovering a forgotten password? Set the password to use <b style="color:var(--text);">after</b> you remove that line &mdash; no old password needed while you're signed in with the docker-compose one.</p>
       <form method="post" action="/settings/security/password" class="sec-form">
-        <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="6" required></label>
-        <label class="field-label"><span>New password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="6" required></label>
+        <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="12" required></label>
+        <label class="field-label"><span>New password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="12" required></label>
         <button type="submit" class="submit-btn">Save password</button>
       </form>
       {% elif login_enabled() %}
       <p class="warn-hint">Login is <b style="color:var(--neon-green);">on</b>. Every page, export and the old /classic/ view asks for the password. Changing it signs every other device out.</p>
       <form method="post" action="/settings/security/password" class="sec-form">
         <label class="field-label"><span>Current password</span><input class="field-input" type="password" name="current" autocomplete="current-password" required></label>
-        <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="6" required></label>
-        <label class="field-label"><span>New password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="6" required></label>
+        <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="12" required></label>
+        <label class="field-label"><span>New password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="12" required></label>
         <button type="submit" class="submit-btn">Change password</button>
       </form>
       <form method="post" action="/settings/security/off" class="sec-form sec-off" onsubmit="return confirm('Turn the login off? Anyone who can reach Ka-Ching! will be able to open it.');">
@@ -458,8 +467,8 @@
       {% else %}
       <p class="warn-hint">Login is <b style="color:var(--text);">off</b> &mdash; fine on your home network. Turn it on if Ka-Ching! can ever be reached from outside it. The password is stored scrambled (hashed), never as plain text.</p>
       <form method="post" action="/settings/security/password" class="sec-form">
-        <label class="field-label"><span>Password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="6" required></label>
-        <label class="field-label"><span>Password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="6" required></label>
+        <label class="field-label"><span>Password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="12" required></label>
+        <label class="field-label"><span>Password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="12" required></label>
         <button type="submit" class="submit-btn">Turn login on</button>
       </form>
       {% endif %}
@@ -652,6 +661,34 @@
 {% endblock %}
 
 {% block extra_script %}
+// Password boxes: a show/hide button on each, and a strength bar under new ones
+document.querySelectorAll('#security-card input[type="password"]').forEach(function (inp) {
+  var wrap = document.createElement('span'); wrap.className = 'pw-wrap';
+  inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+  var btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'pw-eye'; btn.textContent = 'Show'; btn.setAttribute('aria-label', 'Show password');
+  btn.addEventListener('click', function () {
+    var shown = inp.type === 'text'; inp.type = shown ? 'password' : 'text';
+    btn.textContent = shown ? 'Show' : 'Hide'; btn.setAttribute('aria-label', shown ? 'Show password' : 'Hide password');
+  });
+  wrap.appendChild(btn);
+  if (inp.name !== 'password') return;
+  var bar = document.createElement('span'); bar.className = 'pw-meter'; bar.innerHTML = '<i></i><b></b>';
+  wrap.parentNode.appendChild(bar);
+  inp.addEventListener('input', function () {
+    var v = inp.value, score = 0;
+    if (v.length >= 12) score++;
+    if (v.length >= 16) score++;
+    if (/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
+    if (/\d/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v) || /\s/.test(v)) score++;
+    var label = !v ? '' : v.length < 12 ? 'Too short (12 characters minimum)' : score <= 2 ? 'OK' : score <= 3 ? 'Good' : 'Strong';
+    var pct = !v ? 0 : v.length < 12 ? 15 : Math.min(100, score * 22);
+    bar.querySelector('i').style.width = pct + '%';
+    bar.querySelector('i').style.background = v.length < 12 ? 'var(--neon-pink)' : score <= 2 ? '#ffb020' : 'var(--neon-green)';
+    bar.querySelector('b').textContent = label;
+  });
+});
 document.querySelectorAll('[data-catlimit-showall]').forEach(function (a) {
   a.addEventListener('click', function (e) {
     e.preventDefault();

@@ -53,7 +53,8 @@ def login_submit(request: Request, password: str = Form(""), remember: str = For
 
 
 @app.get("/logout")
-def logout():
+def logout(request: Request):
+    _end_session(request.cookies.get(LOGIN_COOKIE))
     response = RedirectResponse(url="/login", status_code=303)
     response.delete_cookie(LOGIN_COOKIE, path="/")
     return response

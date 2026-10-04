@@ -189,14 +189,17 @@ def set_login_password(request: Request, current: str = Form(""), password: str 
     # route, so the Settings password can be replaced without the old one.
     if stored and not _env_password() and not _check_password_hash(current, stored):
         return RedirectResponse(url=back + "?security=wrong-current", status_code=303)
-    if len(password) < 6:
-        return RedirectResponse(url=back + "?security=too-short", status_code=303)
     if password != confirm:
         return RedirectResponse(url=back + "?security=mismatch", status_code=303)
+    problem = password_problem(password)
+    if problem:
+        return RedirectResponse(url=back + "?security=" + problem, status_code=303)
     conn = db.get_db()
     cur = conn.cursor()
     notifications.set_setting(cur, "login_password_hash", _hash_password(password))
     notifications.set_setting(cur, "login_version", str(int(version) + 1))
+    _end_all_sessions(cur)
+    notify_login_change(cur, "password changed" if stored else "turned on")
     conn.commit()
     conn.close()
     logger.info("LOGIN: password %s", "changed" if stored else "set, login turned on")
@@ -215,6 +218,8 @@ def turn_login_off(current: str = Form("")):
     cur = conn.cursor()
     notifications.set_setting(cur, "login_password_hash", "")
     notifications.set_setting(cur, "login_version", str(int(version) + 1))
+    _end_all_sessions(cur)
+    notify_login_change(cur, "turned off")
     conn.commit()
     conn.close()
     logger.info("LOGIN: turned off")

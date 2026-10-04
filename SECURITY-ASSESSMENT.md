@@ -47,25 +47,32 @@ Likelihood and impact are rated Low / Medium / High for a typical home setup.
 
 | # | Threat | Likelihood | Impact | What defends against it now | Status |
 | --- | --- | --- | --- | --- | --- |
-| T1 | Someone else on the network views or changes your data | Medium | Medium | Optional login (Settings → Security): hashed password, signed cookies (HttpOnly, SameSite=Lax, Secure over HTTPS), five-attempt lockout, sign-out everywhere on password change; `KACHING_PASSWORD` for recovery | **Mitigated when the login is on.** Off by default, which the README explains |
-| T2 | A malicious website makes your browser submit Ka-Ching! forms (cross-site request forgery) - e.g. delete items or reset data | Medium | High | With the login on, the SameSite=Lax cookie means cross-site form posts arrive signed out and are refused | **Gap when the login is off.** Planned: a per-session token on every form, so forged posts are refused either way |
+| T1 | Someone else on the network views or changes your data | Medium | Medium | Optional login (Settings → Security): passwords of 12+ characters, common passwords refused, hashed; signed cookies (HttpOnly, SameSite=Lax, Secure over HTTPS) tied to sessions recorded on the server, so signing out ends a session for good; five-attempt lockout; every session ended on password change; a push notification when login details change; `KACHING_PASSWORD` for recovery | **Mitigated when the login is on.** Off by default, which the README explains |
+| T2 | A malicious website makes your browser submit Ka-Ching! forms (cross-site request forgery) - e.g. delete items or reset data | Medium | High | Every form post and background save from another website or subdomain is refused, using the browser's Sec-Fetch-Site and Origin headers; with the login on, the SameSite=Lax cookie adds a second layer | **Fixed in v3.2**, with or without the login |
 | T3 | A crafted name (from a pasted page or a forged form) runs script in your browser (stored cross-site scripting) | Medium | High | Every page escapes names; data placed inside scripts escapes `<`, `>` and `&`; chart tooltips and legends escape names before display. Automated test covers all pages | **Fixed in v3.2** (Insights and Spend by shop were vulnerable before) |
 | T4 | A crafted link sends you from Ka-Ching! to another site (open redirect) | Low | Low | Every "go back to" address is checked to be a page on Ka-Ching! itself, including the old-address redirects | **Fixed in v3.2** |
 | T5 | A crafted paste ties the app up (slow-pattern denial of service) | Low | Medium | Parser patterns rewritten so they can't backtrack; pastes over 1 MB are cut short; tests feed 100,000-character attacks and require under 2 seconds | **Fixed in v3.2** |
-| T6 | A crafted or huge backup file breaks the database or fills the disk on restore | Low | High | Restores check the file is a valid SQLite database before use, copy it in through SQLite's backup API, keep a copy of the previous data first, and upgrade old formats | **Partly mitigated.** Planned: an upload size limit |
-| T7 | Pages framed by another site, or content sniffing | Low | Low | - | **Gap.** Planned: security headers (Content-Security-Policy, frame-ancestors, X-Content-Type-Options, Referrer-Policy) |
+| T6 | A crafted or huge backup file breaks the database or fills the disk on restore | Low | High | Restores check the file is a valid SQLite database before use, copy it in through SQLite's backup API, keep a copy of the previous data first, and upgrade old formats; backups over 100 MB, settings files over 1 MB and any request over 110 MB are refused | **Fixed in v3.2** |
+| T7 | Pages framed by another site, content sniffing, or data left in caches | Low | Low | Content-Security-Policy (nothing loads from other sites; no framing), X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy; `Cache-Control: no-store` on every page, export and backup; HSTS when reached over HTTPS; the server software isn't announced | **Fixed in v3.2** |
 | T8 | Keys or tokens leaked from settings or backups | Low | Medium | Data never leaves your machine; keys are long random values; backups are only downloadable by whoever can use the app | **Accepted.** Tokens are stored as-is because the app must use them; protect the `/data` volume and backups like any other private file |
 | T9 | A vulnerable or compromised dependency | Low | High | Four direct dependencies, pinned; Dependabot alerts; `pip-audit` on every pull request; GitHub Actions pinned to exact commits; CodeQL on every pull request; signed release checksums | **Mitigated.** v3.2 upgraded Starlette, clearing 7 known vulnerabilities |
 | T10 | The app exposed directly to the internet | Low | High | The login, plus HTTPS-aware cookies | **Advice:** don't expose it directly; use a VPN or a reverse proxy with HTTPS and the login on |
 | T11 | Something internal shown to visitors in an error | Low | Low | Incomplete forms get a normal error page; debug tools are off unless `DEBUG_TOOLS_ENABLED=true` and need the sync key | **Mitigated** |
 
-## What's still to do (planned for v3.2's security review)
+## OWASP ASVS Level 1
 
-1. **Cross-site form protection (T2):** a per-session token on every form
-   and action.
-2. **Security headers (T7).**
-3. **Upload size limits (T6)** on restores and imports.
-4. **A full OWASP ASVS Level 1 review**, with results recorded here.
+v3.2 was reviewed against the OWASP Application Security Verification
+Standard 4.0.3, Level 1. Everything that applies is met, including:
+passwords of at least 12 characters, common passwords refused, a strength
+meter and show-password option, notification when login details change,
+lockout after repeated failures, sessions that end for good on sign-out,
+cross-site request protection, output escaping, parameterised SQL, upload
+limits, security headers, no caching of personal data, and no debug pages.
+
+Not applicable to a single-password, self-hosted app: multi-factor and
+one-time-password sections, account recovery questions, and user
+registration. Transport security (TLS) is the deployment's job: use a
+reverse proxy with HTTPS if Ka-Ching! is reachable beyond your home network.
 
 ## Tools that check this continuously
 

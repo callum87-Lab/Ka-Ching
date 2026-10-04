@@ -73,11 +73,11 @@ def test_huge_paste_is_cut_short():
 
 
 def test_login_cookie_secure_behind_https_proxy(client):
-    client.post("/settings/security/password", data={"password": "pass-word-1", "confirm": "pass-word-1"})
+    client.post("/settings/security/password", data={"password": "pass-word-phrase-1", "confirm": "pass-word-phrase-1"})
     anon = TestClient(app)
-    plain = anon.post("/login", data={"password": "pass-word-1", "next": "/"}, follow_redirects=False)
+    plain = anon.post("/login", data={"password": "pass-word-phrase-1", "next": "/"}, follow_redirects=False)
     assert "secure" not in plain.headers["set-cookie"].lower()
-    proxied = anon.post("/login", data={"password": "pass-word-1", "next": "/"},
+    proxied = anon.post("/login", data={"password": "pass-word-phrase-1", "next": "/"},
                         headers={"x-forwarded-proto": "https"}, follow_redirects=False)
     assert "secure" in proxied.headers["set-cookie"].lower()
 
