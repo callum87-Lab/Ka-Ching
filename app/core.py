@@ -343,6 +343,91 @@ async def login_middleware(request: Request, call_next):
     return PlainTextResponse("Sign in required", status_code=401)
 
 
+# ---------------------------------------------------------------------------
+# Security headers, cross-site request protection and request size limits.
+# ---------------------------------------------------------------------------
+MAX_REQUEST_BYTES = 110 * 1024 * 1024   # a little over the largest allowed upload
+MAX_BACKUP_BYTES = 100 * 1024 * 1024
+MAX_SMALL_UPLOAD_BYTES = 1024 * 1024
+
+_CSP = "; ".join([
+    "default-src 'self'",
+    # the pages' own inline scripts and styles; nothing is ever loaded from elsewhere
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "manifest-src 'self'",
+    "worker-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+])
+_SECURITY_HEADERS = {
+    "Content-Security-Policy": _CSP,
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+}
+_UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def _request_hosts(request):
+    hosts = {request.headers.get("host", "").lower()}
+    fwd = request.headers.get("x-forwarded-host", "")
+    if fwd:
+        hosts.add(fwd.split(",")[0].strip().lower())
+    return {h for h in hosts if h}
+
+
+def _cross_site(request):
+    """True if a state-changing request came from another website: the
+    browser's own Sec-Fetch-Site header says so, or its Origin (or, failing
+    that, Referer) names a different site. Requests with neither - scripts,
+    the phone app - carry no cookies from a victim's browser and are
+    judged by the login and sync key as usual."""
+    site = request.headers.get("sec-fetch-site")
+    if site in ("cross-site", "same-site"):   # same-site = another subdomain
+        return True
+    source = request.headers.get("origin") or request.headers.get("referer")
+    if not source or source == "null":
+        return source == "null"
+    return urlparse(source).netloc.lower() not in _request_hosts(request)
+
+
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    length = request.headers.get("content-length")
+    if length and length.isdigit() and int(length) > MAX_REQUEST_BYTES:
+        return PlainTextResponse("Request too large", status_code=413)
+    if request.method in _UNSAFE_METHODS and _cross_site(request):
+        logger.warning("BLOCKED cross-site %s %s (origin=%s)", request.method, request.url.path,
+                       request.headers.get("origin") or request.headers.get("referer"))
+        return PlainTextResponse("Blocked: this request came from another website.", status_code=403)
+    response = await call_next(request)
+    for name, value in _SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
+async def read_upload(upload, limit):
+    """Read an uploaded file, giving up (None) once it passes the limit."""
+    chunks, total = [], 0
+    while True:
+        chunk = await upload.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > limit:
+            return None
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 # Registered after the other middleware so it wraps them all: the whole
 # request - login check, page, template helpers - shares one database
 # connection and one settings cache (see db.get_db).

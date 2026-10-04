@@ -507,7 +507,9 @@ def export_notification_config():
 @app.post("/settings/import-notifications")
 async def import_notification_config(notification_config_file: UploadFile = File(...), next: str = Form("/settings")):
     next = safe_redirect(next, '/settings')
-    contents = await notification_config_file.read()
+    contents = await read_upload(notification_config_file, MAX_SMALL_UPLOAD_BYTES)
+    if contents is None:
+        return RedirectResponse(url=f"{next}?notif_import_result=bad_file", status_code=303)
     try:
         config = json.loads(contents)
     except (json.JSONDecodeError, UnicodeDecodeError):
@@ -592,7 +594,13 @@ async def restore_backup(backup_file: UploadFile = File(...), next: str | None =
     # nothing and keeps landing back on /settings. Local paths only.
     next = safe_redirect(next, None)
     back = next if (next and next.startswith("/") and not next.startswith("//")) else "/settings"
-    contents = await backup_file.read()
+    contents = await read_upload(backup_file, MAX_BACKUP_BYTES)
+    if contents is None:
+        logger.warning("BACKUP RESTORE rejected: file over %s bytes", MAX_BACKUP_BYTES)
+        return RedirectResponse(
+            url=f"{back}?test_error={quote('That file is too large to be a Ka-Ching! backup (over 100 MB)')}",
+            status_code=303,
+        )
 
     # A real SQLite database file always starts with this exact 16-byte header
     if not contents.startswith(b"SQLite format 3\x00"):

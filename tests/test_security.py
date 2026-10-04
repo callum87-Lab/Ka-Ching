@@ -117,3 +117,53 @@ def test_names_cannot_inject_script(client, fresh_db):
         page = client.get(path).text
         assert "<script>alert(1)" not in page, path
         assert "<img src=x onerror" not in page, path
+
+
+# --- cross-site request protection, headers, size limits ---------------------
+
+def test_security_headers_on_every_page(client):
+    for path in ["/", "/settings", "/login", "/static/manifest.json"]:
+        h = client.get(path).headers
+        assert "frame-ancestors 'none'" in h["content-security-policy"]
+        assert h["x-content-type-options"] == "nosniff"
+        assert h["x-frame-options"] == "DENY"
+        assert h["referrer-policy"] == "same-origin"
+
+
+@pytest.mark.parametrize("headers", [
+    {"origin": "https://evil.example"},
+    {"referer": "https://evil.example/page"},
+    {"sec-fetch-site": "cross-site"},
+    {"sec-fetch-site": "same-site", "origin": "https://other.example"},
+    {"origin": "null"},
+])
+def test_forms_from_other_websites_are_blocked(client, seeded, headers):
+    r = client.post("/settings/factory-reset", data={"confirm": "RESET"}, headers=headers, follow_redirects=False)
+    assert r.status_code == 403
+    assert "Test Series #1" in client.get("/search?q=Test").text   # nothing was reset
+
+
+def test_same_site_forms_still_work(client, seeded):
+    r = client.post("/settings/layout", json={"hidden": ["dash.week"]},
+                    headers={"origin": "http://testserver", "sec-fetch-site": "same-origin"})
+    assert r.status_code == 200
+    r = client.post("/items/1/mark", data={"action": "paid", "next": "/orders"},
+                    headers={"referer": "http://testserver/orders"}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_restore_refuses_oversized_files(client, seeded, monkeypatch):
+    from app import core
+    monkeypatch.setattr(core, "MAX_BACKUP_BYTES", 1000)
+    from app import settings_pages
+    monkeypatch.setattr(settings_pages, "MAX_BACKUP_BYTES", 1000)
+    big = b"SQLite format 3\x00" + b"\x00" * 5000
+    r = client.post("/settings/restore", files={"backup_file": ("big.db", big)}, data={"next": "/settings"}, follow_redirects=False)
+    assert "too large" in r.headers["location"].replace("%20", " ")
+    assert "Test Series #1" in client.get("/search?q=Test").text
+
+
+def test_huge_requests_refused_before_reading(client):
+    r = client.post("/import", content=b"x", headers={"content-length": str(200 * 1024 * 1024),
+                                                      "content-type": "application/x-www-form-urlencoded"})
+    assert r.status_code == 413
