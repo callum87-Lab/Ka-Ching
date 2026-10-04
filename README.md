@@ -752,12 +752,16 @@ Ka-Ching! keeps its dependencies deliberately few:
   (web server), Jinja2 (page templates) and python-multipart (form uploads).
   Nothing is loaded from the internet at runtime - no CDNs, external fonts
   or scripts; every chart and icon is built into the app.
-- **How they're obtained:** from PyPI with pip, at the exact versions pinned
-  in [`requirements.txt`](requirements.txt), on top of the official
-  `python:3.12-slim` Docker image.
+- **How they're obtained:** from PyPI with pip, in hash-checking mode:
+  [`requirements.txt`](requirements.txt) pins every package, including
+  sub-dependencies, to an exact version *and* fingerprint, so a tampered
+  download is refused. It's generated from `requirements.in` with
+  `pip-compile --generate-hashes`. The official `python:3.12-slim` Docker
+  base image is pinned by digest too.
 - **How they're tracked:** GitHub's dependency graph and Dependabot alerts
-  watch them for known vulnerabilities; updates are tested before a version
-  is changed, and noted in [CHANGELOG.md](CHANGELOG.md).
+  watch them for known vulnerabilities, and Dependabot proposes updates
+  weekly (versions, hashes and the base image digest together); every update
+  goes through the full test suite before it's merged.
 
 ## Project documents
 

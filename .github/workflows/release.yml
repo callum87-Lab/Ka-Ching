@@ -33,8 +33,8 @@ jobs:
           # Software bill of materials (CycloneDX): every package the release
           # installs, including sub-dependencies, at its exact version
           python -m venv /tmp/release-env
-          /tmp/release-env/bin/pip install --quiet -r requirements.txt
-          pip install --quiet cyclonedx-bom==7.5.0
+          /tmp/release-env/bin/pip install --quiet --require-hashes -r requirements.txt
+          pip install --quiet --require-hashes -r requirements-release.txt
           cyclonedx-py environment /tmp/release-env/bin/python --of JSON -o "Ka-Ching-${TAG}-sbom.cdx.json"
           sha256sum "Ka-Ching-${TAG}.tar.gz" "Ka-Ching-${TAG}-sbom.cdx.json" > "Ka-Ching-${TAG}-SHA256SUMS"
           cat "Ka-Ching-${TAG}-SHA256SUMS"

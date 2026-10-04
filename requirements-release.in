@@ -1,0 +1,4 @@
+# Tools used only by the release workflow (to build the SBOM).
+# requirements-release.txt is generated from this file:
+#   pip-compile --generate-hashes requirements-release.in
+cyclonedx-bom==7.5.0
