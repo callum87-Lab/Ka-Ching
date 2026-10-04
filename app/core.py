@@ -95,7 +95,7 @@ app = FastAPI(title="Ka-Ching!", lifespan=_lifespan)
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
 
-APP_VERSION = "3.1.0"
+APP_VERSION = "3.2.0"
 
 
 templates.env.globals["app_version"] = APP_VERSION

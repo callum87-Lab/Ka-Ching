@@ -1,5 +1,80 @@
 # Changelog
 
+## v3.2.0 — safe, sound and checked
+
+A tidy-up and security release: everything was audited - the code, the
+pages on real data, and security against OWASP ASVS Level 1 - and every
+problem found was fixed. No new features to learn; things just work
+better and more safely.
+
+### Security
+- **Fixed: names could run script code (stored XSS).** An item, shop or
+  category name containing script code ran on the Insights and Spend by
+  shop pages. Every name is now escaped everywhere, including inside charts,
+  tooltips and legends.
+- **Forms can't be submitted from other websites** (cross-site request
+  forgery protection), with or without the login.
+- **Every "go back to" address stays on Ka-Ching!** - crafted links could
+  previously redirect to another site (including via old `/v2/` and
+  `/classic/` addresses).
+- **Crafted pastes can't tie the app up:** the import reader's patterns were
+  rewritten so they can't slow down on malicious text (one took over 25
+  seconds; now 0.02s), and pastes are capped at 1 MB.
+- **Size limits:** backups up to 100 MB, settings files 1 MB, any request
+  110 MB.
+- **Security headers on every response:** a content security policy, no
+  framing, no sniffing, no caching of personal data, a referrer policy, and
+  HSTS when reached over HTTPS. The server no longer announces its software.
+- **Stronger login:** passwords of 12+ characters (existing ones keep
+  working), the most common passwords refused, a strength bar and Show
+  button, sessions recorded on the server so **signing out ends a session
+  for good**, every other session ended on a password change, a
+  notification when login details change, and the cookie marked secure
+  over HTTPS.
+- **Framework upgrade:** FastAPI 0.142 / Starlette 1.7 / Uvicorn 0.54,
+  clearing 7 known vulnerabilities in the old Starlette.
+
+### Fixes
+- Importing the same order twice no longer crashes; items already tracked
+  are marked on the review screen and skipped.
+- The word "None" no longer appears as a note (50 existing ones are
+  cleared automatically).
+- The general paste reader no longer puts lines like "Order Number: ..." or
+  "Qty: 1" into item names.
+- Prices must be between £0 and £100,000; an unreadable date no longer
+  quietly becomes today's.
+- A form missing something shows a normal page with a way back, not
+  technical text.
+- Money shows thousands separators everywhere (£1,274.86).
+- Chart tooltips sit beside the cursor in every layout (they drifted on
+  wide screens).
+- The Price creep tooltip shows the right year; Insights' figures and shop
+  toggles no longer run off a phone screen.
+- The budget alert now follows your budget cycle and rollover, like the
+  sidebar.
+
+### Under the hood
+- **Faster pages:** one database connection per page (was 14 to 21) and
+  60 to 80% fewer queries.
+- The code is split into clear parts, old leftovers from the v2 interface
+  removed, and shared calculations used everywhere so figures always agree.
+- **An automated test suite** (120 tests) runs on every change, alongside
+  CodeQL code scanning, dependency vulnerability and licence checks, and a
+  sign-off check.
+
+### Project
+- **Signed releases:** each release comes with a software bill of materials
+  and a checksums file, signed by GitHub - see
+  [Verifying a release](SECURITY.md#verifying-a-release).
+- New documents: [ARCHITECTURE.md](ARCHITECTURE.md),
+  [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md),
+  [INTERFACES.md](INTERFACES.md), [MAINTAINERS.md](MAINTAINERS.md), and
+  fuller [SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+- OpenSSF Best Practices: Baseline Level 1 and Level 2.
+
+### Upgrading
+- If you use the login, you'll be asked to sign in once more.
+
 ## v3.1.0 — make it yours
 
 ### Customise every page

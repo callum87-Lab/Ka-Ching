@@ -16,6 +16,14 @@ best at — but anything with a name, a price, a release date and a shop works
 the same way, and since v3 you can sort it all into **categories** (Comics,
 Manga, Pokémon cards, Funko Pop… or your own).
 
+> **New in v3.2 — a security and quality release.** A full security review
+> (OWASP ASVS Level 1, plus GitHub's CodeQL scanning) with every issue it
+> found fixed, a stronger optional login, a framework upgrade that clears 7
+> known vulnerabilities, a round of bug fixes, faster pages, an automated
+> test suite, and signed releases. See [CHANGELOG.md](CHANGELOG.md) and
+> [Upgrading from v3.1](#upgrading-from-v31) — **you'll be asked to sign in
+> once more** if you use the login.
+
 > **New in v3.1:** customise every page (show, hide and drag cards into
 > your own order), layouts for wide landscape monitors, a budget split by category with optional per-category
 > limits, an optional login, a `/` search shortcut, and a lot of polish.
@@ -113,6 +121,12 @@ want your data, doesn't have your data, and there's no mechanism by which it
 ever could. **Settings → Data backup → Download backup** gives you the whole
 database as a single file whenever you want it — genuinely yours, not
 locked into anything.
+
+**Built to be safe on your network, too.** Forms can't be submitted from
+other websites, nothing is ever loaded from outside the app, uploads have
+size limits, and every page sends strict security headers. The code is
+scanned on every change (CodeQL, dependency checks) and reviewed against
+OWASP ASVS Level 1 — see [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md).
 
 ## A tour of the interface
 
@@ -433,6 +447,20 @@ Then visit `http://<server-ip>:8091`.
 Data lives in `./data/kaching.db` (SQLite) — back it up like you would any
 other stack config.
 
+### Upgrading from v3.1
+
+`git pull` and `docker compose up -d --build`, as always — your data and
+settings carry straight over. Two things to know:
+
+- **If you use the login, sign in once more** after upgrading (sign-ins now
+  work differently, so old ones end). Your existing password keeps working;
+  the new 12-character minimum only applies when you set or change one.
+- Old notes that showed the word "None" (left by an earlier import screen)
+  are cleared automatically.
+
+To check a downloaded release is genuine before installing it, see
+[Verifying a release](SECURITY.md#verifying-a-release).
+
 ### Upgrading from v3.0
 
 `git pull` and `docker compose up -d --build`, as always. Nothing needs
@@ -489,11 +517,16 @@ Environment variables, set in `docker-compose.yml`:
 
 Ka-Ching! has no login by default — fine on a home network. If it can ever
 be reached from outside yours, switch one on in **Settings → Security**:
-pick a password (stored hashed, never as plain text) and every page, export
-and action then asks for it. The sign-in page can keep you signed in for 30
-days on that device; without it you stay signed in until the browser
-closes. **Sign out** is in the sidebar, changing the password signs every
-other device out, and five wrong attempts lock sign-in for a minute.
+pick a password of at least 12 characters (a few unrelated words work well;
+the most common passwords are refused), and every page, export and action
+then asks for it. Passwords are stored hashed, never as plain text, and the
+password boxes have a strength bar and a **Show** button. The sign-in page
+can keep you signed in for 30 days on that device; without it you stay
+signed in until the browser closes (or a day at most). **Sign out** is in
+the sidebar and ends that session for good, changing the password signs
+every other device out, and five wrong attempts lock sign-in for a minute.
+If notifications are set up, you get a message whenever the login is
+turned on, off or its password changes.
 
 While the login is on, the Calendar's **Subscribe (live)** link carries a
 private key (calendar apps can't type passwords) — re-add it in your
