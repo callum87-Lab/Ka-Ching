@@ -18,8 +18,6 @@
   .recent-row .rp { font-weight: 600; }
   .recent-list-tab { padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
   .overview-card { grid-column: span 8; }
-  /* Narrow desktop windows (portrait monitors): the gauge needs more than a third of the row */
-  @media (min-width: 901px) and (max-width: 1180px) { .ratio-card, .overview-card { grid-column: span 6; } }
   .stat-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
   .mini-stat-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
   .mini-stat-value { font-size: 23.5px; font-weight: 800; }
@@ -124,8 +122,8 @@
 <div class="grid">
   <div class="card ratio-card" data-card="ov.ratio">
     <div class="card-title" style="margin-bottom:0;">Pre-order vs released</div>
-    <div class="gauge-wrap" style="position:relative; width:176px; height:100px; margin:10px auto 6px;">
-      <svg viewBox="0 0 176 100" width="176" height="100">
+    <div class="gauge-wrap" style="position:relative; width:176px; max-width:100%; aspect-ratio:176/100; margin:10px auto 6px;">
+      <svg viewBox="0 0 176 100" style="width:100%; height:auto; display:block;">
         {% if preorder_gauge_has_preorder %}
         <path d="M14 92 A 74 74 0 0 1 {{ preorder_gauge_split_x }} {{ preorder_gauge_split_y }}" fill="none" stroke="var(--neon-blue)" stroke-width="15" stroke-linecap="round"/>
         {% endif %}
@@ -147,11 +145,10 @@
 
   <div class="card overview-card" data-card="ov.releases">
     <div class="card-head" style="margin-bottom:8px;">
-      <div class="card-title" style="margin-bottom:0;">Already out</div>
       <div class="recent-list-tabs" style="display:flex; gap:6px;">
-        <button type="button" class="recent-list-tab active" data-list="recent">Latest 10</button>
-        <button type="button" class="recent-list-tab" data-list="expensive">Priciest</button>
-        <button type="button" class="recent-list-tab" data-list="lowest">Cheapest</button>
+        <button type="button" class="recent-list-tab active" data-list="recent">Recent</button>
+        <button type="button" class="recent-list-tab" data-list="expensive">Most expensive</button>
+        <button type="button" class="recent-list-tab" data-list="lowest">Lowest</button>
       </div>
     </div>
     <div class="recent-list" data-list-panel="recent">

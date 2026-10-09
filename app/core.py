@@ -1584,7 +1584,7 @@ CARD_LAYOUT = [
     ]},
     {"page": "Insights \u00b7 Overview", "path": "/insights", "cards": [
         {"id": "ov.ratio", "name": "Pre-order vs released", "desc": "How much is still on order", "preorder": True},
-        {"id": "ov.releases", "name": "Already out", "desc": "The latest, priciest and cheapest 10 items already released"},
+        {"id": "ov.releases", "name": "Recent, most expensive, lowest", "desc": "Ten items already released: the most recent, the priciest and the cheapest"},
         {"id": "ov.spend", "name": "Spend overview", "desc": "Monthly spend at a glance", "essential": True},
         {"id": "ov.issue", "name": "Per item", "desc": "Priciest item and the average item"},
         {"id": "ov.dist", "name": "Price distribution", "desc": "Items by price bracket"},
