@@ -8,15 +8,15 @@
   .plain-stat-value { font-size: 25px; font-weight: 800; }
   .plain-stat-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
 
-  .titles-hero { grid-column: span 4; background: radial-gradient(circle at 100% 0%, rgba(47,216,255,0.30) 0%, transparent 55%), linear-gradient(160deg, #0a2540 0%, #0c1830 55%, var(--surface) 100%); border-color: rgba(47,216,255,0.35); display: flex; flex-direction: column; justify-content: space-between; }
-  .titles-hero-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a8e0ff; margin-bottom: 8px; }
-  .titles-hero-title { font-size: 20.5px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-  .titles-hero-sub { font-size: 13.5px; color: #a8e0ff; }
+  .titles-hero { grid-column: span 4; background: var(--card-bg); display: flex; flex-direction: column; justify-content: space-between; }
+  .titles-hero-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); margin-bottom: 8px; }
+  .titles-hero-title { font-size: 20.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .titles-hero-sub { font-size: 13.5px; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); }
   .titles-hero-price { margin-top: 16px; }
-  .titles-hero-price .mono { font-size: 29.5px; font-weight: 800; color: #fff; }
-  .titles-hero-divider { height: 1px; background: rgba(255,255,255,0.15); margin: 14px 0; }
-  .titles-hero-note { font-size: 13.5px; color: #a8e0ff; }
-  .titles-hero-note b { color: #fff; font-family: var(--font-mono); }
+  .titles-hero-price .mono { font-size: 29.5px; font-weight: 800; color: var(--text); }
+  .titles-hero-divider { height: 1px; background: color-mix(in srgb, var(--text) 15%, transparent); margin: 14px 0; }
+  .titles-hero-note { font-size: 13.5px; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); }
+  .titles-hero-note b { color: var(--text); font-family: var(--font-mono); }
 
   .titles-table-card { grid-column: span 8; }
   .titles-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
@@ -29,7 +29,7 @@
 
   .series-row { display: grid; grid-template-columns: 1fr 220px 90px 70px; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
   .series-row:first-of-type { border-top: none; }
-  .series-bar-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .series-bar-track { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; }
   .series-bar-fill { height: 100%; border-radius: 4px; }
   .card-note { font-size: 13px; color: var(--text-dim); margin-top: 14px; line-height: 1.5; }
 
@@ -110,7 +110,7 @@
     <div class="titles-hero-price"><span class="mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</span></div>
     {% if top_series_by_spend and priciest_series_m == top_series_by_spend.series %}
     <div class="titles-hero-divider"></div>
-    <div class="titles-hero-note">Also the series with your highest total spend &mdash; <b>{{ currency() }}{{ "{:,.2f}".format(top_series_by_spend.total) }}</b> across {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}.</div>
+    <div class="titles-hero-note">Also the series with your highest total spend: <b>{{ currency() }}{{ "{:,.2f}".format(top_series_by_spend.total) }}</b> across {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}.</div>
     {% endif %}
   </div>
 
@@ -130,7 +130,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <div class="card-note">Ranked by cover price, not what you actually paid &mdash; variants and eBay pickups can run above or below cover.</div>
+    <div class="card-note">Ranked by cover price, not what you actually paid. Variants and eBay pickups can run above or below cover.</div>
   </div>
 </div>
 {% endif %}
@@ -149,7 +149,7 @@
         <span class="mono" style="text-align:right; color:var(--text-dim);">{{ s.count }} issue{{ "s" if s.count != 1 else "" }}</span>
       </div>
       {% endfor %}
-    <div class="card-note">Series with a "#N" in the name, grouped and summed by total spend &mdash; the top 10.</div>
+    <div class="card-note">Series with a "#N" in the name, grouped and summed by total spend. The top 10.</div>
     {% else %}
     <div class="card-note">Nothing tracked yet.</div>
     {% endif %}

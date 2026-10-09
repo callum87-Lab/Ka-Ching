@@ -1,5 +1,71 @@
 # Changelog
 
+## v3.3.0 - a calmer, premium look
+
+A restyle release. Every page has been redesigned to be quieter and easier
+to read: no neon glows, no shouting capitals, big figures in their own
+typeface, and four themes to choose from. Nothing about how your data is
+tracked or added has changed.
+
+### New look
+- **Four themes** in Settings -> Appearance: **Sand** (the new default, a
+  warm light theme), **Grey**, **Blue** and **Noir**. Each has its own set of
+  accent colours, all checked for contrast, so text and charts stay readable
+  whichever you pick. Warning colours (over budget, unpaid) never change.
+  If you were on the White theme from the test builds, you're moved to Sand.
+- **A new logo:** the "K!" monogram, with a matching app icon, favicon and
+  home-screen icon.
+- **Fonts are bundled with the app** (Inter for text, Instrument Serif for
+  headline figures, both under the SIL Open Font Licence). Nothing is loaded
+  from outside your server.
+- **Shop colours follow the theme**, so each shop's colour suits whichever
+  theme you're on (the Android app's API keeps its fixed colours).
+- **Calmer pages throughout:** no glows, icon badges or all-capitals labels,
+  plain underlined tabs instead of pills, and one set of corner sizes,
+  spacing and hover/press effects used everywhere.
+- Text contrast checked and raised where needed in every theme.
+
+### Dashboard
+- **A new "This month" summary** at the top: what's still due, how that
+  sits against your budget, and the single biggest thing still to come.
+- **Key figures** underneath: this year, all time, still on order, and what
+  needs attention (tap it to open Alerts).
+- **The Spending chart** (was Spend trend) now shows **paid** as solid bars
+  and **still due** as hatched, with your budget as a line. Switch to a
+  **line** style with the button by the range tabs; your choice is
+  remembered on each device.
+- The Backup card is folded into Alerts, and "Still due & budget", "Your
+  spending" and "Biggest still to come" are replaced by the new summary.
+  A Dashboard card order you'd saved goes back to the default once, so the
+  new cards don't end up at the bottom.
+
+### Insights
+- **Spend by shop:** shop spend over time is now stacked bars (one bar per
+  month, one segment per shop), and the share-of-spend donut shows the
+  total in the middle.
+- **Price creep:** **Where each series sits** shows every series as a dot on
+  one scale, so you can see at a glance which are climbing; the extra-spend
+  chart is a stepped running total starting from the first price rise.
+
+### Sidebar and layout
+- **A collapsible sidebar:** shrink it to a slim strip of icons, and it
+  stays that way on that device. Search now sits in the sidebar.
+- **Settings sits at the bottom** of the sidebar, and its sections
+  (General, Data backup, Appearance, Security, About, Help) are tabs at the
+  top of the Settings page. Lines join each section to its sub-pages.
+- **Compact** replaces the Three columns layout: tighter spacing and smaller
+  figures so more fits without scrolling, on any screen size. If you were
+  using Three columns, you're moved to Compact.
+
+### Sign-in page
+- Redesigned, with a Show button for the password, a **Caps Lock** warning,
+  how many tries are left before the short lock, and a countdown while
+  locked.
+
+### Fixes
+- The chart's hover line could get in the way of the mouse and make the
+  tooltip flicker.
+
 ## v3.2.0 — safe, sound and checked
 
 A tidy-up and security release: everything was audited - the code, the

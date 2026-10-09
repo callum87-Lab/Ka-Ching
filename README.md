@@ -22,6 +22,14 @@ best at — but anything with a name, a price, a release date and a shop works
 the same way, and since v3 you can sort it all into **categories** (Comics,
 Manga, Pokémon cards, Funko Pop… or your own).
 
+> **New in v3.3 — a calmer, premium look.** Every page redesigned: four
+> themes (Sand, Grey, Blue and Noir) with contrast-checked accent colours, a
+> new "K!" logo, a Dashboard that leads with this month at a glance, a
+> Spending chart that splits paid from still due, a collapsible sidebar, and
+> a Compact layout. Fonts are bundled, so nothing loads from outside your
+> server. See [CHANGELOG.md](CHANGELOG.md) and
+> [Upgrading from v3.2](#upgrading-from-v32).
+
 > **New in v3.2 — a security and quality release.** A full security review
 > (OWASP ASVS Level 1, plus GitHub's CodeQL scanning) with every issue it
 > found fixed, a stronger optional login, a framework upgrade that clears 7
@@ -64,6 +72,10 @@ Manga, Pokémon cards, Funko Pop… or your own).
 
 Click any screenshot to view it full-size.
 
+<a href="screenshots/themes.png"><img src="screenshots/themes.png" width="810" alt="The Dashboard in the Sand, Grey, Blue and Noir themes"></a>
+
+*The four themes: Sand (default), Grey, Blue and Noir.*
+
 <table>
 <tr><th>Dashboard</th><th>Orders</th></tr>
 <tr>
@@ -85,10 +97,10 @@ Click any screenshot to view it full-size.
 <td><a href="screenshots/spend-by-shop.png"><img src="screenshots/spend-by-shop.png" width="400"></a></td>
 <td><a href="screenshots/search.png"><img src="screenshots/search.png" width="400"></a></td>
 </tr>
-<tr><th>Customise mode</th><th>Settings → Layout</th></tr>
+<tr><th>Customise mode</th><th>Settings → Appearance</th></tr>
 <tr>
 <td><a href="screenshots/customise.png"><img src="screenshots/customise.png" width="400"></a></td>
-<td><a href="screenshots/layout.png"><img src="screenshots/layout.png" width="400"></a></td>
+<td><a href="screenshots/appearance.png"><img src="screenshots/appearance.png" width="400"></a></td>
 </tr>
 <tr><th>Alerts</th><th>Settings</th></tr>
 <tr>
@@ -136,15 +148,18 @@ OWASP ASVS Level 1 — see [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md).
 
 ## A tour of the interface
 
-A sidebar on the left (a slide-out menu on phones) takes you everywhere.
-Sections with more than one view — Orders, Insights, Alerts, Settings —
-show their sub-pages under their sidebar entry, and as a row of pills under
-the page title on a phone.
+A sidebar on the left (a slide-out menu on phones) takes you everywhere,
+with search at the top. Sections with more than one view — Orders, Insights
+and Alerts — show their sub-pages under their sidebar entry, joined to it by
+a line (on a phone they're a row of tabs under the page title). **Collapse** at the bottom shrinks the sidebar to a slim strip of
+icons; it stays that way on that device until you expand it again.
+**Settings** sits at the bottom of the sidebar, and its sections are tabs
+at the top of the Settings page.
 
 The **budget box** at the bottom of the sidebar stays in view however far
-you scroll. Choose what it shows in Settings → Budget: spent of budget,
+you scroll. Choose what it shows in Settings → General → Budget: spent of budget,
 left/over, percentage used, a daily allowance, spent + still due, or hide
-it. It turns pink once you're over.
+it. It turns red once you're over.
 
 Toggles, tabs and ranges you pick (chart ranges, series toggles, sort
 orders, the Orders tab, Insights category chips…) are **remembered in your
@@ -158,17 +173,23 @@ handle — drag a card to put it where you want it (press and hold the handle
 on a phone; hold a card near the top or bottom of the screen to scroll).
 Half-width cards pair up side by side; one left on its own widens to fill
 the row. **Reset order** puts a page back to normal. Your layout is saved on
-the server, so it's the same on every device. **Settings → Layout** lists
+the server, so it's the same on every device. **Settings → Appearance** lists
 every card on every page, with one-tap presets: *Everything*, *I don't
 pre-order* (hides the still-due and on-order cards) and *Just the
 essentials*.
 
-**Wide landscape monitors** (about 1,900px across or more) get a choice in
-Settings → Layout: **Standard** (the normal layout, centred), **Three
-columns** (cards sit three to a row and use the full width) or **Side
-panel** (an "At a glance" column on the right of every page with this
-week, alerts and the biggest thing still to come). Phones, tablets, laptops
-and portrait screens always use the normal layout.
+**Themes.** Settings → Appearance has four themes — **Sand** (the default,
+a warm light theme), **Grey**, **Blue** and **Noir** — each with its own
+short list of accent colours. The accents are chosen to stay readable on
+their theme, and warning colours (over budget, unpaid) never change. Shop
+colours follow the theme too.
+
+**Layout.** Also in Settings → Appearance: **Standard** (the normal layout,
+centred), **Compact** (tighter spacing and smaller figures, so more fits
+without scrolling, on any screen) or **Side panel** (an "At a glance"
+column on the right of every page with this week, alerts and the biggest
+thing still to come — wide landscape monitors only, about 1,900px across or
+more).
 
 On a computer, press **/** anywhere to jump into the search box (Esc to
 leave it). Every expand/collapse section has a round chevron button, and on
@@ -176,23 +197,24 @@ Settings you can click anywhere on a section's heading to open it.
 
 ### Dashboard
 
-- **Still due** and **budget** rings for the current month — the number
-  that actually matters day to day, plus how close you are to your budget
-  (and by how much you're over, if you are)
-- **Your spending** — this year and all time side by side, what share of
-  everything this year is, and this year's priciest month so far
+- **This month** — what's still due, the number that actually matters day
+  to day, with a bar showing how that sits against your budget (and by how
+  much you're over, if you are), plus the single **biggest thing still to
+  come**
+- **Key figures** — this year so far (and its priciest month), all time,
+  everything still on order, and what needs attention
 - **Budget by category** — this cycle's spend as one bar split into category
   colours, with any category limits (see [Categories](#categories)); shown
   once you've spent in two or more categories or set a limit
 - **This week**, grouped by likely shipment ("Nothing due" when it's quiet)
 - An **Alerts** card (anything awaiting charge, duplicates, ghost items,
-  items with no release date, categories over their limit)
-- **Backup** — when the last backup was taken; if automatic backups are off
-  it says so, with a one-tap **Turn on daily backups** button
-- **Biggest still to come** — the single highest-value item not yet
-  released, and the total size of everything still on order
-- **Spend trend** with Week / Month / 6M ranges and Total / Items /
-  Shipping toggles; hover (or tap) any point for the breakdown
+  items with no release date, categories over their limit), which also
+  says when the last backup was taken — and if automatic backups are off,
+  offers a one-tap **Turn on daily backups**
+- **Spending** with Week / Month / 6M ranges: **paid** as solid bars,
+  **still due** as hatched, and your budget as a line. The button beside
+  the ranges switches to a **line** style (remembered on each device).
+  Hover (or tap) any period for the breakdown
 - A note when a re-import moved an item's release date: which item, old
   date, new date
 
@@ -281,7 +303,7 @@ Four pages:
   hover a day for its items), **spend by category** (all time / this year),
   pre-order vs released, the 10 most recent releases and a 12-month trend.
 - **Spend by shop** — a share-of-spend donut (all time / last 90 days),
-  shop spend over 6 or 12 months with per-shop toggles, a per-shop
+  shop spend over 6 or 12 months as stacked bars with per-shop toggles, a per-shop
   comparison table, and every shop's all-time total. eBay sellers are
   grouped into one row — click it to expand each seller.
 - **Price creep** — which series are getting pricier. It's based on
@@ -293,6 +315,9 @@ Four pages:
   particular issue, that variant counts as its cover.) The **Typical
   increase** tile is the median across your series, so one odd series can't
   drag it off course, and each series has a dot in its category's colour.
+  **Where each series sits** puts every series on one scale, so the ones
+  climbing stand out, and the extra-spend chart is a running total from the
+  first price rise.
 - **Top titles** — your priciest items, and the series you've spent the most
   on, with a full series comparison.
 
@@ -322,8 +347,8 @@ switched on start switched on.
   3 kept, each downloadable), full spend-history CSV, notification settings
   export / import, and a factory reset (type-to-confirm; wipes tracked items
   only).
-- **Layout** — which cards show on each page, and the wide-screen layout
-  (see above).
+- **Appearance** — theme and accent colour, the layout (Standard, Compact
+  or Side panel), and which cards show on each page (see above).
 - **Security** — the optional login (see [Signing in](#signing-in-optional)).
 - **About** and **Help** — a getting-started guide and FAQ.
 
@@ -453,6 +478,20 @@ Then visit `http://<server-ip>:8091`.
 Data lives in `./data/kaching.db` (SQLite) — back it up like you would any
 other stack config.
 
+### Upgrading from v3.2
+
+`git pull` and `docker compose up -d --build`, as always — your data and
+settings carry straight over. A few things change on their own:
+
+- The new look starts on the **Sand** theme; pick another in Settings →
+  Appearance.
+- If you used the **Three columns** layout, you're moved to **Compact**.
+- The Dashboard's old cards (still due & budget rings, Your spending,
+  Backup, Biggest still to come) are replaced by the new **This month**
+  summary and **Key figures**. If you'd dragged the Dashboard's cards into
+  your own order, that page goes back to the default order once; other
+  pages keep theirs.
+
 ### Upgrading from v3.1
 
 `git pull` and `docker compose up -d --build`, as always — your data and
@@ -529,8 +568,10 @@ then asks for it. Passwords are stored hashed, never as plain text, and the
 password boxes have a strength bar and a **Show** button. The sign-in page
 can keep you signed in for 30 days on that device; without it you stay
 signed in until the browser closes (or a day at most). **Sign out** is in
-the sidebar and ends that session for good, changing the password signs
-every other device out, and five wrong attempts lock sign-in for a minute.
+the sidebar (at the bottom, under Settings) and ends that session for good, changing the password signs
+every other device out, and five wrong attempts lock sign-in for a minute
+(the sign-in page says how many tries are left, counts down the lock, and
+warns if Caps Lock is on).
 If notifications are set up, you get a message whenever the login is
 turned on, off or its password changes.
 
@@ -635,7 +676,7 @@ time you pick.
 ## Using it on a phone
 
 Every page has a proper phone layout: the sidebar becomes a slide-out menu
-(☰), cards stack one per row, section tabs become a pill row under the page
+(☰), cards stack one per row, sub-pages become a row of tabs under the page
 title, shop filters become a dropdown, charts keep readable labels, and wide
 tables become one tidy block per row instead of scrolling sideways.
 
@@ -734,8 +775,9 @@ dashboard — reliably.
 
 - No collection cataloguing, no barcode scanning, no cover art
 - No accounts, no cloud, no analytics, no telemetry of any kind
-- No login/auth — put it behind your existing reverse proxy (NPM/Authelia)
-  the same way as everything else, since it has no auth of its own
+- No user accounts — just one optional password (see
+  [Signing in](#signing-in-optional)); for anything more, put it behind
+  your existing reverse proxy (NPM/Authelia) like everything else
 - No automatic scraping of the retailer site — paste-in only, so nothing
   breaks silently when a retailer changes their page markup
 
@@ -751,7 +793,9 @@ Ka-Ching! keeps its dependencies deliberately few:
   standard library. Today that's four: FastAPI (web framework), Uvicorn
   (web server), Jinja2 (page templates) and python-multipart (form uploads).
   Nothing is loaded from the internet at runtime - no CDNs, external fonts
-  or scripts; every chart and icon is built into the app.
+  or scripts; every chart and icon is built into the app. The two fonts
+  (Inter and Instrument Serif) are bundled in `app/static/fonts` with their
+  SIL Open Font Licence files.
 - **How they're obtained:** from PyPI with pip, in hash-checking mode:
   [`requirements.txt`](requirements.txt) pins every package, including
   sub-dependencies, to an exact version *and* fingerprint, so a tampered

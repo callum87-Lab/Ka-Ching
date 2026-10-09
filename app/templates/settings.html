@@ -3,21 +3,21 @@
 
 {% block extra_style %}
   .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 14px; }
-  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; width: 100%; max-width: 100%; box-sizing: border-box; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; width: 100%; max-width: 100%; box-sizing: border-box; }
   .field-input[type="file"]::file-selector-button { margin-right: 12px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--neon-blue); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; }
-  .field-input[type="file"]::file-selector-button:hover { background: rgba(47,216,255,0.1); }
+  .field-input[type="file"]::file-selector-button:hover { background: color-mix(in srgb, var(--neon-blue) 10%, transparent); }
   .field-input:focus { outline: none; border-color: var(--neon-blue); }
   .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
   .notif-toggle-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); cursor: pointer; }
-  .toggle-switch { width: 32px; height: 18px; border-radius: 999px; background: rgba(255,255,255,0.08); position: relative; cursor: pointer; flex: 0 0 auto; }
+  .toggle-switch { width: 32px; height: 18px; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent); position: relative; cursor: pointer; flex: 0 0 auto; }
   .toggle-switch.on { background: var(--neon-blue); }
   .toggle-switch::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition: left 0.15s ease; }
   .toggle-switch.on::after { left: 16px; }
-  .submit-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; }
+  .submit-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; }
   .btn-secondary { font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; display: inline-block; }
-  .btn-primary { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: none; background: var(--neon-blue); color: #04121a; cursor: pointer; text-decoration: none; display: inline-block; }
+  .btn-primary { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; border: none; background: var(--neon-blue); color: var(--on-accent); cursor: pointer; text-decoration: none; display: inline-block; }
   .search-pagination { display: flex; align-items: center; gap: 14px; justify-content: center; }
-  .btn-secondary.danger { color: var(--neon-pink); border-color: rgba(255,77,141,0.3); }
+  .btn-secondary.danger { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
   .cat-list { border-top: 1px solid var(--border); }
   .cat-row { display: grid; grid-template-columns: 14px 1fr 90px 150px 60px; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
   .cat-head { font-size: 12.5px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 4px; }
@@ -32,7 +32,7 @@
   .cat-remove:disabled:hover { color: var(--text-dim); }
   .add-cat { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
   .add-cat .field-input { width: auto; flex: 1 1 220px; }
-  .add-cat-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; cursor: pointer; }
+  .add-cat-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; cursor: pointer; }
   @media (max-width: 700px) {
     .cat-row { grid-template-columns: 14px 1fr 70px; }
     .cat-row .series-cell { grid-column: 2 / span 2; }
@@ -44,7 +44,7 @@
   .getting-started-step { display: flex; gap: 14px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
   .getting-started-step:first-of-type { border-top: none; padding-top: 0; }
   .getting-started-step b { color: var(--text); }
-  .gs-num { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: rgba(47,216,255,0.14); color: var(--neon-blue); font-weight: 800; font-size: 12.5px; display: flex; align-items: center; justify-content: center; }
+  .gs-num { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, var(--neon-blue) 14%, transparent); color: var(--neon-blue); font-weight: 800; font-size: 12.5px; display: flex; align-items: center; justify-content: center; }
 
   .settings-card { grid-column: span 12; }
   .settings-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -66,7 +66,7 @@
   .past-backups-list li, .sync-devices-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
   .past-backups-list li:first-of-type, .sync-devices-list li:first-of-type { border-top: none; }
 
-  .result-banner { grid-column: span 12; border-radius: 12px; padding: 12px 16px; background: rgba(60,242,166,0.08); border: 1px solid rgba(60,242,166,0.3); color: var(--neon-green); font-size: 12.5px; margin-bottom: 16px; }
+  .result-banner { grid-column: span 12; border-radius: var(--radius-md); padding: 12px 16px; background: color-mix(in srgb, var(--neon-green) 8%, transparent); border: 1px solid color-mix(in srgb, var(--neon-green) 30%, transparent); color: var(--neon-green); font-size: 12.5px; margin-bottom: 16px; }
   .about-meta { font-size: 12px; color: var(--text-dim); margin-top: 10px; }
   .about-meta a { color: var(--neon-blue); }
 
@@ -84,16 +84,15 @@
   .layout-presets { align-items: stretch; }
   .layout-preset { height: 100%; min-height: 72px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .layout-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 6px 0 18px; }
-  .layout-preset { text-align: left; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
-  .layout-preset:hover { border-color: var(--border-strong); box-shadow: 0 0 16px rgba(47,216,255,0.35); }
-  .layout-preset.sel { border-color: var(--neon-blue); background: rgba(47,216,255,0.08); }
+  .layout-preset { text-align: left; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
+  .layout-preset.sel { border-color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 8%, transparent); }
   .layout-preset b { display: block; font-size: 14px; }
   .layout-preset span { font-size: 12px; color: var(--text-muted); }
-  .layout-md { display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-  .layout-pages { background: rgba(255,255,255,0.02); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .layout-md { display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+  .layout-pages { background: color-mix(in srgb, var(--text) 2%, transparent); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
   .layout-page { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border: none; border-bottom: 1px solid var(--border); background: none; color: var(--text-muted); font-size: 13.5px; font-weight: 600; text-align: left; }
-  .layout-page:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-  .layout-page.on { background: rgba(47,216,255,0.08); color: var(--neon-blue); box-shadow: inset 3px 0 0 var(--neon-blue); }
+  .layout-page:hover { color: var(--text); background: color-mix(in srgb, var(--text) 3%, transparent); }
+  .layout-page.on { background: color-mix(in srgb, var(--neon-blue) 8%, transparent); color: var(--neon-blue); box-shadow: inset 3px 0 0 var(--neon-blue); }
   .layout-page small { font-size: 11.5px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
   .layout-cards { padding: 4px 18px 10px; min-width: 0; }
   .layout-panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; padding: 12px 0 6px; }
@@ -102,7 +101,7 @@
   .layout-text { flex: 1 1 auto; min-width: 0; }
   .layout-text b { display: block; font-size: 14px; font-weight: 600; }
   .layout-text span { font-size: 12.5px; color: var(--text-muted); }
-  .layout-tag { display: inline-block; margin-left: 7px; font-size: 10.5px; font-weight: 700; color: var(--neon-violet); border: 1px solid rgba(155,123,255,0.5); border-radius: 999px; padding: 0 7px; vertical-align: 2px; }
+  .layout-tag { display: inline-block; margin-left: 7px; font-size: 10.5px; font-weight: 700; color: var(--neon-violet); border: 1px solid color-mix(in srgb, var(--neon-violet) 50%, transparent); border-radius: 999px; padding: 0 7px; vertical-align: 2px; }
   @media (max-width: 900px) {
     .layout-presets { grid-template-columns: 1fr; }
     .layout-md { grid-template-columns: 1fr; }
@@ -125,17 +124,45 @@
   .sec-form > .submit-btn, .sec-form > .btn-secondary { margin-top: 26px; }
   .sec-form .submit-btn, .sec-form .btn-secondary { justify-self: start; }
   .sec-off { grid-template-columns: minmax(0, 1fr) auto; max-width: 560px; padding-top: 14px; border-top: 1px solid var(--border); }
-  .sec-msg { border-radius: 12px; padding: 10px 14px; font-size: 13.5px; margin: 8px 0 6px; }
-  .sec-msg.good { background: rgba(60,242,166,0.08); border: 1px solid rgba(60,242,166,0.35); color: var(--neon-green); }
-  .sec-msg.bad { background: rgba(255,77,141,0.08); border: 1px solid rgba(255,77,141,0.35); color: var(--neon-pink); }
+  .sec-msg { border-radius: var(--radius-md); padding: 10px 14px; font-size: 13.5px; margin: 8px 0 6px; }
+  .sec-msg.good { background: color-mix(in srgb, var(--neon-green) 8%, transparent); border: 1px solid color-mix(in srgb, var(--neon-green) 35%, transparent); color: var(--neon-green); }
+  .sec-msg.bad { background: color-mix(in srgb, var(--neon-pink) 8%, transparent); border: 1px solid color-mix(in srgb, var(--neon-pink) 35%, transparent); color: var(--neon-pink); }
   @media (max-width: 900px) { .sec-form, .sec-off { grid-template-columns: 1fr; } }
   .pw-wrap { position: relative; display: block; }
   .pw-wrap .field-input { width: 100%; padding-right: 64px; }
   .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none;
     color: var(--neon-blue); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 6px 8px; }
   .pw-meter { display: flex; align-items: center; gap: 10px; margin-top: 7px; min-height: 16px; }
-  .pw-meter i { display: block; height: 5px; width: 0; border-radius: 99px; transition: width 0.2s ease; flex: 0 0 auto; max-width: 60%; }
+  .pw-meter i { display: block; height: 5px; width: 0; border-radius: 999px; transition: width 0.2s ease; flex: 0 0 auto; max-width: 60%; }
   .pw-meter b { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+  /* ---- Theme & colour ---- */
+  .theme-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .theme-choice { height: 100%; justify-content: flex-start; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px; border-radius: var(--radius-md);
+    border: 1px solid var(--border); background: var(--input-bg); text-align: left; }
+  .theme-choice b { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 6px; }
+  .theme-choice span:not(.theme-swatch) { font-size: 12px; color: var(--text-muted); }
+  .theme-choice.sel { border-color: var(--neon-blue); box-shadow: 0 0 0 1px var(--neon-blue); }
+  .theme-swatch { display: block; width: 100%; height: 64px; border-radius: var(--radius-xs); position: relative; border: 1px solid var(--border); overflow: hidden; }
+  .theme-swatch i { position: absolute; left: 12px; bottom: 12px; width: 38%; height: 7px; border-radius: var(--radius-xs); }
+  .theme-swatch-sand { background: linear-gradient(180deg, #f6f3ec 0%, #efeadf 100%); }
+  .theme-swatch-noir { background: linear-gradient(160deg, #1a1916 0%, #0e0e0d 50%, #080808 100%); }
+  .theme-swatch-grey { background: linear-gradient(155deg, #34373d 0%, #1c1e22 45%, #111214 100%); }
+  .theme-swatch-blue { background: linear-gradient(155deg, #123a7a 0%, #0b2350 40%, #071430 100%); }
+  .accent-choices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .accent-choice { display: flex; align-items: center; gap: 9px; padding: 7px 14px 7px 8px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--input-bg); font-size: 13px; color: var(--text); }
+  .accent-choice i { width: 20px; height: 20px; border-radius: 50%; display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+  .accent-choice.sel { border-color: var(--neon-blue); box-shadow: 0 0 0 1px var(--neon-blue); font-weight: 600; }
+  @media (max-width: 900px) { .theme-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 480px) { .theme-swatch { height: 46px; } }
+
+  /* ---- Section tabs (moved here from the sidebar) ---- */
+  .settings-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin: 0 0 18px; overflow-x: auto; scrollbar-width: none; }
+  .settings-tabs::-webkit-scrollbar { display: none; }
+  .settings-tabs button { border-radius: 0; padding: 8px 0 10px; font-size: 14.5px; font-weight: 550; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; flex: 0 0 auto; }
+  .settings-tabs button:hover { color: var(--text); }
+  .settings-tabs button.active { color: var(--text); border-bottom-color: var(--neon-blue); }
 {% endblock %}
 
 {% block content %}
@@ -144,23 +171,32 @@
   <h1>Settings</h1>
   <p>General preferences, budget, and how this app is set up</p>
 </div>
+<nav class="settings-tabs" role="tablist" aria-label="Settings sections">
+  <button type="button" role="tab" class="active" aria-selected="true" data-settings-tab="general">General</button>
+  {% if sync_feature_available() %}<button type="button" role="tab" aria-selected="false" data-settings-tab="sync">Sync</button>{% endif %}
+  <button type="button" role="tab" aria-selected="false" data-settings-tab="backup">Data backup</button>
+  <button type="button" role="tab" aria-selected="false" data-settings-tab="layout">Appearance</button>
+  <button type="button" role="tab" aria-selected="false" data-settings-tab="security">Security</button>
+  <button type="button" role="tab" aria-selected="false" data-settings-tab="about">About</button>
+  <button type="button" role="tab" aria-selected="false" data-settings-tab="help">Help</button>
+</nav>
 
 {% if reset_result == 'done' %}
-<div class="grid"><div class="result-banner">Factory reset complete &mdash; all tracked items and order data cleared. Settings above were kept.</div></div>
+<div class="grid"><div class="result-banner">Factory reset complete. All tracked items and order data cleared. Settings above were kept.</div></div>
 {% endif %}
 {% if restore_result == 'ok' %}
-<div class="grid"><div class="result-banner">Restored &mdash; {{ restore_count }} item(s) loaded from that backup.</div></div>
+<div class="grid"><div class="result-banner">Restored: {{ restore_count }} item(s) loaded from that backup.</div></div>
 {% endif %}
 {% if test_result == 'sent' %}
 <div class="grid"><div class="result-banner">Test sent successfully.</div></div>
 {% endif %}
 {% if test_error %}
-<div class="grid"><div class="result-banner" style="background:rgba(255,77,141,0.08); border-color:rgba(255,77,141,0.3); color:var(--neon-pink);">Test failed: {{ test_error }}</div></div>
+<div class="grid"><div class="result-banner" style="background:color-mix(in srgb, var(--neon-pink) 8%, transparent); border-color:color-mix(in srgb, var(--neon-pink) 30%, transparent); color:var(--neon-pink);">Test failed: {{ test_error }}</div></div>
 {% endif %}
 {% if notif_import_result == 'ok' %}
 <div class="grid"><div class="result-banner">Notification settings imported.</div></div>
 {% elif notif_import_result == 'bad_file' %}
-<div class="grid"><div class="result-banner" style="background:rgba(255,77,141,0.08); border-color:rgba(255,77,141,0.3); color:var(--neon-pink);">That file didn't look like a valid notification config export.</div></div>
+<div class="grid"><div class="result-banner" style="background:color-mix(in srgb, var(--neon-pink) 8%, transparent); border-color:color-mix(in srgb, var(--neon-pink) 30%, transparent); color:var(--neon-pink);">That file didn't look like a valid notification config export.</div></div>
 {% endif %}
 
 <div id="settings-tab-general">
@@ -312,7 +348,7 @@
         <button type="button" class="collapse-btn" data-target="categories-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="categories-body">
-        <p class="warn-hint">What kinds of things you track. <b style="color:var(--text);">Numbered issues</b>: turn on for anything sold as #1, #2, #3&hellip; (comics, manga volumes) &mdash; Price creep and Top titles then track price rises per series.</p>
+        <p class="warn-hint">What kinds of things you track. <b style="color:var(--text);">Numbered issues</b>: turn on for anything sold as #1, #2, #3&hellip; (comics, manga volumes): Price creep and Top titles then track price rises per series.</p>
         <div class="cat-list">
           <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span>Numbered issues</span><span></span></div>
           {% for c in categories_with_counts %}
@@ -356,7 +392,7 @@
         <button type="button" class="collapse-btn" data-target="shops-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="shops-body">
-        <p class="warn-hint">Rename a shop across every item that has it &mdash; useful for fixing a typo, or merging two names that are really the same shop (renaming to a name that already exists just folds them together).</p>
+        <p class="warn-hint">Rename a shop across every item that has it. Useful for fixing a typo, or merging two names that are really the same shop (renaming to a name that already exists just folds them together).</p>
         {% if all_shops %}
           <div id="shops-list-body">
           {% for shop in all_shops %}
@@ -384,17 +420,43 @@
 
 <div id="settings-tab-layout" style="display:none;">
   <div class="grid">
+    {% set _ut = ui_theme() %}
+    <div class="card settings-card" id="appearance-card">
+      <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg></span>Theme &amp; colour</div>
+      <p class="warn-hint">How Ka-Ching! looks on every page. Changes apply straight away.</p>
+      <form method="post" action="/settings/appearance" class="theme-choices">
+        <input type="hidden" name="next" value="/settings#layout">
+        {% for key, t in UI_THEMES.items() %}
+        <button type="submit" name="theme" value="{{ key }}" class="theme-choice{{ ' sel' if _ut.theme == key else '' }}" data-theme-preview="{{ key }}">
+          <span class="theme-swatch theme-swatch-{{ key }}"><i style="background:{{ (t.accents|selectattr(0,'equalto',t.default)|first)[2] }};"></i></span>
+          <b>{{ t.name }}</b>{% if key == 'sand' %}<span>Default</span>{% endif %}
+        </button>
+        {% endfor %}
+      </form>
+      <div class="wide-head" style="margin-top:20px;">Accent colour</div>
+      <p class="warn-hint" style="margin-top:2px;">Used for highlights, this month's bar and the buttons. Each colour is chosen to stay readable on the {{ UI_THEMES[_ut.theme].name }} theme; warnings (like over budget) always stay red.</p>
+      <form method="post" action="/settings/appearance" class="accent-choices">
+        <input type="hidden" name="next" value="/settings#layout">
+        <input type="hidden" name="theme" value="{{ _ut.theme }}">
+        {% for aid, aname, ahex in UI_THEMES[_ut.theme].accents %}
+        <button type="submit" name="accent" value="{{ aid }}" class="accent-choice{{ ' sel' if _ut.accent_id == aid else '' }}" title="{{ aname }}" aria-label="{{ aname }}{{ ' (selected)' if _ut.accent_id == aid else '' }}">
+          <i style="background:{{ ahex }};"></i><span>{{ aname }}</span>
+        </button>
+        {% endfor %}
+      </form>
+    </div>
+
     <div class="card settings-card" id="layout-card">
       <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Layout</div>
-      <p class="warn-hint">Choose which cards show on each page. Changes apply straight away &mdash; you can also use &#9881; Customise on each page.</p>
+      <p class="warn-hint">Choose which cards show on each page. Changes apply straight away. You can also use &#9881; Customise on each page.</p>
       {% set _wl = wide_layout() %}
-      <div class="wide-head">On wide screens</div>
-      <p class="warn-hint" style="margin-top:2px;">Only for <b style="color:var(--text);">wide landscape monitors</b> (about 1,900 pixels across or more). Phones, tablets, laptops and portrait screens always use the normal layout, whichever you pick here.</p>
+      <div class="wide-head">Layout</div>
+      <p class="warn-hint" style="margin-top:2px;">Every layout keeps the page the same width, centred. Compact works on any screen; the Side panel only appears on wide landscape monitors (about 1,900 pixels across or more).</p>
       <form method="post" action="/settings/wide-layout" class="layout-presets wide-choices">
         <input type="hidden" name="next" value="/settings#layout">
-        <button type="submit" name="layout" value="standard" class="layout-preset{{ ' sel' if _wl == 'standard' else '' }}"><b>Standard</b><span>The normal layout, centred on the screen</span></button>
-        <button type="submit" name="layout" value="columns" class="layout-preset{{ ' sel' if _wl == 'columns' else '' }}"><b>Three columns</b><span>Uses the full width: cards sit three to a row</span></button>
-        <button type="submit" name="layout" value="panel" class="layout-preset{{ ' sel' if _wl == 'panel' else '' }}"><b>Side panel</b><span>An "At a glance" column on the right of every page &mdash; this week, alerts, biggest still to come</span></button>
+        <button type="submit" name="layout" value="standard" class="layout-preset{{ ' sel' if _wl == 'standard' else '' }}"><b>Standard</b><span>Comfortable spacing, centred on the screen</span></button>
+        <button type="submit" name="layout" value="compact" class="layout-preset{{ ' sel' if _wl == 'compact' else '' }}"><b>Compact</b><span>Tighter spacing and smaller figures, so more fits without scrolling</span></button>
+        <button type="submit" name="layout" value="panel" class="layout-preset{{ ' sel' if _wl == 'panel' else '' }}"><b>Side panel</b><span>An "At a glance" column on the right of every page, on wide screens</span></button>
       </form>
       <div class="wide-head" style="margin-top:22px;">Cards on each page</div>
       <div class="layout-presets">
@@ -412,7 +474,7 @@
         <div class="layout-cards">
           {% for pg in card_layout() %}
           <div class="layout-panel" data-layout-panel="{{ loop.index0 }}"{% if not loop.first %} hidden{% endif %}>
-            <div class="layout-panel-head">{{ pg.page }} <a href="{{ pg.path }}">Open page &rarr;</a></div>
+            <div class="layout-panel-head">{{ pg.page }} <a href="{{ pg.path }}">Open page</a></div>
             {% for c in pg.cards %}
             <div class="layout-row">
               <div class="layout-text"><b>{{ c.name }}{% if c.preorder %}<span class="layout-tag">pre-order</span>{% endif %}</b><span>{{ c.desc }}</span></div>
@@ -438,15 +500,15 @@
         {% elif _sec == 'changed' %}Password changed. Every other device has been signed out.
         {% elif _sec == 'off' %}Login is off. Anyone who can reach Ka-Ching! can open it again.
         {% elif _sec == 'wrong-current' %}That current password isn't right, so nothing was changed.
-        {% elif _sec == 'too-short' %}Use at least 12 characters &mdash; a few unrelated words make a strong, memorable password.
+        {% elif _sec == 'too-short' %}Use at least 12 characters. A few unrelated words make a strong, memorable password.
         {% elif _sec == 'too-common' %}That password is one of the most commonly used, so it's easy to guess. Pick something else.
         {% elif _sec == 'mismatch' %}The two new passwords didn't match.
         {% elif _sec == 'managed' %}The password is set in docker-compose, so it can't be changed here.{% endif %}
       </div>
       {% endif %}
       {% if login_env_managed() %}
-      <p class="warn-hint">Login is <b style="color:var(--text);">on</b> and <b style="color:var(--text);">managed in docker-compose</b> (<span class="mono">KACHING_PASSWORD</span>) &mdash; it can't be turned off from here while that line is set.</p>
-      <p class="warn-hint">Recovering a forgotten password? Set the password to use <b style="color:var(--text);">after</b> you remove that line &mdash; no old password needed while you're signed in with the docker-compose one.</p>
+      <p class="warn-hint">Login is <b style="color:var(--text);">on</b> and <b style="color:var(--text);">managed in docker-compose</b> (<span class="mono">KACHING_PASSWORD</span>). It can't be turned off from here while that line is set.</p>
+      <p class="warn-hint">Recovering a forgotten password? Set the password to use <b style="color:var(--text);">after</b> you remove that line. No old password needed while you're signed in with the docker-compose one.</p>
       <form method="post" action="/settings/security/password" class="sec-form">
         <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="12" required></label>
         <label class="field-label"><span>New password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="12" required></label>
@@ -465,14 +527,14 @@
         <button type="submit" class="btn-secondary danger">Turn login off</button>
       </form>
       {% else %}
-      <p class="warn-hint">Login is <b style="color:var(--text);">off</b> &mdash; fine on your home network. Turn it on if Ka-Ching! can ever be reached from outside it. The password is stored scrambled (hashed), never as plain text.</p>
+      <p class="warn-hint">Login is <b style="color:var(--text);">off</b>. Fine on your home network. Turn it on if Ka-Ching! can ever be reached from outside it. The password is stored scrambled (hashed), never as plain text.</p>
       <form method="post" action="/settings/security/password" class="sec-form">
         <label class="field-label"><span>Password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="12" required></label>
         <label class="field-label"><span>Password again</span><input class="field-input" type="password" name="confirm" autocomplete="new-password" minlength="12" required></label>
         <button type="submit" class="submit-btn">Turn login on</button>
       </form>
       {% endif %}
-      <p class="warn-hint" style="margin-top:18px;">Forgotten it? Add <span class="mono">KACHING_PASSWORD=something</span> under <span class="mono">environment:</span> in docker-compose.yml and rebuild &mdash; that password always works. Sign in, set a new one here, then remove the line and rebuild again.{% if login_enabled() %} Calendar subscriptions use a private link while login is on &mdash; re-add the <b style="color:var(--text);">Subscribe (live)</b> link from the Calendar page in your calendar app.{% endif %}</p>
+      <p class="warn-hint" style="margin-top:18px;">Forgotten it? Add <span class="mono">KACHING_PASSWORD=something</span> under <span class="mono">environment:</span> in docker-compose.yml and rebuild. That password always works. Sign in, set a new one here, then remove the line and rebuild again.{% if login_enabled() %} Calendar subscriptions use a private link while login is on. Re-add the <b style="color:var(--text);">Subscribe (live)</b> link from the Calendar page in your calendar app.{% endif %}</p>
     </div>
   </div>
 </div><!-- /settings-tab-security -->
@@ -496,7 +558,7 @@
       {% if not sync_on %}
       <p class="warn-hint">The phone app isn't connected. While this is off, the app can't sync with this server. Your sync key is kept, so turning this back on reconnects any device already set up.</p>
       {% else %}
-      <p class="warn-hint">Lets the Android app connect straight to this server so both stay in step. Direct connection only &mdash; nothing else is in the loop, and nothing about this is ever sent anywhere but the device you connect yourself.</p>
+      <p class="warn-hint">Lets the Android app connect straight to this server so both stay in step. Direct connection only. Nothing else is in the loop, and nothing about this is ever sent anywhere but the device you connect yourself.</p>
 
       {% if sync_api_key %}
       <label class="field-label"><span>Sync key</span>
@@ -536,13 +598,13 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Data backup</div>
-      <p class="warn-hint">Downloads the whole tracked database as a single file &mdash; every item, every manual tick, everything. Separate from GitHub on purpose, since GitHub never sees your real order data.</p>
+      <p class="warn-hint">Downloads the whole tracked database as a single file. Every item, every manual tick, everything. Separate from GitHub on purpose, since GitHub never sees your real order data.</p>
       <p class="warn-hint"><span class="mono">{{ item_count }}</span> item{{ "s" if item_count != 1 else "" }} tracked &middot; database file is <span class="mono">{{ db_size_label }}</span></p>
       <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
         <a href="/settings/backup" class="btn-primary">Download backup</a>
         <a href="/settings/export-all.csv" class="btn-primary">Download full spend history (CSV)</a>
       </div>
-      <p class="warn-hint">The database backup above is for restoring everything into Ka-Ching! itself. This CSV is a plain spreadsheet of every tracked item, for opening in Excel or Google Sheets &mdash; not something Ka-Ching! can restore from.</p>
+      <p class="warn-hint">The database backup above is for restoring everything into Ka-Ching! itself. This CSV is a plain spreadsheet of every tracked item, for opening in Excel or Google Sheets. Not something Ka-Ching! can restore from.</p>
 
       {% if past_backups %}
       <div class="settings-card-head" style="margin-top:16px;">
@@ -574,7 +636,7 @@
       {% endif %}
 
       <div style="margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">
-        <p class="warn-hint" style="color:var(--neon-pink);">&#9888; Restoring replaces everything currently tracked with whatever's in the file you upload. There's no in-app undo for this &mdash; download a fresh backup first if you want to keep what's here now.</p>
+        <p class="warn-hint" style="color:var(--neon-pink);">&#9888; Restoring replaces everything currently tracked with whatever's in the file you upload. There's no in-app undo for this. Download a fresh backup first if you want to keep what's here now.</p>
         <form method="post" action="/settings/restore" enctype="multipart/form-data" onsubmit="return confirm('This replaces everything currently tracked with the contents of this file. This cannot be undone from within the app. Continue?');">
           <input type="hidden" name="next" value="/settings">
           <label class="field-label"><span>Restore from backup file</span><input class="field-input" type="file" name="backup_file" accept=".db" required></label>
@@ -586,8 +648,8 @@
 
   <div class="grid">
     <div class="card settings-card">
-      <div class="card-title" style="margin-bottom:14px; color:var(--neon-pink);"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Danger zone</div>
-      <p class="warn-hint">Wipes every tracked item, order, and shipping record. Your notification, budget, and other settings above are kept. There's no undo &mdash; download a backup first if there's anything here worth keeping.</p>
+      <div class="card-title" style="margin-bottom:14px; color:var(--neon-pink);"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-pink) 14%, transparent); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Danger zone</div>
+      <p class="warn-hint">Wipes every tracked item, order, and shipping record. Your notification, budget, and other settings above are kept. There's no undo. Download a backup first if there's anything here worth keeping.</p>
       <form method="post" action="/settings/factory-reset" onsubmit="return confirm('This permanently deletes every tracked item and order. This cannot be undone. Continue?');">
         <input type="hidden" name="next" value="/settings">
         <label class="field-label"><span>Type RESET to confirm</span><input class="field-input" type="text" name="confirm" placeholder="RESET" required></label>
@@ -601,7 +663,7 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>About</div>
-      <p class="warn-hint">Ka-Ching! answers exactly two questions &mdash; what's due this week and what it'll cost, and what this month (and next) is forecast to come to. Nothing more: no collection cataloguing, no accounts, no cloud, nothing ever leaves this server.</p>
+      <p class="warn-hint">Ka-Ching! answers exactly two questions. What's due this week and what it'll cost, and what this month (and next) is forecast to come to. Nothing more: no collection cataloguing, no accounts, no cloud, nothing ever leaves this server.</p>
       <p class="about-meta"><span class="mono">v{{ app_version }}</span> &middot; <a href="https://github.com/callum87-Lab/Ka-Ching" target="_blank" rel="noopener">View on GitHub</a></p>
     </div>
   </div>
@@ -611,8 +673,8 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span>Getting started</div>
-      <div class="getting-started-step"><span class="gs-num">1</span><div><b>Log your first order.</b> Paste an order-history page from Forbidden Planet or eBay into Log Orders, or add items by hand &mdash; either way, nothing's saved until you confirm the review screen.</div></div>
-      <div class="getting-started-step"><span class="gs-num">2</span><div><b>Set a monthly budget.</b> General &rarr; Budget, over on Settings. Once it's set, the ring on Dashboard tracks it automatically and warns you if you go over.</div></div>
+      <div class="getting-started-step"><span class="gs-num">1</span><div><b>Log your first order.</b> Paste an order-history page from Forbidden Planet or eBay into Log Orders, or add items by hand. Either way, nothing's saved until you confirm the review screen.</div></div>
+      <div class="getting-started-step"><span class="gs-num">2</span><div><b>Set a monthly budget.</b> General &rarr; Budget, over on Settings. Once it's set, the budget bar at the top of the Dashboard tracks it and warns you if you go over.</div></div>
       <div class="getting-started-step"><span class="gs-num">3</span><div><b>Turn on notifications.</b> Alerts &rarr; Notifications, pick a provider (ntfy, Gotify, Telegram, or a webhook), send a test to confirm it works, then it'll check once a day for anything releasing tomorrow.</div></div>
       {% if sync_enabled() %}<div class="getting-started-step"><span class="gs-num">4</span><div><b>Connect the Android app (optional).</b> Settings &rarr; Sync, generate a key, paste it into the app. From then on both stay in step automatically.</div></div>{% endif %}
     </div>
@@ -628,19 +690,19 @@
       </div>
       <div class="day-group" id="faq-2">
         <div class="day-group-head"><div class="day-group-label">What happens if I paste the same order page twice?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">Nothing breaks &mdash; items you've already marked paid or cancelled are left alone, everything else just refreshes to match what the retailer's currently showing. Safe to paste the same page again next month.</p></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">Nothing breaks. Items you've already marked paid or cancelled are left alone, everything else just refreshes to match what the retailer's currently showing. Safe to paste the same page again next month.</p></div>
       </div>
       <div class="day-group" id="faq-3">
         <div class="day-group-head"><div class="day-group-label">Why is an item marked "awaiting charge"?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It released a while ago but hasn't been marked paid yet. Usually just a normal short delay before the retailer actually charges the card &mdash; worth a check if it's been sitting a while, but not necessarily a problem.</p></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It released a while ago but hasn't been marked paid yet. Usually just a normal short delay before the retailer actually charges the card. Worth a check if it's been sitting a while, but not necessarily a problem.</p></div>
       </div>
       <div class="day-group" id="faq-4">
         <div class="day-group-head"><div class="day-group-label">What's a "ghost item"?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">An entry that came from an old parser issue and can't be matched to a real order number. Almost always a duplicate of something already tracked properly elsewhere &mdash; worth checking before removing.</p></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">An entry that came from an old parser issue and can't be matched to a real order number. Almost always a duplicate of something already tracked properly elsewhere. Worth checking before removing.</p></div>
       </div>
       <div class="day-group" id="faq-5">
         <div class="day-group-head"><div class="day-group-label">Does anything ever leave this server?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">No &mdash; no accounts, no cloud, nothing tracked here is sent anywhere except the notification service you set up yourself and the device you sync with directly.</p></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">No. No accounts, no cloud, nothing tracked here is sent anywhere except the notification service you set up yourself and the device you sync with directly.</p></div>
       </div>
     </div>
   </div>
@@ -685,7 +747,7 @@ document.querySelectorAll('#security-card input[type="password"]').forEach(funct
     var label = !v ? '' : v.length < 12 ? 'Too short (12 characters minimum)' : score <= 2 ? 'OK' : score <= 3 ? 'Good' : 'Strong';
     var pct = !v ? 0 : v.length < 12 ? 15 : Math.min(100, score * 22);
     bar.querySelector('i').style.width = pct + '%';
-    bar.querySelector('i').style.background = v.length < 12 ? 'var(--neon-pink)' : score <= 2 ? '#ffb020' : 'var(--neon-green)';
+    bar.querySelector('i').style.background = v.length < 12 ? 'var(--neon-pink)' : score <= 2 ? 'var(--neon-amber)' : 'var(--neon-green)';
     bar.querySelector('b').textContent = label;
   });
 });
@@ -745,13 +807,13 @@ document.querySelectorAll('[data-catlimit-showall]').forEach(function (a) {
   });
   counts();
   if (new URLSearchParams(window.location.search).get('security')) window.addEventListener('load', function () {
-    var st = document.querySelector('.sidebar [data-settings-tab="security"]'); if (st) st.click();
+    var st = document.querySelector('.settings-tabs [data-settings-tab="security"]'); if (st) st.click();
   });
   // Arriving from a page's "Manage in Settings" link (/settings#layout, or
   // #layout-page-N to open that page's cards)
   var m = window.location.hash.match(/^#layout(?:-card|-page-(\d+))?$/);
   if (m) window.addEventListener('load', function () {
-    var tab = document.querySelector('.sidebar [data-settings-tab="layout"]');
+    var tab = document.querySelector('.settings-tabs [data-settings-tab="layout"]');
     if (tab) tab.click();
     if (m[1]) { var pb = document.querySelector('.layout-page[data-layout-page="' + m[1] + '"]'); if (pb) pb.click(); }
   });
@@ -765,8 +827,7 @@ document.querySelectorAll('[data-catlimit-showall]').forEach(function (a) {
     tabs.forEach(function (t) {
       var isMatch = t.dataset.settingsTab === target;
       t.classList.toggle('active', isMatch);
-      t.style.color = isMatch ? 'var(--neon-blue)' : 'var(--text-dim)';
-      t.style.fontWeight = isMatch ? '600' : '400';
+      t.setAttribute('aria-selected', isMatch ? 'true' : 'false');
     });
     settingsTabs.forEach(function (key) {
       var el = document.getElementById('settings-tab-' + key);

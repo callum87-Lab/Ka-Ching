@@ -9,18 +9,21 @@
   .plain-stat-value { font-size: 25px; font-weight: 800; }
   .plain-stat-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
 
-  .creep-hero { grid-column: span 5; background: radial-gradient(circle at 100% 0%, rgba(47,216,255,0.30) 0%, transparent 55%), linear-gradient(160deg, #0a2540 0%, #0c1830 55%, var(--surface) 100%); border-color: rgba(47,216,255,0.35); display: flex; flex-direction: column; justify-content: space-between; }
-  .creep-hero-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a8e0ff; margin-bottom: 8px; }
-  .creep-hero-title { font-size: 20.5px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-  .creep-hero-sub { font-size: 13.5px; color: #a8e0ff; }
+  .creep-hero { grid-column: span 5; background: var(--card-bg); display: flex; flex-direction: column; justify-content: space-between; }
+  .creep-hero-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); margin-bottom: 8px; }
+  .creep-hero-title { font-size: 20.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .creep-hero-sub { font-size: 13.5px; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); }
   .creep-hero-prices { margin-top: 16px; display: flex; align-items: baseline; gap: 10px; }
-  .creep-hero-old { font-size: 17px; color: #a8e0ff; text-decoration: line-through; opacity: 0.7; }
-  .creep-hero-arrow { color: #a8e0ff; }
-  .creep-hero-new { font-size: 25px; font-weight: 800; color: #fff; }
-  .creep-hero-divider { height: 1px; background: rgba(255,255,255,0.15); margin: 14px 0; }
-  .creep-hero-note { font-size: 13.5px; color: #a8e0ff; }
-  .creep-hero-note b { color: #fff; font-family: var(--font-mono); }
+  .creep-hero-old { font-size: 17px; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); text-decoration: line-through; opacity: 0.7; }
+  .creep-hero-arrow { color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); }
+  .creep-hero-new { font-size: 25px; font-weight: 800; color: var(--text); }
+  .creep-hero-divider { height: 1px; background: color-mix(in srgb, var(--text) 15%, transparent); margin: 14px 0; }
+  .creep-hero-note { font-size: 13.5px; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); }
+  .creep-hero-note b { color: var(--text); font-family: var(--font-mono); }
 
+  .strip-lead { font-size: 13.5px; color: var(--text-muted); margin: 0 0 4px; }
+  .strip-lead b { color: var(--text); font-weight: 600; }
+  .creep-strip { width: 100%; height: auto; display: block; }
   .dist-card { grid-column: span 7; }
   .dist-chart { display: flex; align-items: flex-end; gap: 10px; height: 130px; margin-top: 10px; }
   .dist-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
@@ -35,20 +38,20 @@
   .creep-table td { padding: 9px 8px; border-top: 1px solid var(--border); }
   .creep-table tr:first-child td { border-top: none; }
   .trend-pill { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; display: inline-block; }
-  .trend-pill.trend-up { color: var(--neon-pink); background: rgba(255,77,141,0.10); }
-  .trend-pill.trend-flat { color: var(--text-dim); background: rgba(255,255,255,0.06); }
-  .trend-pill.trend-down { color: var(--neon-green); background: rgba(60,242,166,0.10); }
+  .trend-pill.trend-up { color: var(--neon-pink); background: color-mix(in srgb, var(--neon-pink) 10%, transparent); }
+  .trend-pill.trend-flat { color: var(--text-dim); background: color-mix(in srgb, var(--text) 6%, transparent); }
+  .trend-pill.trend-down { color: var(--neon-green); background: color-mix(in srgb, var(--neon-green) 10%, transparent); }
   .creep-table .nowrap { white-space: nowrap; }
   .cat-dot-inline { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 9px; vertical-align: 1px; box-shadow: 0 0 6px var(--c); }
   .prem { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 12.5px; }
-  .prem-track { width: 90px; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); flex: 0 0 90px; }
+  .prem-track { width: 90px; height: 6px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); flex: 0 0 90px; }
   .prem-fill { height: 6px; border-radius: 4px; background: linear-gradient(90deg, var(--neon-violet), var(--neon-pink)); }
   .prem-none { color: var(--text-dim); font-size: 12.5px; white-space: nowrap; }
 
   .creep-chart-card { grid-column: span 12; }
   .warn-action-btn { font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; }
   .creep-chart-wrap { position: relative; }
-  .creep-tooltip { position: absolute; display: none; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 12px; font-size: 13px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; z-index: 20; min-width: 120px; }
+  .creep-tooltip { position: absolute; display: none; background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; z-index: 20; min-width: 120px; }
   @media (max-width: 900px) {
     /* Phone blocks: name with the change pill beside it, then issues and
        cover prices, then the variants bar across the full width */
@@ -94,7 +97,7 @@
   <div class="card plain-stat" data-card="creep.stats">
     <div class="plain-stat-label">Extra spend from creep</div>
     <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(creep_total_extra) }}</div>
-    <div class="plain-stat-sub">this year, vs first-tracked prices</div>
+    <div class="plain-stat-sub">all time, vs first-tracked prices</div>
   </div>
 </div>
 
@@ -112,21 +115,19 @@
       <span class="mono creep-hero-new">{{ currency() }}{{ "{:,.2f}".format(creep_biggest_jumper.latest_price) }}</span>
     </div>
     <div class="creep-hero-divider"></div>
-    <div class="creep-hero-note">Up <b>+{{ creep_biggest_jumper.change_pct }}%</b> since your first tracked issue &mdash; the sharpest climb of anything you follow.</div>
+    <div class="creep-hero-note">Up <b>+{{ creep_biggest_jumper.change_pct }}%</b> since your first tracked issue. The sharpest climb of anything you follow.</div>
   </div>
 
   <div class="card dist-card" data-card="creep.dist">
-    <div class="card-title" style="margin-bottom:14px;">Increase distribution</div>
-    <div class="dist-chart">
-      {% for b in creep_buckets %}
-      <div class="dist-bar-wrap">
-        <span class="dist-count mono">{{ b.count }}</span>
-        <div class="dist-bar" style="height:{{ b.bar_pct }}%; background:{{ b.color }};"></div>
-        <span class="dist-label">{{ b.label }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    <div class="card-note">Most series are creeping gently &mdash; 5&ndash;10% is the norm. Anything past 25% is the real outlier worth watching.</div>
+    <div class="card-title" style="margin-bottom:6px;">Where each series sits</div>
+    {% set _rows = all_series_stats %}
+    {% set _flat = _rows|selectattr('change_pct', 'equalto', 0)|list|length %}
+    {% set _up = _rows|selectattr('change_pct', 'gt', 0)|list|length %}
+    {% set _hot = _rows|selectattr('change_pct', 'ge', 25)|list|length %}
+    {% set _down = _rows|selectattr('change_pct', 'lt', 0)|list|length %}
+    <div class="strip-lead"><b>{{ _flat }} of {{ _rows|length }} series</b> haven't changed price.{% if _up %} {{ _up }} {{ 'has' if _up == 1 else 'have' }} gone up{% if _hot %}, {{ _hot }} by 25% or more{% endif %}.{% endif %}{% if _down %} {{ _down }} got cheaper.{% endif %}</div>
+    {{ creep_strip(_rows)|safe }}
+
   </div>
 </div>
 {% endif %}
@@ -173,13 +174,13 @@
 
 <div class="grid">
   <div class="card creep-chart-card" data-card="creep.chart">
-    <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Extra spend from creep</div>
+    <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-pink) 14%, transparent); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Extra spend from creep</div>
     <p style="margin:0 0 14px; font-size:13px; color:var(--text-dim);">Running total of (latest price &minus; first tracked price) &times; issues bought since, per month</p>
     <div class="creep-chart-wrap">
       <svg id="creep-svg" viewBox="0 0 760 170" style="width:100%; height:auto;"></svg>
       <div class="creep-tooltip" id="creep-tooltip"></div>
     </div>
-    <div class="card-note">{{ currency() }}{{ "{:,.2f}".format(creep_total_extra) }} extra this year is small next to your total spend, but it's a real number &mdash; worth a glance if it starts accelerating rather than climbing steadily.</div>
+    <div class="card-note">{% if creep_total_extra %}{{ currency() }}{{ "{:,.2f}".format(creep_total_extra) }} extra in all{% if creep_since %} since {{ creep_since }}{% endif %}, from issues that cost more than the first one you tracked in their series.{% else %}No extra spend from price creep yet.{% endif %}</div>
   </div>
 </div>
 
@@ -258,50 +259,47 @@
   var data = {{ creep_cumulative_json|json_script }};
   if (data.length < 2) return;
 
-  var W = 760, H = 170, padL = 10, padR = 10, padT = 15, padB = 20;
+  // A stepped line (the total only changes when an issue is bought) with a
+  // soft gradient underneath, a scale in pounds, and the running total in
+  // a tag at the end - all in the theme's accent.
+  var W = 760, H = 200, padL = 40, padR = 74, padT = 18, padB = 26;
   var innerW = W - padL - padR, innerH = H - padT - padB;
-  var maxVal = Math.max.apply(null, data.map(function (d) { return d.value; })) || 1;
-  var peakIdx = 0;
-  data.forEach(function (d, i) { if (d.value >= data[peakIdx].value) peakIdx = i; });
-
-  function xFor(i) { return data.length > 1 ? padL + (i / (data.length - 1)) * innerW : padL + innerW / 2; }
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  var top = Math.max.apply(null, data.map(function (d) { return d.value; }));
+  var maxVal = top > 0 ? niceMax(top * 1.2) : 1;
+  function niceMax(v) { var m = Math.pow(10, Math.floor(Math.log10(v))); var f = v / m; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * m; }
+  function xFor(i) { return padL + (i / (data.length - 1)) * innerW; }
   function yFor(v) { return padT + innerH - (v / maxVal) * innerH; }
-
   var svgns = 'http://www.w3.org/2000/svg';
-  var defs = document.createElementNS(svgns, 'defs');
-  var grad = document.createElementNS(svgns, 'linearGradient');
-  grad.setAttribute('id', 'creepGrad');
-  grad.setAttribute('x1', '0'); grad.setAttribute('y1', '0'); grad.setAttribute('x2', '0'); grad.setAttribute('y2', '1');
-  grad.innerHTML = '<stop offset="0%" stop-color="#ff4d8d" stop-opacity="0.25"/><stop offset="100%" stop-color="#ff4d8d" stop-opacity="0"/>';
-  defs.appendChild(grad);
-  svg.appendChild(defs);
-
-  var pts = data.map(function (d, i) { return xFor(i) + ',' + yFor(d.value); }).join(' ');
-  var area = document.createElementNS(svgns, 'polyline');
-  area.setAttribute('points', pts + ' ' + xFor(data.length - 1) + ',' + (padT + innerH) + ' ' + xFor(0) + ',' + (padT + innerH));
-  area.setAttribute('fill', 'url(#creepGrad)');
-  area.setAttribute('stroke', 'none');
-  svg.appendChild(area);
-
-  var line = document.createElementNS(svgns, 'polyline');
-  line.setAttribute('points', pts);
-  line.setAttribute('fill', 'none');
-  line.setAttribute('stroke', '#ff4d8d');
-  line.setAttribute('stroke-width', '2.5');
-  line.setAttribute('stroke-linejoin', 'round');
-  line.setAttribute('stroke-linecap', 'round');
-  svg.appendChild(line);
-
-  for (var i = 0; i < data.length; i += Math.max(1, Math.ceil(data.length / 8))) {
-    var lbl = document.createElementNS(svgns, 'text');
-    lbl.setAttribute('x', xFor(i));
-    lbl.setAttribute('y', H - 4);
-    lbl.setAttribute('font-size', '10');
-    lbl.setAttribute('fill', 'var(--text-dim)');
-    lbl.setAttribute('text-anchor', 'middle');
-    lbl.textContent = data[i].label;
-    svg.appendChild(lbl);
+  function el(tag, attrs, text) {
+    var e = document.createElementNS(svgns, tag);
+    Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    if (text != null) e.textContent = text;
+    svg.appendChild(e); return e;
   }
+  var defs = el('defs', {});
+  defs.innerHTML = '<linearGradient id="creepGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--neon-blue)" stop-opacity="0.26"/><stop offset="1" stop-color="var(--neon-blue)" stop-opacity="0"/></linearGradient>';
+  function money(v) { return '{{ currency() }}' + (v >= 100 ? Math.round(v).toLocaleString('en-GB') : (v % 1 ? v.toFixed(2) : String(v))); }
+  [0, maxVal / 2, maxVal].forEach(function (v) {
+    el('line', { x1: padL, x2: W - padR, y1: yFor(v), y2: yFor(v), stroke: 'var(--border)', 'stroke-dasharray': '2 5' });
+    el('text', { x: padL - 8, y: yFor(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--text-dim)' }, money(v));
+  });
+  var d = 'M' + xFor(0) + ' ' + yFor(data[0].value);
+  for (var i = 1; i < data.length; i++) d += ' L' + xFor(i) + ' ' + yFor(data[i - 1].value) + ' L' + xFor(i) + ' ' + yFor(data[i].value);
+  el('path', { d: d + ' L' + xFor(data.length - 1) + ' ' + (padT + innerH) + ' L' + xFor(0) + ' ' + (padT + innerH) + ' Z', fill: 'url(#creepGrad)' });
+  el('path', { d: d, fill: 'none', stroke: 'var(--neon-blue)', 'stroke-width': 2.2, 'stroke-linejoin': 'round' });
+  var last = data[data.length - 1], lx = xFor(data.length - 1), ly = yFor(last.value);
+  el('circle', { cx: lx, cy: ly, r: 4.5, fill: 'var(--neon-blue)', stroke: 'var(--card-bg)', 'stroke-width': 2 });
+  if (last.value > 0) {
+    el('rect', { x: lx + 10, y: ly - 13, width: 58, height: 26, rx: 8, fill: 'var(--neon-blue)' });
+    el('text', { x: lx + 39, y: ly + 4.5, 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 700, fill: 'var(--on-accent)' }, money(last.value));
+  }
+  var every = Math.max(1, Math.ceil(data.length / 8));
+  data.forEach(function (p, i) {
+    if (i % every && i !== data.length - 1) return;
+    var cur = i === data.length - 1;
+    el('text', { x: xFor(i), y: H - 6, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': cur ? 650 : 500, fill: cur ? 'var(--text)' : 'var(--text-dim)' }, p.label);
+  });
 
   data.forEach(function (d, i) {
     var hit = document.createElementNS(svgns, 'rect');
@@ -318,8 +316,7 @@
   });
 
   function showTip(i, e) {
-    var peakBadge = i === peakIdx ? ' <span style="background:rgba(60,242,166,0.14); color:var(--neon-green); font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px;">PEAK</span>' : '';
-    tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + data[i].label + ' ' + String(data[i].month_key || '').slice(0, 4) + peakBadge + '</div><div class="mono">{{ currency() }}' + data[i].value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>';
+    tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:4px;">' + data[i].label.replace(/ '\d\d$/, '') + ' ' + String(data[i].month_key || '').slice(0, 4) + '</div><div class="mono">{{ currency() }}' + data[i].value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</div>';
     tooltip.style.display = 'block';
     positionTip(e);
   }

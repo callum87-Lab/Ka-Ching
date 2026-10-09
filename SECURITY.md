@@ -38,8 +38,8 @@ the impact, and the version that fixes it. The fix is also listed in
 
 | Version | Security fixes | Other fixes |
 | --- | --- | --- |
-| The latest release (e.g. 3.2.x) | Yes | Yes |
-| The release before it (e.g. 3.1.x) | Yes, for **90 days** after the newer release comes out, then no more | No |
+| The latest release (e.g. 3.3.x) | Yes | Yes |
+| The release before it (e.g. 3.2.x) | Yes, for **90 days** after the newer release comes out, then no more | No |
 | Anything older | No | No |
 
 When a version stops getting security fixes, that's noted in the
@@ -61,7 +61,7 @@ code, not on anyone's computer, and comes with three files on its
 downloaded them to:
 
 ```bash
-sha256sum -c Ka-Ching-v3.2.0-SHA256SUMS
+sha256sum -c Ka-Ching-v3.3.0-SHA256SUMS
 ```
 
 Both lines must say `OK`.
@@ -71,7 +71,7 @@ GitHub artifact attestation, which records exactly which repository and
 workflow produced it. With the [GitHub CLI](https://cli.github.com/):
 
 ```bash
-gh attestation verify Ka-Ching-v3.2.0.tar.gz --repo callum87-Lab/Ka-Ching \
+gh attestation verify Ka-Ching-v3.3.0.tar.gz --repo callum87-Lab/Ka-Ching \
   --signer-workflow callum87-Lab/Ka-Ching/.github/workflows/release.yml
 ```
 

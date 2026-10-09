@@ -1,0 +1,142 @@
+@font-face {
+  font-family: "Instrument Serif";
+  src: url("/static/fonts/InstrumentSerif-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/static/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* ---- Themes. Sand is the default; Grey, Blue and Noir are chosen in
+   Settings -> Appearance. Every colour in the interface comes from these
+   tokens; the accent (--neon-blue) is set separately from the theme's
+   swatch list. --shop-1..8 colour the shops in charts and lists. ---- */
+:root {
+  --font-display: "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 10px;
+  --font-figure: "Instrument Serif", Georgia, "Times New Roman", serif;
+
+  --page-bg: linear-gradient(180deg, #f6f3ec 0%, #efeadf 100%);
+  --bg-1: #f2eee5;
+  --bg-2: #f8f6f0;
+  --surface: #fbfaf6;
+  --surface-raised: #f3f0e8;
+  --card-bg: #fbfaf6;
+  --card-shadow: 0 1px 2px rgba(30, 40, 35, 0.04), 0 6px 20px rgba(30, 40, 35, 0.04);
+  --sidebar: #ece7dc;
+  --border: rgba(0, 70, 67, 0.11);
+  --border-strong: rgba(0, 70, 67, 0.2);
+  --text: #16211f;
+  --text-muted: #4f5c58;
+  --text-dim: #5f6b67;
+  --neon-blue: #004643;
+  --neon-green: #1b6e44;
+  --neon-pink: #b23a27;
+  --neon-violet: #6b5b95;
+  --neon-amber: #8f5508;
+  --on-accent: #f6f3ec;
+  --kc-mark: #004643;
+  --track: rgba(0, 70, 67, 0.08);
+  --hover: rgba(0, 70, 67, 0.05);
+  --input-bg: #fdfcf9;
+  --overlay: rgba(22, 33, 31, 0.35);
+  --chart-bar: #d6d0c2;
+  --chart-bar-future: #e8e3d8;
+  --shop-1: #004643; --shop-2: #c9822e; --shop-3: #5f8f7d; --shop-4: #6b5b95;
+  --shop-5: #b5543a; --shop-6: #3d6f9c; --shop-7: #8a7a5c; --shop-8: #a3486f;
+  --glow: 0;
+}
+:root[data-theme="grey"] {
+  --page-bg: linear-gradient(155deg, #34373d 0%, #1c1e22 45%, #111214 100%);
+  --bg-1: #131417;
+  --bg-2: #1c1e22;
+  --surface: #1d1f23;
+  --surface-raised: #26292e;
+  --card-bg: rgba(255, 255, 255, 0.035);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --sidebar: rgba(0, 0, 0, 0.18);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.17);
+  --text: #f5f6f7;
+  --text-muted: #bcc0c7;
+  --text-dim: #a5a9b1;
+  --neon-green: #5fd39a;
+  --neon-pink: #ff6b5e;
+  --neon-violet: #b4bcf7;
+  --neon-amber: #f5b454;
+  --on-accent: #0c0e11;
+  --kc-mark: #f5f6f7;
+  --track: rgba(255, 255, 255, 0.08);
+  --hover: rgba(255, 255, 255, 0.045);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --chart-bar: rgba(255, 255, 255, 0.22);
+  --chart-bar-future: rgba(255, 255, 255, 0.08);
+  --shop-1: #7dd3fc; --shop-2: #f5b454; --shop-3: #5eead4; --shop-4: #c4b5fd;
+  --shop-5: #fda4af; --shop-6: #bef264; --shop-7: #93c5fd; --shop-8: #fcd34d;
+}
+:root[data-theme="blue"] {
+  --page-bg: linear-gradient(155deg, #123a7a 0%, #0b2350 40%, #071430 100%);
+  --bg-1: #08173a;
+  --bg-2: #0b2350;
+  --surface: #0f2a5c;
+  --surface-raised: #15346d;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --sidebar: rgba(2, 8, 24, 0.25);
+  --border: rgba(180, 205, 255, 0.13);
+  --border-strong: rgba(180, 205, 255, 0.24);
+  --text: #f3f7ff;
+  --text-muted: #adbfdf;
+  --text-dim: #8fa4c8;
+  --neon-green: #6ee7b7;
+  --neon-pink: #ff7a8a;
+  --neon-violet: #c4b5fd;
+  --neon-amber: #fbbf63;
+  --on-accent: #06122b;
+  --kc-mark: #ffffff;
+  --track: rgba(160, 200, 255, 0.13);
+  --hover: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --overlay: rgba(2, 6, 20, 0.6);
+  --chart-bar: rgba(160, 200, 255, 0.40);
+  --chart-bar-future: rgba(160, 200, 255, 0.12);
+  --shop-1: #67e8f9; --shop-2: #fbbf63; --shop-3: #6ee7b7; --shop-4: #c4b5fd;
+  --shop-5: #fda4af; --shop-6: #bae6fd; --shop-7: #fde68a; --shop-8: #f0abfc;
+}
+:root[data-theme="noir"] {
+  --page-bg: linear-gradient(160deg, #1a1916 0%, #0e0e0d 50%, #080808 100%);
+  --bg-1: #0b0b0a;
+  --bg-2: #141412;
+  --surface: #171614;
+  --surface-raised: #201f1c;
+  --card-bg: rgba(255, 248, 230, 0.03);
+  --card-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.05);
+  --sidebar: rgba(0, 0, 0, 0.25);
+  --border: rgba(255, 240, 210, 0.09);
+  --border-strong: rgba(255, 240, 210, 0.17);
+  --text: #f3efe6;
+  --text-muted: #b0a99b;
+  --text-dim: #958f82;
+  --neon-green: #8fc79a;
+  --neon-pink: #e8756a;
+  --neon-violet: #b9a8e0;
+  --neon-amber: #e2b866;
+  --on-accent: #14120e;
+  --kc-mark: #f3efe6;
+  --track: rgba(255, 240, 210, 0.08);
+  --hover: rgba(255, 240, 210, 0.05);
+  --input-bg: rgba(255, 240, 210, 0.04);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --chart-bar: rgba(255, 240, 210, 0.18);
+  --chart-bar-future: rgba(255, 240, 210, 0.07);
+  --shop-1: #c9a25b; --shop-2: #8fa9c2; --shop-3: #8fc79a; --shop-4: #b9a8e0;
+  --shop-5: #d8a48f; --shop-6: #e3cf9f; --shop-7: #9c8f78; --shop-8: #c98b8b;
+}
+:root { --neon-blue-dim: color-mix(in srgb, var(--neon-blue) 80%, var(--text)); }

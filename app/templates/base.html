@@ -1,38 +1,19 @@
+{% from "_logo_mark.html" import kc_mark %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ ui_theme().theme }}" style="--neon-blue: {{ ui_theme().accent }};">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Ka-Ching!{% endblock %}</title>
-<link rel="icon" type="image/png" href="/static/img/logo.png?v={{ app_version }}">
+<link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg?v={{ app_version }}">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png?v={{ app_version }}">
 <link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#0a1224">
-<link rel="apple-touch-icon" href="/static/img/icon-192.png?v={{ app_version }}">
+<meta name="theme-color" content="{{ ui_theme().chrome }}">
+<link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png?v={{ app_version }}">
 <style>
   /* ---- Base styles carried over from the original stylesheet (only the
      rules this interface still uses) ---- */
-:root {
-  --bg-1: #060a17;
-  --bg-2: #0d1428;
-  --surface: #101a30;
-  --surface-raised: #16213d;
-  --border: rgba(94, 156, 255, 0.16);
-  --border-strong: rgba(94, 156, 255, 0.32);
-  --text: #e7ecfa;
-  --text-muted: #7c89ad;
-
-  --neon-blue: #2fd8ff;
-  --neon-blue-dim: #0ea5c9;
-  --neon-green: #3cf2a6;
-  --neon-pink: #ff4d8d;
-  --neon-violet: #9b7bff;
-
-  --font-display: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-
-  --radius: 8px;
-}
+{% include "_theme_tokens.html" %}
 
 * { box-sizing: border-box; }
 
@@ -45,10 +26,7 @@ html, body {
   padding: 0;
   min-height: 100%;
   background-color: var(--bg-1);
-  background-image:
-    radial-gradient(circle at 15% -10%, rgba(47, 216, 255, 0.14) 0%, transparent 45%),
-    radial-gradient(circle at 100% 0%, rgba(155, 123, 255, 0.10) 0%, transparent 40%),
-    linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 55%);
+  background-image: var(--page-bg);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-body);
@@ -94,7 +72,7 @@ a:hover { text-decoration: underline; }
   color: var(--neon-blue);
   border-color: var(--neon-blue);
   text-decoration: none;
-  box-shadow: 0 0 8px rgba(47, 216, 255, 0.3);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--neon-blue) 30%, transparent);
 }
 
 .bulk-toolbar {
@@ -109,7 +87,7 @@ a:hover { text-decoration: underline; }
   border-radius: var(--radius);
   padding: 10px 14px;
   margin-bottom: 18px;
-  box-shadow: 0 0 14px rgba(47, 216, 255, 0.25);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--neon-blue) 25%, transparent);
 }
 
 .bulk-select {
@@ -163,12 +141,12 @@ a:hover { text-decoration: underline; }
   color: var(--text);
   text-decoration: none;
   border-color: var(--neon-blue);
-  box-shadow: 0 0 10px rgba(47, 216, 255, 0.35);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--neon-blue) 35%, transparent);
 }
 
 .range-tab.active,
 .shop-filter-tab.active {
-  background: rgba(47, 216, 255, 0.12);
+  background: color-mix(in srgb, var(--neon-blue) 12%, transparent);
   color: var(--neon-blue);
   border-color: var(--neon-blue);
   box-shadow: none;
@@ -187,6 +165,7 @@ a:hover { text-decoration: underline; }
 }
 
 .trend-hit { cursor: crosshair; }
+.trend-guide, .trend-dot { pointer-events: none; }   /* never steal the hover from the targets underneath */
 
 .chart-multi.hide-total .trend-series-total,
 .chart-multi.hide-comics .trend-series-comics,
@@ -223,15 +202,15 @@ a:hover { text-decoration: underline; }
 
 .trend-toggle-row.trend-toggle-checked .trend-toggle-label { color: var(--text); }
 
-.trend-toggle-total .toggle input:checked ~ .toggle-track { background: rgba(47, 216, 255, 0.15); border-color: var(--neon-blue); }
+.trend-toggle-total .toggle input:checked ~ .toggle-track { background: color-mix(in srgb, var(--neon-blue) 15%, transparent); border-color: var(--neon-blue); }
 
 .trend-toggle-total .toggle input:checked ~ .toggle-track::before { background: linear-gradient(135deg, var(--neon-blue), var(--neon-violet)); }
 
-.trend-toggle-comics .toggle input:checked ~ .toggle-track { background: rgba(60, 242, 166, 0.15); border-color: var(--neon-green); }
+.trend-toggle-comics .toggle input:checked ~ .toggle-track { background: color-mix(in srgb, var(--neon-green) 15%, transparent); border-color: var(--neon-green); }
 
 .trend-toggle-comics .toggle input:checked ~ .toggle-track::before { background: var(--neon-green); }
 
-.trend-toggle-shipping .toggle input:checked ~ .toggle-track { background: rgba(255, 77, 141, 0.15); border-color: var(--neon-pink); }
+.trend-toggle-shipping .toggle input:checked ~ .toggle-track { background: color-mix(in srgb, var(--neon-pink) 15%, transparent); border-color: var(--neon-pink); }
 
 .trend-toggle-shipping .toggle input:checked ~ .toggle-track::before { background: var(--neon-pink); }
 
@@ -244,7 +223,7 @@ a:hover { text-decoration: underline; }
   padding: 10px 12px;
   font-size: 12.5px;
   min-width: 150px;
-  box-shadow: 0 0 14px rgba(47, 216, 255, 0.25);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--neon-blue) 25%, transparent);
   pointer-events: none;
 }
 
@@ -304,7 +283,7 @@ textarea::placeholder { color: var(--text-muted); }
 button {
   align-self: flex-start;
   background: var(--neon-blue);
-  color: #04121a;
+  color: var(--on-accent);
   border: none;
   border-radius: var(--radius);
   padding: 11px 22px;
@@ -314,7 +293,7 @@ button {
   cursor: pointer;
 }
 
-button:hover { box-shadow: 0 0 16px rgba(47, 216, 255, 0.55); }
+button:hover { box-shadow: 0 0 16px color-mix(in srgb, var(--neon-blue) 55%, transparent); }
 
 .provider-fields { padding: 2px 0; }
 
@@ -361,7 +340,7 @@ input[type="file"] {
 .comic-row-name:focus, .comic-row-price:focus {
   outline: none;
   border-color: var(--neon-blue);
-  box-shadow: 0 0 0 2px rgba(47, 216, 255, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--neon-blue) 20%, transparent);
 }
 
 .logorders-tabs {
@@ -384,7 +363,7 @@ input[type="file"] {
 
 .logorders-tab.active {
   color: var(--neon-blue);
-  background: rgba(47, 216, 255, 0.12);
+  background: color-mix(in srgb, var(--neon-blue) 12%, transparent);
   border-color: var(--neon-blue);
 }
 
@@ -427,7 +406,7 @@ input[type="file"] {
   min-height: 76px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -436,11 +415,11 @@ input[type="file"] {
 
 .cal-day-empty { background: transparent; border-color: transparent; }
 
-.cal-today { border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(47, 216, 255, 0.3); }
+.cal-today { border-color: var(--neon-blue); box-shadow: 0 0 10px color-mix(in srgb, var(--neon-blue) 30%, transparent); }
 
 .cal-has-items {
   border-color: var(--border-strong);
-  background: linear-gradient(160deg, rgba(60, 242, 166, 0.07), var(--surface) 55%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--neon-green) 7%, transparent), var(--surface) 55%);
   cursor: pointer;
 }
 
@@ -496,14 +475,14 @@ input[type="file"] {
   font-size: 12px;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 20px;
+  border-radius: 999px;
   margin-top: 2px;
   width: fit-content;
 }
 
-.trend-up { background: rgba(255, 77, 141, 0.14); color: var(--neon-pink); }
+.trend-up { background: color-mix(in srgb, var(--neon-pink) 14%, transparent); color: var(--neon-pink); }
 
-.trend-down { background: rgba(60, 242, 166, 0.14); color: var(--neon-green); }
+.trend-down { background: color-mix(in srgb, var(--neon-green) 14%, transparent); color: var(--neon-green); }
 
 .search-pagination { display: flex; align-items: center; gap: 14px; justify-content: center; margin-top: 16px; }
 
@@ -560,7 +539,7 @@ input[type="file"] {
 }
 
 .toggle input:checked ~ .toggle-track {
-  background: rgba(47, 216, 255, 0.15);
+  background: color-mix(in srgb, var(--neon-blue) 15%, transparent);
   border-color: var(--neon-blue);
 }
 
@@ -571,32 +550,23 @@ input[type="file"] {
 
   /* ---- Layout and components ---- */
   :root {
-    --bg-1: #060a17;
-    --surface: #101a30;
-    --surface-raised: #16213d;
-    --sidebar: #0a0f20;
-    --border: rgba(94, 156, 255, 0.14);
-    --border-strong: rgba(94, 156, 255, 0.30);
-    --text: #e7ecfa;
-    --text-muted: #7c89ad;
-    --text-dim: #566089;
-    --neon-blue: #2fd8ff;
-    --neon-green: #3cf2a6;
-    --neon-pink: #ff4d8d;
-    --neon-violet: #9b7bff;
-    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    /* corners: cards, panels inside cards, controls, small bits */
     --radius-lg: 18px;
     --radius-md: 14px;
     --radius-sm: 10px;
+    --radius-xs: 8px;
+    /* spacing: everything sits on a 4px step */
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+    /* motion: one speed, one curve */
+    --dur: 140ms;
+    --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; min-height: 100%;
-    background: var(--bg-1);
-    background-image:
-      radial-gradient(circle at 10% -10%, rgba(47, 216, 255, 0.10) 0%, transparent 40%),
-      radial-gradient(circle at 100% 0%, rgba(155, 123, 255, 0.08) 0%, transparent 40%);
+    background-color: var(--bg-1);
+    background-image: var(--page-bg);
+    background-attachment: fixed;
     color: var(--text);
     font-family: var(--font-body);
     font-size: 16px;
@@ -617,17 +587,17 @@ input[type="file"] {
   .nav-label { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); padding: 16px 10px 6px; }
   .nav-item { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 999px; color: var(--text-muted); font-weight: 600; font-size: 15.5px; cursor: pointer; }
   .nav-item svg.icon { width: 17px; height: 17px; flex: 0 0 auto; opacity: 0.85; }
-  .nav-item.active { background: rgba(47,216,255,0.14); color: var(--neon-blue); box-shadow: inset 0 0 0 1px var(--neon-blue); }
+  .nav-item.active { background: color-mix(in srgb, var(--neon-blue) 14%, transparent); color: var(--neon-blue); box-shadow: inset 0 0 0 1px var(--neon-blue); }
   .nav-item.active svg.icon { opacity: 1; }
   .sidebar-foot { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
   .budget-mini { padding: 12px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); }
-  .budget-mini-label { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .budget-mini-bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 6px; }
+  .budget-mini-label { font-size: 12.5px; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; }
+  .budget-mini-bar { height: 6px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; margin-bottom: 6px; }
   .budget-mini-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-green), var(--neon-blue)); }
   .budget-mini.is-over .budget-mini-fill { background: linear-gradient(90deg, var(--neon-violet), var(--neon-pink)); }
   .budget-mini-bar.split { display: flex; }
   .budget-mini-bar.split .budget-mini-fill { border-radius: 4px 0 0 4px; flex: 0 0 auto; }
-  .budget-mini-due { height: 100%; flex: 0 0 auto; background: repeating-linear-gradient(135deg, rgba(47,216,255,0.45) 0 3px, rgba(47,216,255,0.15) 3px 6px); }
+  .budget-mini-due { height: 100%; flex: 0 0 auto; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--neon-blue) 45%, transparent) 0 3px, color-mix(in srgb, var(--neon-blue) 15%, transparent) 3px 6px); }
   .budget-mini-main { font-size: 13px; font-weight: 700; }
   .budget-mini-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
   .bm-ok { color: var(--neon-green); } .bm-over { color: var(--neon-pink); }
@@ -647,20 +617,20 @@ input[type="file"] {
 
   .tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
   .tab-pill { padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); }
-  .tab-pill.active { background: rgba(47,216,255,0.14); color: var(--neon-blue); border-color: var(--neon-blue); }
+  .tab-pill.active { background: color-mix(in srgb, var(--neon-blue) 14%, transparent); color: var(--neon-blue); border-color: var(--neon-blue); }
 
   .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin-bottom: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--card-shadow); }
   .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
   .card-title { display: flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 700; }
-  .card-icon-badge { width: 26px; height: 26px; border-radius: 8px; background: rgba(94,156,255,0.08); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--neon-blue); flex: 0 0 auto; }
+  .card-icon-badge { width: 26px; height: 26px; border-radius: var(--radius-xs); background: color-mix(in srgb, var(--text) 4.4%, transparent); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--neon-blue); flex: 0 0 auto; }
   .card-icon-badge svg { width: 14px; height: 14px; }
 
-  .bulk-toolbar { position: fixed; left: 236px; right: 0; bottom: 0; display: none; align-items: center; justify-content: center; gap: 14px; background: rgba(10,15,32,0.92); backdrop-filter: blur(10px); border-top: 1px solid var(--border-strong); padding: 14px; z-index: 20; }
+  .bulk-toolbar { position: fixed; left: 236px; right: 0; bottom: 0; display: none; align-items: center; justify-content: center; gap: 14px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--border-strong); padding: 14px; z-index: 20; }
   .bulk-toolbar.visible { display: flex; }
   .bulk-btn { font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; }
-  .bulk-btn.confirm { background: var(--neon-blue); color: #04121a; border-color: transparent; }
-  .bulk-btn.danger { color: var(--neon-pink); border-color: rgba(255,77,141,0.3); }
+  .bulk-btn.confirm { background: var(--neon-blue); color: var(--on-accent); border-color: transparent; }
+  .bulk-btn.danger { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
 
   {% block extra_style %}{% endblock %}
 
@@ -673,15 +643,15 @@ input[type="file"] {
   .category-input:focus { cursor: text; }
   .cat-dropdown {
     position: absolute; z-index: 60; max-height: 280px; overflow-y: auto;
-    background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: 12px;
-    padding: 6px; box-shadow: 0 14px 34px rgba(0,0,0,0.5), 0 0 0 1px rgba(47,216,255,0.05);
+    background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+    padding: 6px; box-shadow: 0 14px 34px rgba(0,0,0,0.5), 0 0 0 1px color-mix(in srgb, var(--neon-blue) 5%, transparent);
   }
-  .cat-option { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: 8px; font-size: 14px; color: var(--text); cursor: pointer; white-space: nowrap; }
-  .cat-option:hover, .cat-option.is-highlighted { background: rgba(47,216,255,0.10); color: var(--neon-blue); }
+  .cat-option { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: var(--radius-xs); font-size: 14px; color: var(--text); cursor: pointer; white-space: nowrap; }
+  .cat-option:hover, .cat-option.is-highlighted { background: color-mix(in srgb, var(--neon-blue) 10%, transparent); color: var(--neon-blue); }
   .cat-option.is-current { color: var(--neon-blue); font-weight: 600; }
   .cat-option-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
   .cat-option-new { color: var(--neon-blue); font-weight: 600; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; border-radius: 0 0 8px 8px; }
-  .cat-option-new:first-child { border-top: none; margin-top: 0; padding-top: 8px; border-radius: 8px; }
+  .cat-option-new:first-child { border-top: none; margin-top: 0; padding-top: 8px; border-radius: var(--radius-xs); }
   .cat-option-empty { padding: 8px 11px; font-size: 13px; color: var(--text-dim); }
 
   /* Category filter chips (Price creep / Top titles) */
@@ -699,11 +669,11 @@ input[type="file"] {
            .warn-action-btn, .page-btn, .btn-secondary, .export-btn, .csv-btn, .filter-toggle-btn,
            .delay-btn, .bulk-btn, .clear-btn, .parser-hint-btn, .month-nav-today, .cat-chip,
            .submit-btn, .btn-primary, .notif-test-btn, .add-cat-btn) {
-    --pill-glow: rgba(47,216,255,0.55);
+    --pill-glow: color-mix(in srgb, var(--neon-blue) 55%, transparent);
     transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   }
   /* Coloured pills glow in their own colour */
-  body :is(.danger, .preset-pill.clear) { --pill-glow: rgba(255,77,141,0.55); }
+  body :is(.danger, .preset-pill.clear) { --pill-glow: color-mix(in srgb, var(--neon-pink) 55%, transparent); }
   body .cat-chip { --pill-glow: color-mix(in srgb, var(--chip) 55%, transparent); }
   body .shop-filter-tab[style*="--shop-color"] { --pill-glow: color-mix(in srgb, var(--shop-color) 55%, transparent); }
 
@@ -724,7 +694,7 @@ input[type="file"] {
   /* Selected: blue tint / text / border (the cat chips keep their own colour) */
   body :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .logorders-tab, .preset-pill,
            .filter-toggle-btn, .parser-hint-btn).active {
-    background: rgba(47,216,255,0.14); color: var(--neon-blue); border-color: var(--neon-blue);
+    background: color-mix(in srgb, var(--neon-blue) 14%, transparent); color: var(--neon-blue); border-color: var(--neon-blue);
   }
   body .shop-filter-tab[style*="--shop-color"].active { background: none; color: var(--shop-color); border-color: var(--shop-color); }
   /* Selected + hover: look unchanged, plus the same glow */
@@ -768,7 +738,7 @@ input[type="file"] {
     transform: none !important; transition: box-shadow 0.15s ease, border-color 0.15s ease; }
   .kc-chev svg { width: 16px; height: 16px; transition: transform 0.2s ease; }
   .kc-chev:hover, :is(.day-group-head, .thisweek-head, .shop-row, .settings-card-head):hover .kc-chev {
-    box-shadow: 0 0 14px rgba(47,216,255,0.5); border-color: var(--neon-blue) !important; }
+    box-shadow: 0 0 14px color-mix(in srgb, var(--neon-blue) 50%, transparent); border-color: var(--neon-blue) !important; }
   .kc-chev.open svg, .day-group.expanded .kc-chev svg, .shop-row.expanded .kc-chev svg { transform: rotate(180deg); }
 
   /* Always keep room for the scrollbar, so a page (or tab) that's short
@@ -781,12 +751,12 @@ input[type="file"] {
     /* width:100% as well - auto margins alone make a grid item shrink to
        its content, so each page came out a different width */
     body.wide-standard .main { margin: 0 auto; width: 100%; }
-    body.wide-columns .main { max-width: 2240px; margin: 0 auto; width: 100%; }
     body.wide-panel .shell { grid-template-columns: 236px minmax(0, 1fr) 400px; }
-    body.wide-panel .main { max-width: none; width: 100%; }
+    body.wide-panel.sb-rail .shell { grid-template-columns: 76px minmax(0, 1fr) 400px; }
+    body.wide-panel .main { margin: 0 auto; width: 100%; }
     body.wide-panel .glance { display: flex; }
     /* the Dashboard's own copies of what the panel shows */
-    body.wide-panel [data-card="dash.week"], body.wide-panel [data-card="dash.alerts"], body.wide-panel [data-card="dash.stillorder"] { display: none !important; }
+    body.wide-panel [data-card="dash.week"], body.wide-panel [data-card="dash.alerts"] { display: none !important; }
   }
   .glance { position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-direction: column; gap: 14px;
     padding: 22px 18px 30px; background: var(--sidebar); border-left: 1px solid var(--border); }
@@ -804,13 +774,134 @@ input[type="file"] {
   .glance a.glance-alert:first-of-type { border-top: none; }
   .glance a.glance-alert .d { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
   .glance a.glance-alert:hover { color: var(--neon-blue); }
-  .glance-big { background: radial-gradient(circle at 100% 0%, rgba(47,216,255,0.25) 0%, transparent 55%), linear-gradient(160deg, #0a2540 0%, #0c1830 55%, var(--surface) 100%); border-color: rgba(47,216,255,0.35); }
-  .glance-big .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #a8e0ff; }
+  .glance-big { background: var(--card-bg); }
+  .glance-big .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: color-mix(in srgb, var(--neon-blue) 55%, var(--text)); }
   .glance-big .nm { font-size: 15px; font-weight: 700; margin: 6px 0 2px; line-height: 1.35; }
   .glance-big .pr { font-size: 22px; font-weight: 800; color: var(--neon-green); margin-top: 8px; }
 
-  .kc-flash { margin: 0 0 16px; padding: 11px 16px; border-radius: 12px; font-size: 14px;
-    background: rgba(47,216,255,0.08); border: 1px solid rgba(47,216,255,0.35); color: var(--text); }
+  /* ---- v3.3 design pass: no icon badges, no shouting labels, no glows,
+     plain text tabs, and headline figures in their own typeface ---- */
+  .main .card-icon-badge { display: none !important; }
+  .main .card-title { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; gap: 0; text-transform: none; }
+  .main, .main * { text-transform: none !important; }
+  .main *, .main *::before, .main *::after { text-shadow: none !important; }
+  .main *:not(.card):not(.toggle-track):not(input):not(select):not(textarea):not(:focus-visible) { box-shadow: none !important; }
+  .main svg * { filter: none !important; }
+  .main :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .preset-pill, .logorders-tab, .sub-tab) {
+    background: none !important; border: none !important; border-radius: 0 !important; height: auto !important;
+    padding: 6px 0 7px !important; margin-right: 18px !important; color: var(--text-muted) !important; font-weight: 500 !important;
+    border-bottom: 2px solid transparent !important; }
+  .main :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .preset-pill, .logorders-tab, .sub-tab):hover { color: var(--text) !important; }
+  .main :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .preset-pill, .logorders-tab, .sub-tab):is(.active, .sel, [aria-selected="true"]) {
+    color: var(--text) !important; border-bottom-color: var(--neon-blue) !important; }
+  .main :is(.submit-btn, .kc-cust, .btn-secondary) { border-radius: var(--radius-sm) !important; }
+  .page-head h1 { letter-spacing: -0.03em; }
+
+  /* headline figures */
+  :is(.hero-big, .hero-side-p, .fig-v, .mini-stat-value, .cm-big, .plain-stat-value, .creep-hero-new, .titles-hero-price .mono, .gauge-wrap > .mono) {
+    font-family: var(--font-figure) !important; font-weight: 400 !important; letter-spacing: -0.01em !important;
+    font-variant-numeric: lining-nums; line-height: 1.05; }
+  .hero-big { font-size: 84px !important; letter-spacing: -0.02em !important; }
+  .hero-big small { font-size: 40px; }
+  .hero-side-p { font-size: 48px !important; }
+  .fig-v { font-size: 40px !important; }
+  .mini-stat-value { font-size: 34px !important; }
+  .cm-big { font-size: 40px !important; }
+  .plain-stat-value { font-size: 36px !important; }
+  .creep-hero-new { font-size: 36px !important; }
+  .titles-hero-price .mono { font-size: 42px !important; }
+  .gauge-wrap > .mono { font-size: 36px !important; }
+  @media (max-width: 900px) {
+    .hero-big { font-size: 64px !important; }
+    .hero-big small { font-size: 30px; }
+    .hero-side-p, .titles-hero-price .mono { font-size: 40px !important; }
+    .fig-v, .mini-stat-value, .cm-big, .plain-stat-value, .creep-hero-new, .gauge-wrap > .mono { font-size: 31px !important; }
+  }
+
+  .sidebar .brand { display: flex; align-items: center; gap: 11px; padding: 6px 10px 18px; text-decoration: none; }
+  .sidebar .brand .kc-mark { flex: 0 0 auto; display: block; }
+  .brand-word { font-family: var(--font-body); font-weight: 700; font-size: 24px; letter-spacing: -0.035em; color: var(--text); line-height: 1; }
+
+  /* ---- Sidebar (v3.3): search lives here on desktop, calmer current
+     page, Alerts count, and an optional icon rail ---- */
+  .sb-search { display: flex; align-items: center; gap: 9px; margin: 2px 0 8px; padding: 0 10px 0 12px; height: 40px; border-radius: var(--radius-sm);
+    background: var(--input-bg); border: 1px solid var(--border); color: var(--text-dim); cursor: text; }
+  .sb-search:focus-within { border-color: var(--neon-blue); }
+  .sb-search svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .sb-search input { flex: 1; min-width: 0; background: none; border: none; outline: none; color: var(--text); font: inherit; font-size: 14px; }
+  .sb-search input::placeholder { color: var(--text-dim); opacity: 1; }
+  .sb-search .kc-kbd { margin-left: auto; }
+  .sidebar .nav-label { text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 600; }
+  .sidebar .nav-item { border-radius: var(--radius-sm); position: relative; font-weight: 550; }
+  .sidebar .nav-item.active { background: color-mix(in srgb, var(--neon-blue) 10%, transparent); box-shadow: none; color: var(--text); }
+  .sidebar .nav-item.active svg.icon { color: var(--neon-blue); }
+  .sidebar .nav-item.active::before { content: ''; position: absolute; left: -16px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--neon-blue); }
+  .nav-badge { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--neon-pink); color: #fff;
+    font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .sb-collapse { display: none; }
+  @media (min-width: 901px) {
+    .main > .topbar { display: none; }
+    .sb-collapse { display: flex; align-items: center; gap: 9px; width: 100%; margin: 0 0 10px; padding: 7px 10px; border-radius: var(--radius-xs);
+      background: none; border: none; color: var(--text-dim); font: inherit; font-size: 13px; font-weight: 550; cursor: pointer; }
+    .sb-collapse:hover { color: var(--text); background: var(--hover); }
+    body.sb-rail .shell { grid-template-columns: 76px minmax(0, 1fr); }
+    body.sb-rail .sidebar { padding: 22px 12px; align-items: center; }
+    body.sb-rail .sb-collapse svg { transform: rotate(180deg); }
+    body.sb-rail .sb-collapse { width: 46px; height: 36px; justify-content: center; padding: 0; }
+    body.sb-rail .sb-collapse span { display: none; }
+    body.sb-rail .brand { padding: 4px 0 18px; justify-content: center; }
+    body.sb-rail :is(.brand-word, .nav-label, .sub-item, .sb-search input, .sb-search .kc-kbd, .budget-mini-label, .budget-mini-main, .budget-mini-sub, .budget-mini .mono) { display: none !important; }
+    body.sb-rail .sidebar .nav-item { font-size: 0; width: 46px; height: 42px; justify-content: center; padding: 0; gap: 0; }
+    body.sb-rail .sidebar .nav-item svg.icon { width: 19px; height: 19px; }
+    body.sb-rail .sidebar .nav-item.active::before { left: -12px; }
+    body.sb-rail .nav-badge { position: absolute; top: 3px; right: 1px; min-width: 16px; height: 16px; font-size: 10px; padding: 0 4px; }
+    body.sb-rail .sb-search { width: 46px; height: 40px; padding: 0; justify-content: center; cursor: pointer; }
+    body.sb-rail .sidebar-foot { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    body.sb-rail .budget-mini { display: none; }
+  }
+
+  /* ---- Compact layout (Settings -> Appearance): same width, tighter, on
+     every screen size, so more fits without scrolling ---- */
+  body.wide-compact .main { padding-top: 16px; }
+  body.wide-compact .page-head { margin-bottom: 10px; }
+  body.wide-compact .page-head h1 { font-size: 24px; }
+  body.wide-compact .grid { gap: 10px; margin-bottom: 10px; }
+  body.wide-compact .card:not(.hero-card):not(.figures-card) { padding: 14px 16px; border-radius: var(--radius-md); }
+  body.wide-compact .card-title { font-size: 14px; margin-bottom: 8px; }
+  body.wide-compact .hero-card { padding: 2px 2px 18px; gap: 32px; }
+  body.wide-compact .hero-big { font-size: 60px !important; margin: 6px 0; }
+  body.wide-compact .hero-big small { font-size: 30px; }
+  body.wide-compact .hero-lead { font-size: 14.5px; }
+  body.wide-compact .hero-meter { margin-top: 14px; }
+  body.wide-compact .hero-side-p { font-size: 38px !important; }
+  body.wide-compact .figures-card .fig { padding: 14px 0 16px 20px; }
+  body.wide-compact .figures-card .fig-1 { padding-left: 2px; }
+  body.wide-compact .fig-v { font-size: 31px !important; margin: 4px 0 2px; }
+  body.wide-compact :is(.mini-stat-value, .cm-big, .plain-stat-value, .creep-hero-new, .gauge-wrap > .mono) { font-size: 28px !important; }
+  body.wide-compact .titles-hero-price .mono { font-size: 34px !important; }
+  body.wide-compact:not(.sb-rail) .sidebar .nav-item { padding: 7px 10px; font-size: 14.5px; }
+  body.wide-compact .alert-line { padding-top: 7px; padding-bottom: 7px; }
+  @media (max-width: 900px) {
+    body.wide-compact .hero-big { font-size: 52px !important; }
+    body.wide-compact .card:not(.hero-card):not(.figures-card) { padding: 12px 14px; }
+  }
+
+  /* ---- Sidebar footer: Settings, sign out ---- */
+  .sb-util { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 4px; }
+  .sidebar-foot .budget-mini { margin-bottom: 2px; }
+
+  /* ---- Connector lines from a section to its sub-pages ---- */
+  .sidebar .sub-nav .sub-item { position: relative; }
+  .sidebar .sub-nav .sub-item::before { content: ''; position: absolute; left: -15px; top: -2px; width: 11px; height: calc(50% + 2px);
+    border-left: 1.5px solid var(--border-strong); border-bottom: 1.5px solid var(--border-strong); border-bottom-left-radius: 9px; }
+  .sidebar .sub-nav .sub-item:not(:last-child)::after { content: ''; position: absolute; left: -15px; top: 0; bottom: 0; border-left: 1.5px solid var(--border-strong); }
+  .sidebar .sub-nav .sub-item.active::before { border-color: var(--neon-blue); }
+  @media (min-width: 901px) {
+    body.sb-rail .sb-util { align-items: center; width: 100%; }
+  }
+
+  .kc-flash { margin: 0 0 16px; padding: 11px 16px; border-radius: var(--radius-md); font-size: 14px;
+    background: color-mix(in srgb, var(--neon-blue) 8%, transparent); border: 1px solid color-mix(in srgb, var(--neon-blue) 35%, transparent); color: var(--text); }
 
   /* ---- Show / hide cards (Customise) ---- */
   .kc-solo { grid-column: span 12 !important; }
@@ -820,36 +911,36 @@ input[type="file"] {
   .kc-cust { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; font-size: 13px; padding: 7px 14px; }
   .kc-cust svg { width: 15px; height: 15px; }
   .kc-editbar { display: none; position: sticky; top: 10px; z-index: 30; margin: 0 0 14px; padding: 10px 14px;
-    background: rgba(12,24,44,0.94); border: 1px solid var(--neon-blue); border-radius: 14px;
+    background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--neon-blue); border-radius: var(--radius-md);
     align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; color: var(--text); }
   body.kc-editing .kc-editbar { display: flex; }
   body.kc-editing [data-card] { position: relative; outline: 1px dashed var(--border-strong); outline-offset: 4px; }
   /* Customise strip: a header across the top of each card (the card's own
      content moves down beneath it, nothing is covered) */
   .kc-strip { display: none; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 16px 9px 20px;
-    background: rgba(47,216,255,0.07); border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 700;
+    background: color-mix(in srgb, var(--neon-blue) 7%, transparent); border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 700;
     cursor: pointer; user-select: none; }
   body.kc-editing .kc-strip { display: flex; }
   .kc-strip .kc-nm { color: var(--text); }
   .kc-strip .kc-nmwrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .kc-handle { cursor: grab; color: var(--text-muted); font-size: 15px; letter-spacing: -3px; padding: 2px 8px 2px 2px; margin-left: -6px;
     touch-action: none; user-select: none; line-height: 1; border-radius: 6px; }
-  .kc-handle:hover { color: var(--neon-blue); background: rgba(47,216,255,0.10); }
+  .kc-handle:hover { color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 10%, transparent); }
   body.kc-drag-active, body.kc-drag-active * { cursor: grabbing !important; user-select: none; }
-  .kc-dragging { opacity: 0.55; outline: 2px solid var(--neon-blue) !important; box-shadow: 0 0 24px rgba(47,216,255,0.35); }
+  .kc-dragging { opacity: 0.55; outline: 2px solid var(--neon-blue) !important; box-shadow: 0 0 24px color-mix(in srgb, var(--neon-blue) 35%, transparent); }
   .kc-fill { grid-column: span var(--kc-span) !important; }
   .kc-bar-btns { display: flex; gap: 8px; flex: 0 0 auto; }
   .kc-strip .kc-st { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
   body.kc-editing .kc-flexrow { flex-wrap: wrap; align-content: flex-start; }
-  .kc-strip.kc-group { grid-column: span 12; border: 1px solid var(--border); border-radius: 14px; }
+  .kc-strip.kc-group { grid-column: span 12; border: 1px solid var(--border); border-radius: var(--radius-md); }
   body.kc-editing [data-card].kc-off > :not(.kc-strip) { opacity: 0.35; }
-  body.kc-editing .kc-strip.is-off { background: rgba(255,255,255,0.03); }
+  body.kc-editing .kc-strip.is-off { background: color-mix(in srgb, var(--text) 3%, transparent); }
   body.kc-editing .kc-strip.is-off .kc-nm { color: var(--text-muted); }
-  .kc-strip .sw { width: 34px; height: 19px; border-radius: 999px; border: 1px solid var(--border-strong); position: relative; background: rgba(255,255,255,0.04); flex: 0 0 34px; }
+  .kc-strip .sw { width: 34px; height: 19px; border-radius: 999px; border: 1px solid var(--border-strong); position: relative; background: color-mix(in srgb, var(--text) 4%, transparent); flex: 0 0 34px; }
   .kc-strip .sw::before { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--text-dim); transition: left 0.15s; }
-  .kc-strip.on .sw { border-color: var(--neon-blue); background: rgba(47,216,255,0.15); }
+  .kc-strip.on .sw { border-color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 15%, transparent); }
   .kc-strip.on .sw::before { left: 17px; background: var(--neon-blue); }
-  .kc-hidden-strip { margin: 6px 0 20px; border: 1px dashed var(--border-strong); border-radius: 14px; padding: 10px 14px; font-size: 13px; color: var(--text-muted); }
+  .kc-hidden-strip { margin: 6px 0 20px; border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; color: var(--text-muted); }
   .kc-hidden-strip a { color: var(--neon-blue); cursor: pointer; text-decoration: none; }
   body.kc-editing .kc-hidden-strip { display: none; }
 
@@ -864,17 +955,17 @@ input[type="file"] {
     .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 260px; height: 100%; z-index: 60;
                transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: none; }
     body.drawer-open .sidebar { transform: none; box-shadow: 0 0 40px rgba(0,0,0,0.6); }
-    .drawer-scrim { display: block; position: fixed; inset: 0; background: rgba(3,6,15,0.6); z-index: 55;
+    .drawer-scrim { display: block; position: fixed; inset: 0; background: color-mix(in srgb, var(--surface) 60%, transparent); z-index: 55;
                     opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
     body.drawer-open .drawer-scrim { opacity: 1; pointer-events: auto; }
     body.drawer-open { overflow: hidden; }
     .main { padding: 14px 14px 40px; max-width: 100%; min-width: 0; }
     .topbar { gap: 10px; margin-bottom: 16px; }
     .menu-btn { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: 0 0 38px;
-                border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+                border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); color: var(--text); }
     .menu-btn svg { width: 18px; height: 18px; }
     .topbar-brand { display: block; flex: 0 0 auto; }
-    .topbar-brand img { height: 30px; width: auto; display: block; filter: drop-shadow(0 0 8px rgba(47,216,255,0.35)); }
+    .topbar-brand .kc-mark { display: block; }
     .search-box { flex: 1 1 auto; width: auto; min-width: 0; }
     .page-head h1 { font-size: 22px; }
     /* One card per row; nothing wider than the screen */
@@ -913,6 +1004,58 @@ input[type="file"] {
     .main table td:first-child { grid-column: 1 / -1; font-size: 14.5px; font-weight: 600; color: var(--text); }
     .main table td:first-child::before { display: none !important; }
   }
+
+  /* ---- v3.3 polish: spacing, corners and motion ---- */
+  .main { padding: var(--space-6) var(--space-8) 48px; }
+  .page-head { margin-bottom: var(--space-5); }
+  .grid { gap: var(--space-4); margin-bottom: var(--space-4); }
+  .card { padding: var(--space-5); }
+  .card-head { margin-bottom: var(--space-4); }
+  .glance .card { padding: var(--space-4) var(--space-5); }
+  body.wide-compact .main { padding-top: var(--space-4); }
+  body.wide-compact .page-head { margin-bottom: var(--space-3); }
+  body.wide-compact .grid { gap: var(--space-3); margin-bottom: var(--space-3); }
+  body.wide-compact .card:not(.hero-card):not(.figures-card) { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); }
+  @media (max-width: 900px) {
+    .main { padding: var(--space-4) var(--space-4) 40px; }
+    .grid { gap: var(--space-3); margin-bottom: var(--space-3); }
+    .card { padding: var(--space-4); }
+  }
+
+  /* Nothing glows anywhere, the sidebar and top bar included */
+  :is(.sidebar, .topbar) *:not(:focus-visible), button:hover { box-shadow: none !important; }
+
+  /* Things you can tap: quick colour change on hover, a small press when clicked */
+  body :is(button, .btn-primary, .btn-secondary, .submit-btn, .export-btn, .csv-btn, .warn-action-btn,
+           .month-nav-btn, .month-nav-today, .icon-btn, .page-btn, .bulk-btn, .clear-btn, .cat-chip,
+           .nav-item, .sub-item, .sb-collapse, .sb-search, .close-x-btn, .search-submit-btn, .notif-test-btn, .add-cat-btn) {
+    transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease),
+                border-color var(--dur) var(--ease), opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  body :is(.btn-secondary, .export-btn, .csv-btn, .warn-action-btn, .month-nav-btn, .month-nav-today, .icon-btn,
+           .page-btn, .bulk-btn, .clear-btn, .close-x-btn):not(:disabled):hover {
+    background-color: var(--hover); border-color: var(--border-strong); color: var(--text); }
+  body :is(.submit-btn, .btn-primary, .search-submit-btn, .notif-test-btn, .add-cat-btn):not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--neon-blue) 88%, var(--text)); }
+  body :is(button, .btn-primary, .btn-secondary, .submit-btn, .export-btn, .csv-btn, .warn-action-btn,
+           .month-nav-btn, .month-nav-today, .icon-btn, .page-btn, .bulk-btn, .clear-btn, .cat-chip,
+           .nav-item, .sub-item, .sb-collapse, .close-x-btn):not(:disabled):not(.kc-chev):not(.trend-hit):active {
+    transform: scale(0.97); }
+  .main :is(.tab-pill, .range-tab, .shop-filter-tab, .recent-list-tab, .preset-pill, .logorders-tab, .sub-tab, .settings-tabs button, .chart-style button):active { transform: none !important; }
+
+  /* Rows and tiles that open something */
+  a.alert-line { transition: color var(--dur) var(--ease); }
+  a.alert-line:hover { color: var(--neon-blue); }
+  .layout-preset, .theme-choice { transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease); }
+  .layout-preset:hover, .theme-choice:hover { border-color: var(--neon-blue); }
+  .cal-day { transition: border-color var(--dur) var(--ease); }
+
+  /* One focus ring for keyboard users */
+  :is(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--neon-blue); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    body *:active { transform: none !important; }
+  }
 </style>
 <script>
 /* Shared "remember my choice" helper. Values are JSON, kept in this
@@ -937,65 +1080,56 @@ KC.pref = {
 <style id="kc-hidden-cards">{% for c in hidden_cards() %}body:not(.kc-editing) [data-card="{{ c }}"] { display: none !important; }
 {% endfor %}</style>
 <script>window.kcEsc = function (v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
-window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order()|tojson }}; window.KC_WIDE = {{ wide_layout_json()|json_script }}; window.KC_LAYOUT_PAGES = {{ card_layout()|map(attribute='path')|list|tojson }}; window.KC_CARD_NAMES = { {% for pg in card_layout() %}{% for c in pg.cards %}{{ c.id|tojson }}: {{ c.name|tojson }}, {% endfor %}{% endfor %} };</script>
+window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order()|tojson }}; window.KC_LAYOUT_PAGES = {{ card_layout()|map(attribute='path')|list|tojson }}; window.KC_CARD_NAMES = { {% for pg in card_layout() %}{% for c in pg.cards %}{{ c.id|tojson }}: {{ c.name|tojson }}, {% endfor %}{% endfor %} };</script>
 {% block head_script %}{% endblock %}
 </head>
 <body class="wide-{{ wide_layout() }}">
+<script>try { if (localStorage.getItem('kc-rail') === '1') document.body.classList.add('sb-rail'); } catch (e) {}</script>
 <div class="shell">
 
   <aside class="sidebar" id="sidebar">
     <a class="brand" href="/">
-      <img src="/static/img/logo.png?v={{ app_version }}" alt="Ka-Ching!" style="height:56px; width:auto; filter: drop-shadow(0 0 10px rgba(47,216,255,0.35));">
+      {{ kc_mark("side", 44, 33) }}<span class="brand-word">Ka-Ching!</span>
     </a>
+    <form class="sb-search" action="/search" method="get" role="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" name="q" placeholder="Search" autocomplete="off" aria-label="Search a title or order number">
+      <kbd class="kc-kbd" title="Press / to search">/</kbd>
+    </form>
 
     <div class="nav-label">Track</div>
     <a class="nav-item {{ 'active' if request.url.path == '/' else '' }}" href="/"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard</a>
     <a class="nav-item {{ 'active expanded' if request.url.path == '/orders' else '' }}" href="/orders"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1 11H4L3 9Z"/><path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3"/></svg>Orders</a>
     {% if request.url.path == '/orders' %}
     <div class="sub-nav" id="orders-sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
-      <a class="sub-item active" data-orders-tab="all" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--neon-blue); font-weight:600; cursor:pointer;">All</a>
-      <a class="sub-item" data-orders-tab="unpaid" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Unpaid &amp; cancelled</a>
+      <a class="sub-item active" data-orders-tab="all" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: var(--neon-blue); font-weight:600; cursor:pointer;">All</a>
+      <a class="sub-item" data-orders-tab="unpaid" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: var(--text-dim); font-weight:400; cursor:pointer;">Unpaid &amp; cancelled</a>
     </div>
     {% endif %}
     <a class="nav-item {{ 'active' if request.url.path == '/calendar' else '' }}" href="/calendar"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar</a>
-    <a class="nav-item {{ 'active' if request.url.path == '/search' else '' }}" href="/search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search</a>
+    <a class="nav-item {{ 'active' if request.url.path == '/search' else '' }}" href="/search"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Advanced search</a>
     <div class="nav-label">Manage</div>
     <a class="nav-item {{ 'active' if request.url.path == '/items/new' else '' }}" href="/items/new"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg>Log orders</a>
     <a class="nav-item {{ 'active expanded' if request.url.path.startswith('/insights') else '' }}" href="/insights"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Insights</a>
     {% if request.url.path.startswith('/insights') %}
     <div class="sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
-      <a class="sub-item {{ 'active' if request.url.path == '/insights' else '' }}" href="/insights" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights' else '400' }};">Overview</a>
-      <a class="sub-item {{ 'active' if request.url.path == '/insights/spend-by-shop' else '' }}" href="/insights/spend-by-shop" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights/spend-by-shop' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/spend-by-shop' else '400' }};">Spend by shop</a>
-      <a class="sub-item {{ 'active' if request.url.path == '/insights/price-creep' else '' }}" href="/insights/price-creep" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights/price-creep' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/price-creep' else '400' }};">Price creep</a>
-      <a class="sub-item {{ 'active' if request.url.path == '/insights/top-titles' else '' }}" href="/insights/top-titles" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: {{ 'var(--neon-blue)' if request.url.path == '/insights/top-titles' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/top-titles' else '400' }};">Top titles</a>
+      <a class="sub-item {{ 'active' if request.url.path == '/insights' else '' }}" href="/insights" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: {{ 'var(--neon-blue)' if request.url.path == '/insights' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights' else '400' }};">Overview</a>
+      <a class="sub-item {{ 'active' if request.url.path == '/insights/spend-by-shop' else '' }}" href="/insights/spend-by-shop" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: {{ 'var(--neon-blue)' if request.url.path == '/insights/spend-by-shop' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/spend-by-shop' else '400' }};">Spend by shop</a>
+      <a class="sub-item {{ 'active' if request.url.path == '/insights/price-creep' else '' }}" href="/insights/price-creep" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: {{ 'var(--neon-blue)' if request.url.path == '/insights/price-creep' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/price-creep' else '400' }};">Price creep</a>
+      <a class="sub-item {{ 'active' if request.url.path == '/insights/top-titles' else '' }}" href="/insights/top-titles" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: {{ 'var(--neon-blue)' if request.url.path == '/insights/top-titles' else 'var(--text-dim)' }}; font-weight: {{ '600' if request.url.path == '/insights/top-titles' else '400' }};">Top titles</a>
     </div>
     {% endif %}
-    <a class="nav-item {{ 'active expanded' if request.url.path == '/alerts' else '' }}" href="/alerts"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>Alerts</a>
+    <a class="nav-item {{ 'active expanded' if request.url.path == '/alerts' else '' }}" href="/alerts"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>Alerts{% set _nav_alerts = topbar_alert_count() %}{% if _nav_alerts %}<span class="nav-badge" aria-label="{{ _nav_alerts }} alerts">{{ _nav_alerts }}</span>{% endif %}</a>
     {% if request.url.path == '/alerts' %}
     <div class="sub-nav" id="alerts-sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
-      <a class="sub-item active" data-alerts-tab="alerts" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--neon-blue); font-weight:600; cursor:pointer;">Current</a>
-      <a class="sub-item" data-alerts-tab="notifications" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Notifications</a>
-    </div>
-    {% endif %}
-    <a class="nav-item {{ 'active expanded' if request.url.path == '/settings' else '' }}" href="/settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
-    {% if request.url.path == '/settings' %}
-    <div class="sub-nav" id="settings-sub-nav" style="padding-left:33px; position:relative; margin:2px 0 6px;">
-      <a class="sub-item active" data-settings-tab="general" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--neon-blue); font-weight:600; cursor:pointer;">General</a>
-      {% if sync_feature_available() %}<a class="sub-item" data-settings-tab="sync" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Sync</a>{% endif %}
-      <a class="sub-item" data-settings-tab="backup" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Data backup</a>
-      <a class="sub-item" data-settings-tab="layout" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Layout</a>
-      <a class="sub-item" data-settings-tab="security" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Security</a>
-      <a class="sub-item" data-settings-tab="about" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">About</a>
-      <a class="sub-item" data-settings-tab="help" style="display:block; padding:7px 10px; font-size:12.5px; border-radius:8px; color: var(--text-dim); font-weight:400; cursor:pointer;">Help</a>
+      <a class="sub-item active" data-alerts-tab="alerts" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: var(--neon-blue); font-weight:600; cursor:pointer;">Current</a>
+      <a class="sub-item" data-alerts-tab="notifications" style="display:block; padding:7px 10px; font-size:12.5px; border-radius: var(--radius-xs); color: var(--text-dim); font-weight:400; cursor:pointer;">Notifications</a>
     </div>
     {% endif %}
 
-    {% if login_enabled() %}
-    <a class="nav-item kc-signout" href="/logout"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</a>
-    {% endif %}
     {% set _display = sidebar_budget_display() %}
-    {% if _display != 'hidden' %}
     <div class="sidebar-foot">
+    {% if _display != 'hidden' %}
       {% set _budget = topbar_budget_status() %}
       {% if _budget %}
       {% set _cls = 'bm-over' if _budget.over else 'bm-ok' %}
@@ -1033,14 +1167,21 @@ window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order(
         <div class="mono muted" style="font-size:12px;">Not set &middot; <a href="/settings" style="color:var(--neon-blue);">configure</a></div>
       </div>
       {% endif %}
-    </div>
     {% endif %}
+      <div class="sb-util">
+      <a class="nav-item {{ 'active expanded' if request.url.path == '/settings' else '' }}" href="/settings"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</a>
+      {% if login_enabled() %}
+      <a class="nav-item kc-signout" href="/logout"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</a>
+      {% endif %}
+      </div>
+      <button type="button" class="sb-collapse" id="sb-collapse" aria-label="Collapse sidebar" title="Collapse sidebar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg><span>Collapse</span></button>
+    </div>
   </aside>
 
   <main class="main">
     <div class="topbar">
       <button type="button" class="menu-btn" id="menu-btn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
-      <a class="topbar-brand" href="/"><img src="/static/img/logo.png?v={{ app_version }}" alt="Ka-Ching!"></a>
+      <a class="topbar-brand" href="/">{{ kc_mark("top", 36, 27) }}</a>
       <form class="search-box" action="/search" method="get" style="cursor:text;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" name="q" placeholder="Search a title, order #..." autocomplete="off" style="background:none; border:none; outline:none; color:var(--text); font-size:14.5px; font-family:inherit; width:100%; padding:0;">
@@ -1055,7 +1196,7 @@ window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order(
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           {% set alert_count = topbar_alert_count() %}
           {% if alert_count %}
-          <span class="bell-count" style="position:absolute; top:-3px; right:-3px; background:var(--neon-pink); color:#fff; font-size:9px; font-weight:800; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 6px rgba(255,77,141,0.6);">{{ alert_count }}</span>
+          <span class="bell-count" style="position:absolute; top:-3px; right:-3px; background:var(--neon-pink); color:#fff; font-size:9px; font-weight:800; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 6px color-mix(in srgb, var(--neon-pink) 60%, transparent);">{{ alert_count }}</span>
           {% endif %}
         </a>
       </div>
@@ -1115,33 +1256,6 @@ window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order(
         });
       });
       Object.keys(unitSpan).forEach(function (id) { if (unitSpan[id] > 12) unitSpan[id] = 12; });
-      // Wide landscape screens with "Three columns" chosen: each card takes
-      // its wide-screen width (single cards only; stat-tile groups keep theirs)
-      var WIDE = window.KC_WIDE || { spans: {}, order: {} };
-      var normalSpan = {};
-      Object.keys(unitSpan).forEach(function (id) { normalSpan[id] = unitSpan[id]; });
-      var wideMQ = window.matchMedia('(min-width: 1900px)');
-      function wideColumnsOn() { return wideMQ.matches && document.body.classList.contains('wide-columns'); }
-      // Some cards set their width in their own style attribute; keep that
-      // so switching back to the normal layout restores it exactly
-      Object.keys(unitEls).forEach(function (id) {
-        unitEls[id].forEach(function (el) { el.dataset.kcOrigCol = el.style.gridColumn || ''; });
-      });
-      function applyWideSpans() {
-        var on = wideColumnsOn();
-        Object.keys(unitEls).forEach(function (id) {
-          if (unitEls[id].length !== 1) return;
-          var el = unitEls[id][0], w = WIDE.spans[id];
-          if (on && w) { el.style.gridColumn = 'span ' + w; el.dataset.kcSpan = w; unitSpan[id] = w; }
-          else { el.style.gridColumn = el.dataset.kcOrigCol; el.dataset.kcSpan = normalSpan[id]; unitSpan[id] = normalSpan[id]; }
-        });
-      }
-      applyWideSpans();
-      if (wideColumnsOn() && !(window.KC_ORDER || {})[path] && WIDE.order[path]) {
-        var wo = WIDE.order[path].filter(function (id) { return unitEls[id]; });
-        defaultOrder.forEach(function (id) { if (wo.indexOf(id) === -1) wo.push(id); });
-        defaultOrder = wo;
-      }
       function orderedIds(saved) {
         var out = (saved || []).filter(function (id) { return unitEls[id]; });
         defaultOrder.forEach(function (id) { if (out.indexOf(id) === -1) out.push(id); });
@@ -1391,10 +1505,6 @@ window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order(
       document.addEventListener('pointerup', endDrag);
       document.addEventListener('pointercancel', endDrag);
 
-      // Crossing the wide-screen width (resizing, turning a monitor) re-packs
-      (wideMQ.addEventListener ? wideMQ.addEventListener('change', function () { applyWideSpans(); tidy(); })
-                               : wideMQ.addListener(function () { applyWideSpans(); tidy(); }));
-
       tidy(); strip();
     })();
     </script>
@@ -1436,7 +1546,7 @@ window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order(
       <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>This week</div>
       {% if g.week %}
       {% for w in g.week %}<div class="glance-row"><span class="gd">{{ w.day }}</span><span class="gn">{{ w.name }}</span><span class="gp mono">{{ currency() }}{{ "{:,.2f}".format(w.price) }}</span></div>{% endfor %}
-      <div class="glance-foot"><span>{% if g.week_more %}+{{ g.week_more }} more &middot; {% endif %}<a href="/orders" style="color:var(--neon-blue);text-decoration:none;">Orders &rarr;</a></span><span class="mono">{{ currency() }}{{ "{:,.2f}".format(g.week_total) }}</span></div>
+      <div class="glance-foot"><span>{% if g.week_more %}+{{ g.week_more }} more &middot; {% endif %}<a href="/orders" style="color:var(--neon-blue);text-decoration:none;">View in Orders</a></span><span class="mono">{{ currency() }}{{ "{:,.2f}".format(g.week_total) }}</span></div>
       {% else %}<div class="glance-empty">Nothing due in the next 7 days.</div>{% endif %}
     </div>
     <div class="card">
@@ -1460,16 +1570,45 @@ window.KC_HIDDEN = {{ hidden_cards()|tojson }}; window.KC_ORDER = {{ card_order(
 <script>
 // Press "/" anywhere (when not already typing) to jump into search; Esc leaves it
 (function () {
-  var q = document.querySelector('.topbar input[name="q"]');
-  if (!q) return;
+  var boxes = [document.querySelector('.sb-search input[name="q"]'), document.querySelector('.topbar input[name="q"]')].filter(Boolean);
+  if (!boxes.length) return;
+  function visibleBox() { return boxes.filter(function (b) { return b.offsetParent !== null; })[0] || boxes[0]; }
   document.addEventListener('keydown', function (e) {
     if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
     var t = e.target;
     if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
     e.preventDefault();
-    q.focus(); q.select();
+    if (document.body.classList.contains('sb-rail') && visibleBox().closest('.sb-search')) document.getElementById('sb-collapse').click();
+    var q = visibleBox(); q.focus(); q.select();
   });
-  q.addEventListener('keydown', function (e) { if (e.key === 'Escape') q.blur(); });
+  boxes.forEach(function (q) { q.addEventListener('keydown', function (e) { if (e.key === 'Escape') q.blur(); }); });
+  // the collapsed rail's search icon opens the sidebar and focuses search
+  var sb = document.querySelector('.sb-search');
+  if (sb) sb.addEventListener('click', function () {
+    if (document.body.classList.contains('sb-rail')) { document.getElementById('sb-collapse').click(); sb.querySelector('input').focus(); }
+  });
+})();
+
+// Collapse the sidebar to an icon rail (desktop only); remembered on this device
+(function () {
+  var btn = document.getElementById('sb-collapse');
+  if (!btn) return;
+  document.querySelectorAll('.sidebar .nav-item').forEach(function (a) {
+    if (!a.title) a.title = a.textContent.replace(/\d+$/, '').trim();
+  });
+  function sync() {
+    var rail = document.body.classList.contains('sb-rail');
+    btn.setAttribute('aria-label', rail ? 'Expand sidebar' : 'Collapse sidebar');
+    btn.title = rail ? 'Expand sidebar' : 'Collapse sidebar';
+    btn.setAttribute('aria-expanded', rail ? 'false' : 'true');
+  }
+  sync();
+  btn.addEventListener('click', function () {
+    var rail = document.body.classList.toggle('sb-rail');
+    try { localStorage.setItem('kc-rail', rail ? '1' : '0'); } catch (e) {}
+    sync();
+    window.dispatchEvent(new Event('resize'));
+  });
 })();
 
 // Installable as a home-screen app (the worker does no caching)
@@ -1782,7 +1921,7 @@ document.addEventListener('click', function () {
     var current = (activeBox.dataset.shown || '').toLowerCase();
     var html = matches.map(function (c) {
       return '<div class="cat-option' + (c.toLowerCase() === current ? ' is-current' : '') + '" data-value="' + c.replace(/"/g, '&quot;') + '">' +
-        '<span class="cat-option-dot" style="background:' + (colorFor(c) || '#7c89ad') + '"></span>' + c.replace(/</g, '&lt;') + '</div>';
+        '<span class="cat-option-dot" style="background:' + (colorFor(c) || 'var(--text-muted)') + '"></span>' + c.replace(/</g, '&lt;') + '</div>';
     }).join('');
     if (text && !exact) {
       html += '<div class="cat-option cat-option-new" data-value="' + text.replace(/"/g, '&quot;') + '">+ Add &ldquo;' + text.replace(/</g, '&lt;') + '&rdquo;</div>';

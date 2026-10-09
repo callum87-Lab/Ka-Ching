@@ -5,14 +5,14 @@
   .cal-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
   .month-nav { display: flex; align-items: center; gap: 8px; }
   .month-nav-btn { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-raised); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); cursor: pointer; }
-  .month-nav-today { font-size: 11px; font-weight: 700; color: var(--neon-blue); background: rgba(47,216,255,0.10); border: 1px solid rgba(47,216,255,0.3); border-radius: 999px; padding: 4px 10px; cursor: pointer; margin-left: 2px; }
+  .month-nav-today { font-size: 11px; font-weight: 700; color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 10%, transparent); border: 1px solid color-mix(in srgb, var(--neon-blue) 30%, transparent); border-radius: 999px; padding: 4px 10px; cursor: pointer; margin-left: 2px; }
   .export-btn { display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-muted); }
   .export-btn svg { width: 13px; height: 13px; }
-  .cal-day { border-radius: 10px; border: 1px solid var(--border); background: var(--surface-raised); min-height: 76px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .cal-day { border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-raised); min-height: 76px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
   .cal-day-empty { border-color: transparent; background: transparent; }
   .cal-day.cal-has-items { cursor: pointer; }
   .cal-day.cal-has-items:hover { border-color: var(--neon-blue); }
-  .cal-day.cal-today { border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(47,216,255,0.25); }
+  .cal-day.cal-today { border-color: var(--neon-blue); box-shadow: 0 0 10px color-mix(in srgb, var(--neon-blue) 25%, transparent); }
   .cal-day-num { font-size: 12.5px; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; }
   .cal-day-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; flex: 0 0 auto; }
   .cal-today .cal-day-num { color: var(--neon-blue); }
@@ -27,23 +27,23 @@
   .mini-cal-grid span { text-align: center; font-size: 11px; color: var(--text-dim); padding: 5px 0; border-radius: 6px; }
   .mini-cal-grid span.weekday-head { font-weight: 700; color: var(--text-muted); }
   .mini-cal-grid a { display: block; text-align: center; font-size: 11px; color: var(--text-muted); padding: 5px 0; border-radius: 6px; cursor: pointer; }
-  .mini-cal-grid a:hover { background: rgba(255,255,255,0.06); }
+  .mini-cal-grid a:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
   .mini-cal-grid a.has-items { color: var(--neon-blue); font-weight: 700; position: relative; }
   .mini-cal-grid a.has-items::after { content:""; position:absolute; bottom:1px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--neon-blue); }
-  .mini-cal-grid .today-cell { background: var(--neon-blue); color: #06111f; font-weight: 700; border-radius: 6px; }
-  .mini-cal-grid a.today-cell.has-items { color: #06111f; }
-  .mini-cal-grid a.today-cell.has-items::after { background: #06111f; }
+  .mini-cal-grid .today-cell { background: var(--neon-blue); color: var(--on-accent); font-weight: 700; border-radius: 6px; }
+  .mini-cal-grid a.today-cell.has-items { color: var(--on-accent); }
+  .mini-cal-grid a.today-cell.has-items::after { background: var(--on-accent); }
   /* Day picked to filter the releases card */
-  .mini-cal-grid a.day-selected { box-shadow: inset 0 0 0 1.5px var(--neon-blue); background: rgba(47,216,255,0.14); }
+  .mini-cal-grid a.day-selected { box-shadow: inset 0 0 0 1.5px var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 14%, transparent); }
   .mini-cal-grid a.today-cell.day-selected { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--neon-blue); background: var(--neon-blue); }
-  .cal-day.cal-selected { border-color: var(--neon-blue); box-shadow: inset 0 0 0 1px var(--neon-blue), 0 0 12px rgba(47,216,255,0.35); background: rgba(47,216,255,0.10); }
+  .cal-day.cal-selected { border-color: var(--neon-blue); box-shadow: inset 0 0 0 1px var(--neon-blue), 0 0 12px color-mix(in srgb, var(--neon-blue) 35%, transparent); background: color-mix(in srgb, var(--neon-blue) 10%, transparent); }
   .day-filter-clear[hidden] { display: none; }
   .day-group.day-filter-first { border-top: none; padding-top: 4px; }
   .mini-cal-legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
   .shop-legend-row { display: flex; align-items: center; gap: 7px; font-size: 13px; margin-bottom: 5px; }
   .shop-legend-name { color: var(--text-muted); flex: 1; }
   .shop-legend-pct { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-dim); }
-  .shop-legend-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 12px; }
+  .shop-legend-bar { height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; margin-bottom: 12px; }
   .shop-legend-bar div { height: 100%; border-radius: 3px; }
 
   .heatmap-card { grid-column: span 12; }
@@ -52,7 +52,7 @@
   .heatmap-daylabels { display: flex; flex-direction: column; gap: 4px; margin-right: 8px; }
   .heatmap-daylabels span { font-size: 10px; color: var(--text-dim); height: 14px; line-height: 14px; }
   .heatmap-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 14px); gap: 3px; width: 100%; min-width: 0; }
-  .heatmap-cell { width: 14px; height: 14px; border-radius: 3px; background: rgba(255,255,255,0.05); cursor: default; }
+  .heatmap-cell { width: 14px; height: 14px; border-radius: 3px; background: color-mix(in srgb, var(--text) 5%, transparent); cursor: default; }
   .heatmap-cell[title] { cursor: default; }
   .heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 10px; font-size: 11px; color: var(--text-dim); }
   .heatmap-legend .heatmap-cell { width: 10px; height: 10px; }
@@ -82,13 +82,13 @@
   .ro-item-row { display: grid; grid-template-columns: 1fr 90px 26px; align-items: center; gap: 12px; padding: 7px 0 7px 20px; font-size: 13.5px; }
   .ro-item-row .mono { text-align: right; }
   .ro-item-row.is-paid { opacity: 0.6; }
-  .ro-item-row .paid-tag-inline { font-size: 11.5px; color: var(--neon-green); background: rgba(60,242,166,0.10); padding: 2px 7px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
+  .ro-item-row .paid-tag-inline { font-size: 11.5px; color: var(--neon-green); background: color-mix(in srgb, var(--neon-green) 10%, transparent); padding: 2px 7px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
   .ro-row-menu-wrap { position: relative; display: flex; justify-content: flex-end; }
-  .ro-row-menu-btn { width: 22px; height: 22px; border-radius: 7px; background: transparent; border: none; padding: 0; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .ro-row-menu-btn { width: 22px; height: 22px; border-radius: var(--radius-xs); background: transparent; border: none; padding: 0; color: var(--text-dim); cursor: pointer; font-size: 14px; }
   .ro-row-menu-btn:hover { background: var(--surface-raised); }
-  .ro-row-menu-drawer-fixed { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; min-width: 90px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); }
+  .ro-row-menu-drawer-fixed { position: fixed; z-index: 9999; background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px; min-width: 90px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); }
   .ro-row-menu-drawer-fixed a { display: block; text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; }
-  .ro-row-menu-drawer-fixed a:hover { background: rgba(255,255,255,0.05); }
+  .ro-row-menu-drawer-fixed a:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
   .ro-row-menu-template { display: none; }
   .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .empty-note { font-size: 12px; color: var(--text-dim); padding: 6px 4px; }
@@ -203,14 +203,14 @@
         {% endfor %}
       {% endfor %}
     </div>
-    <p class="cal-hint">Blank days are release-free. The dot marks a day with something due &mdash; brighter means more spent that day. Tap any marked day to show just that day's releases below &mdash; tap it again for the whole month.</p>
+    <p class="cal-hint">Blank days are release-free. The dot marks a day with something due. Brighter means more spent that day. Tap any marked day to show just that day's releases below. Tap it again for the whole month.</p>
   </div>
 </div>
 
 <div class="grid">
   <div class="card heatmap-card" data-card="cal.heatmap">
     <div class="card-head">
-      <div class="card-title"><span class="card-icon-badge" style="background:rgba(60,242,166,0.14);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon-green)" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Activity</div>
+      <div class="card-title"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-green) 14%, transparent);"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon-green)" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Activity</div>
     </div>
     <div style="display:flex;">
       <div class="heatmap-daylabels" style="flex:0 0 auto;"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
@@ -221,14 +221,14 @@
     </div>
     <div class="heatmap-legend">
       Less
-      <span class="heatmap-cell" style="background:rgba(255,255,255,0.05);"></span>
-      <span class="heatmap-cell" style="background:rgba(47,216,255,0.22);"></span>
-      <span class="heatmap-cell" style="background:rgba(47,216,255,0.45);"></span>
-      <span class="heatmap-cell" style="background:rgba(47,216,255,0.7);"></span>
+      <span class="heatmap-cell" style="background:color-mix(in srgb, var(--text) 5%, transparent);"></span>
+      <span class="heatmap-cell" style="background:color-mix(in srgb, var(--neon-blue) 22%, transparent);"></span>
+      <span class="heatmap-cell" style="background:color-mix(in srgb, var(--neon-blue) 45%, transparent);"></span>
+      <span class="heatmap-cell" style="background:color-mix(in srgb, var(--neon-blue) 70%, transparent);"></span>
       <span class="heatmap-cell" style="background:var(--neon-blue);"></span>
       More
     </div>
-    <p class="cal-hint">Each square is a day &mdash; darker means more tracked spend, so recurring pull-day rhythms (and quiet stretches) show up at a glance.</p>
+    <p class="cal-hint">Each square is a day. Darker means more tracked spend, so recurring pull-day rhythms (and quiet stretches) show up at a glance.</p>
   </div>
 </div>
 
@@ -351,10 +351,10 @@
   Object.keys(dailyTotals).forEach(function (d) { if (dailyTotals[d] > maxTotal) maxTotal = dailyTotals[d]; });
 
   var levels = [
-    'rgba(255,255,255,0.05)',
-    'rgba(47,216,255,0.22)',
-    'rgba(47,216,255,0.45)',
-    'rgba(47,216,255,0.7)',
+    'color-mix(in srgb, var(--text) 5%, transparent)',
+    'color-mix(in srgb, var(--neon-blue) 22%, transparent)',
+    'color-mix(in srgb, var(--neon-blue) 45%, transparent)',
+    'color-mix(in srgb, var(--neon-blue) 70%, transparent)',
     'var(--neon-blue)'
   ];
   var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

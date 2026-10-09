@@ -16,7 +16,7 @@
   .shop-row .shop-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .shop-subrow span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .shop-row .seller-count { font-weight: 400; color: var(--text-dim); font-size: 12.5px; margin-left: 4px; }
-  .shop-bar-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .shop-bar-track { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; }
   .shop-bar-fill { height: 100%; border-radius: 4px; }
   .shop-total { font-weight: 700; text-align: right; }
   .shop-count { color: var(--text-dim); font-size: 13px; text-align: right; }
@@ -48,7 +48,7 @@
   .overtime-legend-item { display: flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--text-muted); }
   .overtime-legend-item .dot { width: 8px; height: 8px; border-radius: 50%; }
   .overtime-chart-wrap { position: relative; }
-  .overtime-tooltip { position: absolute; display: none; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 12px; font-size: 13px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; z-index: 20; min-width: 140px; }
+  .overtime-tooltip { position: absolute; display: none; background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; z-index: 20; min-width: 140px; }
   .overtime-tooltip .ot-row { display: flex; justify-content: space-between; gap: 14px; padding: 2px 0; }
   @media (max-width: 900px) {
     /* Narrow: drop the fixed-width bar column so name and figures fit */
@@ -108,11 +108,12 @@
       </div>
     </div>
     <svg viewBox="0 0 120 120" width="180" height="180" id="donut-svg">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="var(--track)" stroke-width="14"></circle>
       {% for s in shop_stats[:6] %}
-      <circle class="donut-seg" data-source="{{ s.source }}" cx="60" cy="60" r="50" fill="none" stroke="{{ s.color }}" stroke-width="16" transform="rotate(-90 60 60)"></circle>
+      <circle class="donut-seg" data-source="{{ s.source }}" cx="60" cy="60" r="50" fill="none" stroke="{{ s.color }}" stroke-width="14" stroke-linecap="round" transform="rotate(-90 60 60)"></circle>
       {% endfor %}
-      <text id="donut-total-text" x="60" y="56" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)">{{ currency() }}{{ "%.0f"|format(total_spend) }}</text>
-      <text id="donut-period-text" x="60" y="72" text-anchor="middle" font-size="8.5" fill="var(--text-dim)">total tracked</text>
+      <text id="donut-total-text" x="60" y="62" text-anchor="middle" font-size="22" font-family="Instrument Serif, Georgia, serif" fill="var(--text)">{{ currency() }}{{ "%.0f"|format(total_spend) }}</text>
+      <text id="donut-period-text" x="60" y="76" text-anchor="middle" font-size="8" fill="var(--text-dim)">total tracked</text>
     </svg>
     <div class="donut-legend" id="donut-legend">
       {% for s in shop_stats[:6] %}
@@ -183,7 +184,7 @@
     <div class="card-head" style="margin-bottom:6px;">
       <div>
         <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Spend by shop</div>
-        <p style="margin:0; font-size:13px; color:var(--text-dim);">&pound; spent per month, per shop &mdash; hover a point for exact figures</p>
+        <p style="margin:0; font-size:13px; color:var(--text-dim);">Spend per month, stacked by shop. Hover a month for the breakdown.</p>
       </div>
       <div class="range-tabs" id="overtime-range-tabs" style="display:flex; gap:6px;">
         <button type="button" class="tab-pill" data-months="6">6 months</button>
@@ -222,14 +223,17 @@
       var seg = svg.querySelector('.donut-seg[data-source="' + CSS.escape(s.source) + '"]');
       if (!seg) return;
       var dash = (s.pct / 100) * circumference;
-      seg.setAttribute('stroke-dasharray', dash.toFixed(2) + ' ' + (circumference - dash).toFixed(2));
-      seg.setAttribute('stroke-dashoffset', (-offset).toFixed(2));
+      var gap = d.shops.filter(function (x) { return x.pct > 0; }).length > 1 ? 18 : 0;   // room for the rounded ends
+      var shownDash = dash > 0 ? Math.max(dash - gap, 0.6) : 0;
+      seg.setAttribute('stroke-dasharray', shownDash.toFixed(2) + ' ' + (circumference - shownDash).toFixed(2));
+      seg.setAttribute('stroke-dashoffset', (-(offset + gap / 2)).toFixed(2));
+      seg.style.display = dash > 0 ? '' : 'none';
       offset += dash;
 
       var legendRow = legend.querySelector('.donut-legend-row[data-source="' + CSS.escape(s.source) + '"]');
       if (legendRow) legendRow.querySelector('.pct').textContent = s.pct + '%';
     });
-    totalText.textContent = '{{ currency() }}' + d.total.toFixed(0);
+    totalText.textContent = '{{ currency() }}' + Math.round(d.total).toLocaleString('en-GB');
     periodText.textContent = range === 'all' ? 'total tracked' : 'last 90 days';
   }
 
@@ -295,72 +299,55 @@
   fullData.series.forEach(function (s) { visibleShops[s.name] = shopsOff.indexOf(s.name) === -1; });
   var legendBuilt = false;
 
+  var currentMonths = 12;
+  function money(v) {
+    return '{{ currency() }}' + (v >= 100 ? Math.round(v).toLocaleString('en-GB') : v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  }
+  // Stacked bars: one bar per month, one segment per shop (in each
+  // theme's shop colours), the month's total on top, this month in full
+  // strength. Shops switched off in the legend drop out of the stack.
   function render(monthCount) {
+    currentMonths = monthCount;
     svg.innerHTML = '';
     var months = fullData.months.slice(-monthCount);
     var series = fullData.series.map(function (s) {
       return { name: s.name, color: s.color, data: s.data.slice(-monthCount) };
     });
-
-    var maxVal = 0, peakIdx = 0, peakSeriesIdx = 0;
-    series.forEach(function (s, si) {
-      s.data.forEach(function (v, i) {
-        if (v > maxVal) { maxVal = v; peakIdx = i; peakSeriesIdx = si; }
-      });
-    });
-    maxVal = maxVal || 1;
-
-    function xFor(i) { return months.length > 1 ? padL + (i / (months.length - 1)) * innerW : padL + innerW / 2; }
-    function yFor(v) { return padT + innerH - (v / maxVal) * innerH; }
-
-    for (var i = 0; i < months.length; i += Math.max(1, Math.ceil(months.length / 8))) {
-      var lbl = document.createElementNS(svgns, 'text');
-      lbl.setAttribute('x', xFor(i));
-      lbl.setAttribute('y', H - 4);
-      lbl.setAttribute('font-size', '10');
-      lbl.setAttribute('fill', 'var(--text-dim)');
-      lbl.setAttribute('text-anchor', 'middle');
-      lbl.textContent = months[i];
-      svg.appendChild(lbl);
+    var shown = series.filter(function (s) { return visibleShops[s.name]; });
+    var W2 = 760, H2 = 250, pl = 8, pr = 8, pt = 26, pb = 28;
+    svg.setAttribute('viewBox', '0 0 ' + W2 + ' ' + H2);
+    var n = months.length, slot = (W2 - pl - pr) / n, bw = Math.min(34, slot * 0.56);
+    var totals = months.map(function (_, i) { return shown.reduce(function (a, s) { return a + s.data[i]; }, 0); });
+    var maxVal = Math.max.apply(null, totals.concat([1])) * 1.12;
+    function el(tag, attrs) {
+      var e = document.createElementNS(svgns, tag);
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      svg.appendChild(e); return e;
     }
-
-    series.forEach(function (s) {
-      var pts = s.data.map(function (v, i) { return xFor(i) + ',' + yFor(v); }).join(' ');
-      var poly = document.createElementNS(svgns, 'polyline');
-      poly.setAttribute('points', pts);
-      poly.setAttribute('fill', 'none');
-      poly.setAttribute('stroke', s.color);
-      poly.setAttribute('stroke-width', '2.5');
-      poly.setAttribute('stroke-linejoin', 'round');
-      poly.setAttribute('stroke-linecap', 'round');
-      poly.setAttribute('data-source', s.name);
-      poly.style.display = visibleShops[s.name] ? '' : 'none';
-      svg.appendChild(poly);
-    });
-
-    // Mark the real peak point (highest single value across all shown series/months)
-    var peakDot = document.createElementNS(svgns, 'circle');
-    peakDot.setAttribute('cx', xFor(peakIdx));
-    peakDot.setAttribute('cy', yFor(maxVal));
-    peakDot.setAttribute('r', '4');
-    peakDot.setAttribute('fill', 'var(--bg-1)');
-    peakDot.setAttribute('stroke', series[peakSeriesIdx].color);
-    peakDot.setAttribute('stroke-width', '2.5');
-    peakDot.style.display = visibleShops[series[peakSeriesIdx].name] ? '' : 'none';
-    svg.appendChild(peakDot);
-
+    for (var g = 1; g <= 3; g++) {
+      var gy = pt + (H2 - pt - pb) * (1 - g / 3.4);
+      el('line', { x1: pl, x2: W2 - pr, y1: gy, y2: gy, stroke: 'var(--border)', 'stroke-dasharray': '2 5' });
+    }
     months.forEach(function (m, i) {
-      var hit = document.createElementNS(svgns, 'rect');
-      hit.setAttribute('x', xFor(i) - (innerW / months.length) / 2);
-      hit.setAttribute('y', padT);
-      hit.setAttribute('width', innerW / months.length);
-      hit.setAttribute('height', innerH);
-      hit.setAttribute('fill', 'transparent');
+      var cx = pl + slot * i + slot / 2, y = H2 - pb, cur = i === n - 1;
+      if (!totals[i]) el('rect', { x: cx - bw / 2, y: H2 - pb - 3, width: bw, height: 3, rx: 1.5, fill: 'var(--track)' });
+      shown.forEach(function (s) {
+        var h = s.data[i] / maxVal * (H2 - pt - pb);
+        if (h <= 0) return;
+        y -= h;
+        el('rect', { x: cx - bw / 2, y: y, width: bw, height: Math.max(h - 1.5, 1), rx: 5, fill: s.color, opacity: cur ? 1 : 0.8 });
+      });
+      if (totals[i]) {
+        var t = el('text', { x: cx, y: y - 8, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': cur ? 650 : 500, fill: cur ? 'var(--text)' : 'var(--text-muted)' });
+        t.textContent = '{{ currency() }}' + Math.round(totals[i]).toLocaleString('en-GB');
+      }
+      var lbl = el('text', { x: cx, y: H2 - 8, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': cur ? 650 : 500, fill: cur ? 'var(--text)' : 'var(--text-dim)' });
+      lbl.textContent = m;
+      var hit = el('rect', { x: cx - slot / 2, y: 0, width: slot, height: H2, fill: 'transparent' });
       hit.style.cursor = 'pointer';
-      hit.addEventListener('mouseenter', function (e) { showTip(i, months, series, i === peakIdx); });
+      hit.addEventListener('mouseenter', function () { showTip(i, months, shown, totals[i]); });
       hit.addEventListener('mousemove', function (e) { positionTip(e); });
       hit.addEventListener('mouseleave', function () { tooltip.style.display = 'none'; });
-      svg.appendChild(hit);
     });
 
     if (!legendBuilt) {
@@ -375,9 +362,7 @@
         checkbox.addEventListener('change', function () {
           var shop = checkbox.dataset.legendShop;
           visibleShops[shop] = checkbox.checked;
-          svg.querySelectorAll('polyline[data-source="' + CSS.escape(shop) + '"]').forEach(function (poly) {
-            poly.style.display = checkbox.checked ? '' : 'none';
-          });
+          render(currentMonths);
           var now = KC.pref.get('shop.overtime.shopsOff', []);
           if (!Array.isArray(now)) now = [];
           now = now.filter(function (n) { return n !== shop; });
@@ -389,12 +374,12 @@
     }
   }
 
-  function showTip(i, months, series, isPeak) {
-    var rows = series.map(function (s) {
-      return '<div class="ot-row"><span style="color:' + kcEsc(s.color) + ';">' + kcEsc(s.name) + '</span><span class="mono">{{ currency() }}' + s.data[i].toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
+  function showTip(i, months, series, total) {
+    var rows = series.filter(function (s) { return s.data[i] > 0; }).map(function (s) {
+      return '<div class="ot-row"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:' + kcEsc(s.color) + ';"></i>' + kcEsc(s.name) + '</span><span class="mono">' + money(s.data[i]) + '</span></div>';
     }).join('');
-    var peakBadge = isPeak ? ' <span style="background:rgba(60,242,166,0.14); color:var(--neon-green); font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px;">PEAK</span>' : '';
-    tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:6px;">' + months[i] + peakBadge + '</div>' + rows;
+    tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:6px;">' + months[i] + '</div>' + (rows || '<div class="ot-row"><span>Nothing this month</span></div>') +
+      (rows ? '<div class="ot-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:6px;font-weight:650;"><span>Total</span><span class="mono">' + money(total) + '</span></div>' : '');
     tooltip.style.display = 'block';
   }
   function positionTip(e) {

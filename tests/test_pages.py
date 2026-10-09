@@ -41,3 +41,11 @@ def test_exports(client, seeded):
     assert ics.status_code == 200
     assert "BEGIN:VCALENDAR" in ics.text
     assert client.get("/sw.js").headers["content-type"].startswith("application/javascript")
+
+
+def test_sidebar_search_and_alert_count(client, seeded):
+    page = client.get("/orders").text
+    assert 'class="sb-search"' in page and 'action="/search"' in page
+    assert "Advanced search" in page
+    assert 'class="nav-badge"' in page          # the seeded data has an alert (an undated item)
+    assert 'id="sb-collapse"' in page

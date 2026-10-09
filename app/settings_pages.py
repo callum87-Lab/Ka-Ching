@@ -239,6 +239,29 @@ def save_wide_layout(layout: str = Form("standard"), next: str = Form("/settings
     return RedirectResponse(url=back, status_code=303)
 
 
+@app.post("/settings/appearance")
+def save_appearance(theme: str = Form(""), accent: str = Form(""), next: str = Form("/settings#layout")):
+    """Theme and accent colour. Only the listed themes and each theme's own
+    accents are accepted; switching theme picks that theme's default accent
+    unless the chosen one also belongs to it."""
+    next = safe_redirect(next, "/settings#layout")
+    conn = db.get_db()
+    cur = conn.cursor()
+    # A form that sends only a theme (no accent): picking the theme you're
+    # already on keeps your accent rather than resetting it.
+    if not accent:
+        cur_theme, cur_accent, _ = resolve_ui_theme(notifications.get_setting(cur, "ui_theme", DEFAULT_UI_THEME),
+                                                    notifications.get_setting(cur, "ui_accent", ""))
+        if theme == cur_theme:
+            accent = cur_accent
+    theme, accent_id, _ = resolve_ui_theme(theme, accent)
+    notifications.set_setting(cur, "ui_theme", theme)
+    notifications.set_setting(cur, "ui_accent", accent_id)
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
 @app.post("/settings/layout")
 async def save_layout(request: Request):
     """Replace the set of hidden cards. Body: {"hidden": [card ids]}.

@@ -2,9 +2,7 @@
 {% block title %}Ka-Ching! &middot; Dashboard{% endblock %}
 
 {% block extra_style %}
-  .ringpair-card { grid-column: span 6; display: flex; align-items: stretch; }
-  .ringpair-half { flex: 1; text-align: center; }
-  .ringpair-divider { width: 1px; background: var(--border); margin: 0 20px; }
+
   .ring-wrap { position: relative; width: 100px; height: 100px; margin: 0 auto; }
   .ring-wrap svg { width: 100px; height: 100px; }
   .ring-label { font-size: 14.5px; color: var(--text-muted); margin: 6px 0 2px; }
@@ -12,43 +10,19 @@
   .ring-detail { font-size: 13px; color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
   .ring-detail .dim { color: var(--text-dim); }
   .ring-detail.warn { color: var(--neon-pink); font-weight: 600; }
-
-  .yearpair-card { grid-column: span 6; display: flex; flex-wrap: wrap; align-items: stretch; }
-  .yearpair-foot { flex: 0 0 100%; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-  .yearpair-half { flex: 1; }
-  .yearpair-divider { width: 1px; background: var(--border); margin: 0 20px; }
   .plain-stat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .plain-stat-head .card-icon-badge { width: 22px; height: 22px; }
   .plain-stat-head .card-icon-badge svg { width: 12px; height: 12px; }
-  .plain-stat-head .card-icon-badge.violet { color: var(--neon-violet); background: rgba(155,123,255,0.1); border-color: rgba(155,123,255,0.3); }
+  .plain-stat-head .card-icon-badge.violet { color: var(--neon-violet); background: color-mix(in srgb, var(--neon-violet) 10%, transparent); border-color: color-mix(in srgb, var(--neon-violet) 30%, transparent); }
   .plain-stat-label { font-size: 14.5px; color: var(--text-muted); }
   .plain-stat-value { font-size: 25px; font-weight: 800; }
   .plain-stat-sub { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
-  .plain-stat-chip { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--neon-violet); background: rgba(155,123,255,0.12); border: 1px solid rgba(155,123,255,0.3); padding: 3px 10px; border-radius: 999px; }
-  .plain-stat-bar-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 12px; }
-  .plain-stat-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-blue), #7fe8ff); }
+  .plain-stat-chip { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--neon-violet); background: color-mix(in srgb, var(--neon-violet) 12%, transparent); border: 1px solid color-mix(in srgb, var(--neon-violet) 30%, transparent); padding: 3px 10px; border-radius: 999px; }
+  .plain-stat-bar-track { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; margin-top: 12px; }
+  .plain-stat-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-blue), color-mix(in srgb, var(--neon-blue) 70%, var(--text))); }
   .plain-stat-bar-legend { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-dim); margin-top: 8px; }
   .plain-stat-bar-legend .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-blue); display: inline-block; margin-right: 5px; }
   .plain-stat-bar-legend b { color: var(--text); font-weight: 700; }
-
-  .stillorder-card {
-    grid-column: span 12;
-    background: radial-gradient(circle at 100% 0%, rgba(47,216,255,0.30) 0%, transparent 55%), linear-gradient(160deg, #0a2540 0%, #0c1830 55%, var(--surface) 100%);
-    border: 1px solid rgba(47,216,255,0.35);
-    display: flex; flex-direction: column; justify-content: space-between;
-  }
-  .stillorder-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a8e0ff; margin-bottom: 6px; }
-  .stillorder-title { font-size: 18px; font-weight: 700; color: #fff; }
-  .stillorder-sub { font-size: 14px; color: #a8e0ff; }
-  .stillorder-price { font-size: 27px; font-weight: 800; color: var(--neon-green); margin-top: 14px; }
-  .stillorder-divider { height: 1px; background: rgba(255,255,255,0.12); margin: 14px 0; }
-  .stillorder-onorder-label { font-size: 13px; color: #a8e0ff; margin-bottom: 6px; }
-  .stillorder-onorder-row { display: flex; align-items: baseline; justify-content: space-between; }
-  .stillorder-onorder-count { font-size: 14.5px; color: #fff; font-weight: 600; }
-  .stillorder-onorder-total { font-size: 20.5px; color: #fff; font-weight: 800; }
-  .stillorder-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-  .stillorder-countdown { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; color: #fff; }
-  .stillorder-countdown span { font-size: 8.5px; font-weight: 600; color: #a8e0ff; text-transform: uppercase; letter-spacing: 0.04em; }
 
   .yearreview-card { grid-column: span 6; }
   .yr-compare { display: flex; align-items: center; margin-bottom: 14px; }
@@ -58,31 +32,23 @@
   .yr-compare-value.dim { color: var(--text-muted); font-size: 18px; }
   .yr-compare-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
   .yr-compare-divider { width: 1px; height: 40px; background: var(--border); margin: 0 20px; }
-  .yr-compare-bar-track { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 8px; }
+  .yr-compare-bar-track { height: 6px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; margin-bottom: 8px; }
   .yr-compare-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--neon-blue), var(--neon-violet)); }
   .yr-compare-bar-label { font-size: 11.5px; color: var(--text-dim); }
   .yr-compare-bar-label b { color: var(--text); }
   .thisweek-total.thisweek-none { font-family: inherit; color: var(--text-dim); font-weight: 600; font-size: 13px; }
-  .stillorder-empty { color: #a8e0ff; font-size: 14px; }
 
-  .alerts-card { grid-column: span 6; }
+  .alerts-card { grid-column: span 5; }
   .alert-line { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 14px; }
   .alert-line:first-of-type { border-top: none; padding-top: 4px; }
-  .alert-line .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--neon-pink); flex: 0 0 auto; box-shadow: 0 0 6px rgba(255,77,141,0.5); }
+  .alert-line .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--neon-pink); flex: 0 0 auto; box-shadow: 0 0 6px color-mix(in srgb, var(--neon-pink) 50%, transparent); }
   .alert-line .txt { flex: 1; color: var(--text); }
   .alert-line .txt b { font-family: var(--font-mono); }
   .alert-line .arrow { color: var(--text-dim); font-size: 14.5px; }
   .alerts-empty { font-size: 13.5px; color: var(--text-dim); padding: 4px 0; }
   .alerts-viewall { display: block; text-align: center; margin-top: 10px; font-size: 13px; color: var(--neon-blue); font-weight: 600; }
 
-  .syncbackup-card { grid-column: span 6; }
-  .syncbackup-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
-  .syncbackup-row:first-of-type { border-top: none; padding-top: 0; }
-  .syncbackup-row .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); margin-top: 6px; flex: 0 0 auto; }
-  .syncbackup-text { font-size: 14.5px; color: var(--text); }
-  .syncbackup-sub { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
-
-  .thisweek-card { grid-column: span 12; }
+  .thisweek-card { grid-column: span 7; }
   .thisweek-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
   .thisweek-label { font-size: 14.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .thisweek-total { margin-left: auto; font-size: 15px; font-weight: 700; color: var(--neon-blue); }
@@ -96,7 +62,7 @@
   .tw-item-date { font-size: 12.5px; color: var(--text-dim); }
   .tw-item-price { font-weight: 600; text-align: right; }
   .tw-row-menu { position: relative; display: flex; justify-content: flex-end; }
-  .tw-menu-btn { width: 22px; height: 22px; border-radius: 7px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .tw-menu-btn { width: 22px; height: 22px; border-radius: var(--radius-xs); background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; }
   .tw-menu-btn:hover { background: var(--surface-raised); }
   .thisweek-viewall { display: block; text-align: center; margin-top: 12px; font-size: 14px; color: var(--neon-blue); font-weight: 600; text-decoration: none; }
 
@@ -111,13 +77,13 @@
 
   .mini-paid-circle { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; flex: 0 0 auto; cursor: pointer; padding: 0; }
   .mini-paid-circle.checked { background: var(--neon-green); border-color: var(--neon-green); }
-  .row-actions-drawer { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); min-width: 104px; }
+  .row-actions-drawer { position: fixed; z-index: 9999; background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); min-width: 104px; }
   .row-actions-drawer a, .row-actions-drawer button { text-align: left; background: none; border: none; color: var(--text); font-size: 13px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; display: block; }
-  .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: rgba(255,255,255,0.05); }
+  .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
   .row-actions-drawer .danger:hover { color: var(--neon-pink); }
-  .backup-off .submit-btn { border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; cursor: pointer; }
+  .backup-off .submit-btn { border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; font-weight: 700; cursor: pointer; }
   .catbudget-card { grid-column: span 12; }
-  .catbudget-bar { position: relative; display: flex; height: 14px; border-radius: 999px; background: rgba(255,255,255,0.05); margin: 14px 0 12px; overflow: visible; }
+  .catbudget-bar { position: relative; display: flex; height: 14px; border-radius: 999px; background: color-mix(in srgb, var(--text) 5%, transparent); margin: 14px 0 12px; overflow: visible; }
   .catbudget-bar i { display: block; height: 100%; }
   .catbudget-bar i:first-child { border-radius: 999px 0 0 999px; }
   .catbudget-bar i:last-of-type { border-radius: 0 999px 999px 0; }
@@ -130,6 +96,98 @@
   .catbudget-item.over b, .catbudget-item.over .catbudget-lim { color: var(--neon-pink); }
   .catbudget-foot { margin-top: 10px; font-size: 12.5px; color: var(--text-dim); }
   .catbudget-foot a { color: var(--neon-blue); text-decoration: none; }
+
+  /* ---- Hero: this month's money and the biggest thing still to come.
+     No box - it's the page's focal point, set straight on the background. ---- */
+  .hero-card { grid-column: span 12; background: none; border: none; box-shadow: none; border-radius: 0;
+    padding: 6px 2px 34px; border-bottom: 1px solid var(--border);
+    display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 48px; align-items: end; position: relative; }
+  .hero-eyebrow { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+  .hero-big { font-size: 80px; font-weight: 250; letter-spacing: -0.05em; line-height: 1; margin: 12px 0 10px; color: var(--text); }
+  .hero-big small { font-size: 32px; letter-spacing: -0.03em; }
+  .hero-lead { font-size: 16px; color: var(--text-muted); }
+  .hero-lead b { color: var(--text); font-weight: 600; }
+  .hero-meter { margin-top: 24px; max-width: 480px; }
+  .hero-track { height: 6px; border-radius: var(--radius-xs); background: var(--track); overflow: hidden; }
+  .hero-fill { height: 100%; border-radius: var(--radius-xs); background: var(--neon-blue); }
+  .hero-meter.over .hero-fill { background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink)); }
+  .hero-meter-lab { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
+  .hero-meter-lab b { color: var(--text); font-weight: 600; }
+  .hero-meter-lab b.warn { color: var(--neon-pink); }
+  .hero-meter-lab.nobudget { margin-top: 20px; }
+  .hero-meter-lab.nobudget a { color: var(--neon-blue); }
+  .hero-side-k { font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px; }
+  .hero-side-t { font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; color: var(--text); }
+  .hero-side-p { font-size: 36px; font-weight: 300; letter-spacing: -0.04em; margin-top: 10px; color: var(--neon-blue); }
+  .hero-side-s { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ---- Key figures: four numbers in a row, divided by fine lines ---- */
+  .figures-card { grid-column: span 12; background: none; border: none; box-shadow: none; border-radius: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--border); }
+  .figures-card .fig { padding: 24px 0 26px 26px; border-left: 1px solid var(--border); color: inherit; text-decoration: none; display: block; }
+  .figures-card .fig-1 { padding-left: 2px; border-left: none; }
+  .fig-k { font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
+  .fig-v { font-size: 29px; font-weight: 300; letter-spacing: -0.035em; margin: 8px 0 4px; color: var(--text); }
+  .fig-s { font-size: 12.5px; color: var(--text-dim); }
+  .figures-card .fig.attention .fig-v { color: var(--neon-pink); }
+  a.fig:hover .fig-k { color: var(--text); }
+
+  /* ---- Alerts as quiet rows; the backup line is green when all is well ---- */
+  .alert-line .dot { box-shadow: none !important; }
+  .backup-line { flex-wrap: wrap; }
+  .backup-line .val { font-size: 13px; text-align: right; }
+  .backup-line.ok .dot { background: var(--neon-green); }
+  .backup-line.ok .val { color: var(--neon-green); }
+  .backup-line.bad .dot { background: var(--neon-pink); }
+  .backup-line.bad .val { color: var(--neon-pink); font-weight: 600; }
+  .backup-line .backup-on { margin-left: auto; }
+  .backup-line .backup-on button { font-size: 12.5px; font-weight: 600; color: var(--neon-blue); padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--border-strong); }
+  .bars-svg { height: auto; }
+  .bars-narrow { display: none; }
+  @media (max-width: 600px) {
+    .bars-wide { display: none; }
+    .bars-narrow { display: block; }
+    .chart-card .chart { height: auto; }
+    .bars-narrow .trend-axis-label { font-size: 12px !important; }
+  }
+
+  @media (max-width: 900px) {
+    .hero-card { grid-template-columns: 1fr; gap: 26px; padding-bottom: 26px; }
+    .card.hero-card { padding: 4px 2px 26px; }
+    .card.figures-card { padding: 0; }
+    .figures-card .fig { padding: 20px 0 20px 18px; }
+    .figures-card .fig-1, .figures-card .fig-3 { padding-left: 2px; }
+    .fig-v { font-size: 25px; }
+    .hero-big { font-size: 60px; }
+    .hero-big small { font-size: 26px; }
+    .figures-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .figures-card .fig-3 { padding-left: 2px; border-left: none; }
+    .figures-card .fig-3, .figures-card .fig-4 { border-top: 1px solid var(--border); }
+    .thisweek-card, .alerts-card { grid-column: span 12; }
+  }
+
+  /* ---- Spending: bars or line, paid vs still due ---- */
+  .chart-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .chart-style { display: flex; gap: 2px; padding: 3px; border-radius: var(--radius-xs); background: var(--hover); border: 1px solid var(--border); }
+  .chart-style button { width: 30px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); }
+  .chart-style button:hover { color: var(--text); }
+  .chart-style button.on { background: var(--card-bg); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14) !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .chart-card .as-line { display: none !important; }
+  .chart-card.show-line .as-bars { display: none !important; }
+  .chart-card.show-line .bars-wide.as-line { display: block !important; }
+  .chart-card.show-line .chart-key { display: none; }
+  @media (max-width: 600px) {
+    .chart-card.show-line .bars-wide.as-line { display: none !important; }
+    .chart-card.show-line .bars-narrow.as-line { display: block !important; }
+  }
+  .chart-key { display: flex; gap: 18px; justify-content: center; margin-top: 10px; font-size: 12.5px; color: var(--text-muted); flex-wrap: wrap; }
+  .chart-key span { display: flex; align-items: center; gap: 7px; }
+  .chart-key i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+  .chart-key .k-paid { background: var(--neon-blue); }
+  .chart-key .k-due { background: repeating-linear-gradient(135deg, var(--neon-blue) 0 2px, color-mix(in srgb, var(--neon-blue) 15%, transparent) 2px 5px); border: 1px solid var(--neon-blue); }
+  .chart-key .k-budget { height: 0; border-top: 1.5px dashed var(--neon-pink); border-radius: 0; }
 {% endblock %}
 
 {% block content %}
@@ -141,8 +199,8 @@
 
 {% if date_changes_flash %}
 <div class="grid">
-  <div class="card" style="grid-column: span 12; border-color: rgba(155,123,255,0.35); background: linear-gradient(160deg, rgba(155,123,255,0.10) 0%, transparent 60%), var(--surface);">
-    <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge" style="background:rgba(155,123,255,0.14); color:var(--neon-violet);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Release date{{ "s" if date_changes_flash|length != 1 else "" }} changed since your last import</div>
+  <div class="card" style="grid-column: span 12; border-color: color-mix(in srgb, var(--neon-violet) 35%, transparent); background: linear-gradient(160deg, color-mix(in srgb, var(--neon-violet) 10%, transparent) 0%, transparent 60%), var(--surface);">
+    <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-violet) 14%, transparent); color:var(--neon-violet);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Release date{{ "s" if date_changes_flash|length != 1 else "" }} changed since your last import</div>
     {% for c in date_changes_flash %}
     <div style="display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:8px 0; border-top:1px solid var(--border); font-size:13.5px;"><span style="flex:1; color:var(--text);">{{ c.name }}</span><span class="mono" style="color:var(--text-muted);">{{ c.old_label }} &rarr; {{ c.new_label }}</span></div>
     {% endfor %}
@@ -151,79 +209,109 @@
 {% endif %}
 
 <div class="grid">
-  <div class="card ringpair-card" data-card="dash.rings">
-    <div class="ringpair-half">
-      {{ still_due_ring_svg|safe }}
-      <div class="ring-label">Still due &middot; {{ current_month_label }}</div>
-      <div class="ring-sub mono">{{ currency() }}{{ "{:,.2f}".format(hero_remaining_total) }} of {{ currency() }}{{ "{:,.2f}".format(hero_grand_total) }}</div>
-      <div class="ring-detail">{{ currency() }}{{ "{:,.2f}".format(hero_grand_total - hero_remaining_total) }} spent so far <span class="dim">this month</span></div>
-    </div>
-    <div class="ringpair-divider"></div>
-    <div class="ringpair-half">
-      {% if budget_ring_svg %}
-      {{ budget_ring_svg|safe }}
-      <div class="ring-label">Budget</div>
-      <div class="ring-sub mono">{{ currency() }}{{ "{:,.2f}".format(cycle_spend) }} of {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }}</div>
-      {% if cycle_spend > monthly_budget %}
-      <div class="ring-detail warn">{{ currency() }}{{ "{:,.2f}".format(cycle_spend - monthly_budget) }} over budget</div>
+  <div class="card hero-card" data-card="dash.hero">
+    <div class="hero-main">
+      <div class="hero-eyebrow">{{ hero_days_left }} day{{ "s" if hero_days_left != 1 else "" }} left this month</div>
+      {% set _whole = hero_remaining_total|int %}
+      <div class="hero-big mono">{{ currency() }}{{ "{:,}".format(_whole) }}<small>.{{ "%02d"|format(((hero_remaining_total - _whole) * 100)|round|int) }}</small></div>
+      {% if hero_remaining_total > 0 %}
+      <div class="hero-lead"><b>Still due this month</b> across {{ hero_remaining_count }} release{{ "s" if hero_remaining_count != 1 else "" }} &middot; {{ currency() }}{{ "{:,.2f}".format(hero_spent_total) }} spent so far</div>
       {% else %}
-      <div class="ring-detail">{{ budget_bar_pct }}% of {{ budget_cycle_label }}'s budget</div>
+      <div class="hero-lead"><b>Nothing left to come this month</b> &middot; {{ currency() }}{{ "{:,.2f}".format(hero_spent_total) }} spent</div>
       {% endif %}
-      {% else %}
-      <div class="ring-label" style="margin-top:38px;">No budget set</div>
-      <div class="ring-sub"><a href="/settings" style="color:var(--neon-blue);">Set one in Settings</a></div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="card yearpair-card" data-card="dash.year">
-    <div class="yearpair-half">
-      <div class="plain-stat-head"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="plain-stat-label">{{ year_stats.year }} so far</span></div>
-      <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(year_stats.spent) }}</div>
-      <div class="plain-stat-sub">{{ year_stats.count }} issue{{ "s" if year_stats.count != 1 else "" }} tracked this year</div>
-      {% if year_stats.total > 0 %}
-      <div class="plain-stat-bar-track"><div class="plain-stat-bar-fill" style="width:{{ (year_stats.spent / year_stats.total * 100)|round(1) }}%;"></div></div>
-      <div class="plain-stat-bar-legend">
-        <span><span class="dot"></span>Spent <b class="mono">{{ currency() }}{{ "{:,.2f}".format(year_stats.spent) }}</b></span>
-        <span class="dim">of <b class="mono">{{ currency() }}{{ "{:,.2f}".format(year_stats.total) }}</b> tracked</span>
+      {% if monthly_budget %}
+      <div class="hero-meter{{ ' over' if cycle_spend > monthly_budget else '' }}">
+        <div class="hero-track"><div class="hero-fill" style="width:{{ [budget_bar_pct or 0, 100]|min }}%;"></div></div>
+        <div class="hero-meter-lab">
+          <span>Budget {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }} &middot; {{ budget_cycle_label }}</span>
+          {% if cycle_spend > monthly_budget %}
+          <b class="warn">{{ currency() }}{{ "{:,.2f}".format(cycle_spend - monthly_budget) }} over &middot; {{ ((cycle_spend / monthly_budget) * 100)|round|int }}%</b>
+          {% else %}
+          <b>{{ currency() }}{{ "{:,.2f}".format(monthly_budget - cycle_spend) }} left &middot; {{ budget_bar_pct }}%</b>
+          {% endif %}
+        </div>
       </div>
+      {% else %}
+      <div class="hero-meter-lab nobudget"><a href="/settings">Set a budget</a> to see how this month compares</div>
       {% endif %}
     </div>
-    <div class="yearpair-divider"></div>
-    <div class="yearpair-half">
-      <div class="plain-stat-head"><span class="card-icon-badge violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="plain-stat-label">All time</span></div>
-      <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(all_time_stats.spent) }}</div>
-      <div class="plain-stat-sub">{{ all_time_stats.count }} issue{{ "s" if all_time_stats.count != 1 else "" }} tracked, all time</div>
-      <div class="plain-stat-chip">{{ currency() }}{{ "{:,.2f}".format(all_time_stats.total) }} tracked total</div>
+    <div class="hero-side">
+      {% if biggest_still_to_come %}
+      <div class="hero-side-k">Biggest still to come &middot; {{ biggest_still_to_come.due_label }}{% if biggest_still_to_come.days_until_due is not none and biggest_still_to_come.days_until_due >= 0 %} &middot; in {{ biggest_still_to_come.days_until_due }} day{{ "s" if biggest_still_to_come.days_until_due != 1 else "" }}{% endif %}</div>
+      <div class="hero-side-t">{{ biggest_still_to_come.name }}</div>
+      <div class="hero-side-p mono">{{ currency() }}{{ "{:,.2f}".format(biggest_still_to_come.price) }}</div>
+      <div class="hero-side-s">{{ biggest_still_to_come.source }}</div>
+      {% else %}
+      <div class="hero-side-k">Biggest still to come</div>
+      <div class="hero-side-s">Nothing on order right now.</div>
+      {% endif %}
     </div>
-    {% if all_time_stats.spent > 0 %}
-    <div class="yearpair-foot">
-      <div class="yr-compare-bar-track"><div class="yr-compare-bar-fill" style="width:{{ (year_stats.spent / all_time_stats.spent * 100)|round(1) }}%;"></div></div>
-      <div class="yr-compare-bar-label">{{ year_stats.year }} is <b>{{ (year_stats.spent / all_time_stats.spent * 100)|round|int }}%</b> of everything tracked, all time{% if year_top_month %} &middot; priciest month so far: <b>{{ year_top_month }}</b>{% endif %}</div>
-    </div>
-    {% endif %}
   </div>
 </div>
 
-{% set _has_limit = category_budget|selectattr('limit')|list %}
-{% if category_budget|length >= 2 or _has_limit %}
 <div class="grid">
-  <div class="card catbudget-card" data-card="dash.catbudget">
-    <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h12"/></svg></span>Budget by category &middot; <span class="muted" style="font-weight:600;">{{ budget_cycle_label if budget_cycle_label is defined else 'this cycle' }}</span></div>
-    {% set _scale = [category_budget_total, monthly_budget or 0]|max %}
-    <div class="catbudget-bar">
-      {% for r in category_budget %}{% if r.total > 0 %}<i style="width:{{ (r.total / _scale * 100) if _scale else 0 }}%; background:{{ r.color }};" title="{{ r.name }} {{ currency() }}{{ '%.2f'|format(r.total) }}"></i>{% endif %}{% endfor %}
-      {% if monthly_budget %}<span class="catbudget-mark" style="left:{{ (monthly_budget / _scale * 100) if _scale else 0 }}%;" title="Budget"></span>{% endif %}
+  <div class="card figures-card" data-card="dash.figures">
+    <div class="fig fig-1">
+      <div class="fig-k">{{ year_stats.year }} so far</div>
+      <div class="fig-v mono">{{ currency() }}{{ "{:,.2f}".format(year_stats.spent) }}</div>
+      <div class="fig-s">{{ year_stats.count }} item{{ "s" if year_stats.count != 1 else "" }}{% if year_top_month %} &middot; priciest month {{ year_top_month }}{% endif %}</div>
     </div>
-    <div class="catbudget-legend">
-      {% for r in category_budget %}
-      <span class="catbudget-item{{ ' over' if r.over else '' }}"><span class="cat-dot" style="background:{{ r.color }};"></span>{{ r.name }} <b class="mono">{{ currency() }}{{ "{:,.2f}".format(r.total) }}</b>{% if r.limit %}<span class="catbudget-lim"> / {{ currency() }}{{ "{:,.2f}".format(r.limit) }}{% if r.over %} &middot; {{ currency() }}{{ "{:,.2f}".format(r.over) }} over{% endif %}</span>{% endif %}</span>
+    <div class="fig">
+      <div class="fig-k">All time</div>
+      <div class="fig-v mono">{{ currency() }}{{ "{:,.2f}".format(all_time_stats.spent) }}</div>
+      <div class="fig-s">{{ all_time_stats.count }} item{{ "s" if all_time_stats.count != 1 else "" }} &middot; {{ currency() }}{{ "{:,.2f}".format(all_time_stats.total) }} tracked</div>
+    </div>
+    <div class="fig fig-3">
+      <div class="fig-k">Still on order</div>
+      <div class="fig-v mono">{{ currency() }}{{ "{:,.2f}".format(still_to_come_total) }}</div>
+      <div class="fig-s">{{ still_to_come_count }} item{{ "s" if still_to_come_count != 1 else "" }} not yet released</div>
+    </div>
+    {% set _att = attention_counts.total + (0 if backup_state.ok else 1) %}
+    <a class="fig fig-4{{ ' attention' if _att else '' }}" href="/alerts">
+      <div class="fig-k">Needs attention</div>
+      <div class="fig-v mono">{{ _att }}</div>
+      <div class="fig-s">{% if _att %}{% set _bits = [] %}{% if attention_counts.awaiting %}{% set _ = _bits.append(attention_counts.awaiting ~ " unpaid") %}{% endif %}{% if attention_counts.undated %}{% set _ = _bits.append(attention_counts.undated ~ " without a date") %}{% endif %}{% if attention_counts.duplicates %}{% set _ = _bits.append(attention_counts.duplicates ~ " possible duplicate" ~ ("s" if attention_counts.duplicates != 1 else "")) %}{% endif %}{% if attention_counts.ghost %}{% set _ = _bits.append(attention_counts.ghost ~ " ghost") %}{% endif %}{% if attention_counts.over_limit %}{% set _ = _bits.append(attention_counts.over_limit ~ " over a limit") %}{% endif %}{% if not backup_state.ok %}{% set _ = _bits.append("backups") %}{% endif %}{{ _bits|join(" &middot; ")|safe }}{% else %}All clear{% endif %}</div>
+    </a>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card chart-card" data-card="dash.trend">
+    <div class="card-head">
+      <div class="card-title">Spending</div>
+      <div class="chart-controls">
+        <div class="range-tabs" id="chart-tabs">
+          {% for key, label in range_tabs %}
+          <button type="button" class="range-tab {{ 'active' if key == active_chart_range else '' }}" data-range="{{ key }}">{{ label }}</button>
+          {% endfor %}
+        </div>
+        <div class="chart-style" id="chart-style" role="group" aria-label="Chart style">
+          <button type="button" data-style="bars" class="on" aria-pressed="true" title="Bars"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span class="sr-only">Bars</span></button>
+          <button type="button" data-style="line" aria-pressed="false" title="Line"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 17l5-6 4 3 8-9"/></svg><span class="sr-only">Line</span></button>
+        </div>
+      </div>
+    </div>
+    <div class="chart-multi hide-comics hide-shipping" id="chart-multi">
+      {% for key, svg in chart_svg_all.items() %}
+      <div class="chart {{ 'chart-active' if key == active_chart_range else '' }}" data-chart-range="{{ key }}">
+        <div class="bars-wide as-bars">{{ svg|safe }}</div>
+        <div class="bars-narrow as-bars">{{ chart_svg_narrow[key]|safe }}</div>
+        <div class="bars-wide as-line">{{ line_svg_all[key]|safe }}</div>
+        <div class="bars-narrow as-line">{{ line_svg_narrow[key]|safe }}</div>
+      </div>
       {% endfor %}
     </div>
-    <div class="catbudget-foot">{{ currency() }}{{ "{:,.2f}".format(category_budget_total) }}{% if monthly_budget %} of {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }} overall{% endif %} &middot; <a href="/settings#category-limits">Set limits</a></div>
+    <div class="chart-key" aria-hidden="true"><span><i class="k-paid"></i>Paid</span><span><i class="k-due"></i>Still due</span>{% if monthly_budget %}<span><i class="k-budget"></i>Budget</span>{% endif %}</div>
+    <div class="trend-tooltip" id="trend-tooltip" style="display:none;">
+      <div class="trend-tooltip-label"></div>
+      <div class="trend-tooltip-row"><span>Items</span><span class="trend-tooltip-comics mono"></span></div>
+      <div class="trend-tooltip-row"><span>Shipping</span><span class="trend-tooltip-shipping mono"></span></div>
+      <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
+      <div class="trend-tooltip-row trend-tooltip-due"><span>Still due</span><span class="mono"></span></div>
+      <div class="trend-tooltip-count"></div>
+    </div>
   </div>
 </div>
-{% endif %}
 
 <div class="grid">
   <div class="card thisweek-card" data-card="dash.week">
@@ -272,12 +360,10 @@
       {% if ns.shown == 0 %}
       <div class="alerts-empty">Nothing due this week.</div>
       {% endif %}
-      <a class="thisweek-viewall" href="/orders">View all in Orders &rarr;</a>
+      <a class="thisweek-viewall" href="/orders">View all in Orders</a>
     </div>
   </div>
-</div>
 
-<div class="grid">
   <div class="card alerts-card" data-card="dash.alerts">
     <div class="card-title" style="margin-bottom:2px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/></svg></span>Alerts</div>
     {% if awaiting_charge %}
@@ -289,28 +375,28 @@
     {% endif %}
     {% if duplicate_groups %}
     <a class="alert-line" href="/alerts">
-      <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px rgba(155,123,255,0.5);"></span>
+      <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px color-mix(in srgb, var(--neon-violet) 50%, transparent);"></span>
       <span class="txt"><b>{{ duplicate_groups|length }}</b> possible duplicate{{ "s" if duplicate_groups|length != 1 else "" }}</span>
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}
     {% if ghost_items %}
     <a class="alert-line" href="/alerts">
-      <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px rgba(155,123,255,0.5);"></span>
+      <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px color-mix(in srgb, var(--neon-violet) 50%, transparent);"></span>
       <span class="txt"><b>{{ ghost_items|length }}</b> ghost item{{ "s" if ghost_items|length != 1 else "" }}</span>
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}
     {% if undated_items %}
     <a class="alert-line" href="/alerts#undated">
-      <span class="dot" style="background:var(--neon-blue); box-shadow:0 0 6px rgba(47,216,255,0.5);"></span>
+      <span class="dot" style="background:var(--neon-blue); box-shadow:0 0 6px color-mix(in srgb, var(--neon-blue) 50%, transparent);"></span>
       <span class="txt"><b>{{ undated_items|length }}</b> with no release date</span>
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}
     {% for r in category_budget if r.over %}
     <a class="alert-line" href="/alerts#category-limits">
-      <span class="dot" style="background:var(--neon-pink); box-shadow:0 0 6px rgba(255,77,141,0.6);"></span>
+      <span class="dot" style="background:var(--neon-pink); box-shadow:0 0 6px color-mix(in srgb, var(--neon-pink) 60%, transparent);"></span>
       <span class="txt"><b>{{ r.name }}</b> {{ currency() }}{{ "{:,.2f}".format(r.over) }} over its limit</span>
       <span class="arrow">&rsaquo;</span>
     </a>
@@ -318,103 +404,61 @@
     {% if not awaiting_charge and not duplicate_groups and not ghost_items and not undated_items and not (category_budget|selectattr('over')|list) %}
     <div class="alerts-empty">Nothing needs your attention right now.</div>
     {% endif %}
-    <a class="alerts-viewall" href="/alerts">View all in Alerts &rarr;</a>
+    {% if backup_state.ok %}
+    <div class="alert-line backup-line ok"><span class="dot"></span><span class="txt">Backups</span><span class="val">{{ backup_state.text }}</span></div>
+    {% else %}
+    <div class="alert-line backup-line bad"><span class="dot"></span><span class="txt">Backups</span><span class="val">{{ backup_state.text }}</span>
+      {% if backup_state.action %}<form method="post" action="/settings/auto-backup/on" class="backup-on"><input type="hidden" name="next" value="/"><button type="submit">Turn on</button></form>{% endif %}
+    </div>
+    {% endif %}
+    <a class="alerts-viewall" href="/alerts">View all in Alerts</a>
   </div>
 
   {% set sync_on = sync_enabled() %}
-  <div class="card syncbackup-card" data-card="dash.backup">
-    <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg></span>{{ 'Sync & backup' if sync_on else 'Backup' }}</div>
-    {% if sync_on and most_recent_sync %}
-    <div class="syncbackup-row">
-      <span class="sync-dot"></span>
-      <div class="syncbackup-text">Last synced<div class="syncbackup-sub">{{ most_recent_sync.label }} &middot; {{ most_recent_sync.client_label }}</div></div>
-    </div>
-    {% endif %}
-    {% if most_recent_backup %}
-    <div class="syncbackup-row">
-      <span class="sync-dot" style="background:var(--neon-green); box-shadow:0 0 6px var(--neon-green);"></span>
-      <div class="syncbackup-text">Last backup<div class="syncbackup-sub">{{ most_recent_backup.label }} &middot; {{ most_recent_backup.size_label }}</div></div>
-    </div>
-    {% endif %}
-    {% if not auto_backup_on %}
-    <div class="backup-off">
-      <div class="syncbackup-sub" style="margin-bottom:12px;">Automatic backups are <b style="color:var(--text);">off</b> &mdash; a daily copy of your data, last 7 kept.</div>
-      <form method="post" action="/settings/auto-backup/on">
-        <input type="hidden" name="next" value="/">
-        <button type="submit" class="submit-btn">Turn on daily backups</button>
-      </form>
-    </div>
-    {% elif not most_recent_backup %}
-    <div class="syncbackup-row">
-      <span class="sync-dot" style="background:var(--neon-green); box-shadow:0 0 6px var(--neon-green);"></span>
-      <div class="syncbackup-text">Automatic backups on<div class="syncbackup-sub">First backup tonight at 03:00</div></div>
-    </div>
-    {% endif %}
-  </div>
 </div>
 
+{% set _has_limit = category_budget|selectattr('limit')|list %}
+{% if category_budget|length >= 2 or _has_limit %}
 <div class="grid">
-  <div class="card stillorder-card" data-card="dash.stillorder">
-    {% if biggest_still_to_come %}
-    <div class="stillorder-top">
-      <div>
-        <div class="stillorder-eyebrow">Biggest still to come <span class="dim">&middot; due {{ biggest_still_to_come.due_label }}</span></div>
-        <div class="stillorder-title">{{ biggest_still_to_come.name }}</div>
-        <div class="stillorder-sub">{{ biggest_still_to_come.source }}</div>
-      </div>
-      {% if biggest_still_to_come.days_until_due is not none and biggest_still_to_come.days_until_due >= 0 %}
-      <div class="stillorder-countdown">{{ biggest_still_to_come.days_until_due }}<span>days</span></div>
-      {% endif %}
+  <div class="card catbudget-card" data-card="dash.catbudget">
+    <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h12"/></svg></span>Budget by category &middot; <span class="muted" style="font-weight:600;">{{ budget_cycle_label if budget_cycle_label is defined else 'this cycle' }}</span></div>
+    {% set _scale = [category_budget_total, monthly_budget or 0]|max %}
+    <div class="catbudget-bar">
+      {% for r in category_budget %}{% if r.total > 0 %}<i style="width:{{ (r.total / _scale * 100) if _scale else 0 }}%; background:{{ r.color }};" title="{{ r.name }} {{ currency() }}{{ '%.2f'|format(r.total) }}"></i>{% endif %}{% endfor %}
+      {% if monthly_budget %}<span class="catbudget-mark" style="left:{{ (monthly_budget / _scale * 100) if _scale else 0 }}%;" title="Budget"></span>{% endif %}
     </div>
-    <div class="stillorder-price mono">{{ currency() }}{{ "{:,.2f}".format(biggest_still_to_come.price) }}</div>
-    <div class="stillorder-divider"></div>
-    <div class="stillorder-onorder-label">Still on order, not yet released</div>
-    <div class="stillorder-onorder-row">
-      <span class="stillorder-onorder-count mono">{{ still_to_come_count }} item{{ "s" if still_to_come_count != 1 else "" }}</span>
-      <span class="stillorder-onorder-total mono">{{ currency() }}{{ "{:,.2f}".format(still_to_come_total) }}</span>
-    </div>
-    {% else %}
-    <div class="stillorder-eyebrow">Biggest still to come</div>
-    <div class="stillorder-empty">Nothing on order right now.</div>
-    {% endif %}
-  </div>
-</div>
-
-<div class="grid">
-  <div class="card chart-card" data-card="dash.trend">
-    <div class="card-head">
-      <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Spend trend</div>
-      <div class="range-tabs" id="chart-tabs">
-        {% for key, label in range_tabs %}
-        <button type="button" class="range-tab {{ 'active' if key == active_chart_range else '' }}" data-range="{{ key }}">{{ label }}</button>
-        {% endfor %}
-      </div>
-    </div>
-    <div class="chart-multi hide-comics hide-shipping" id="chart-multi">
-      {% for key, svg in chart_svg_all.items() %}
-      <div class="chart {{ 'chart-active' if key == active_chart_range else '' }}" data-chart-range="{{ key }}">
-        {{ svg|safe }}
-      </div>
+    <div class="catbudget-legend">
+      {% for r in category_budget %}
+      <span class="catbudget-item{{ ' over' if r.over else '' }}"><span class="cat-dot" style="background:{{ r.color }};"></span>{{ r.name }} <b class="mono">{{ currency() }}{{ "{:,.2f}".format(r.total) }}</b>{% if r.limit %}<span class="catbudget-lim"> / {{ currency() }}{{ "{:,.2f}".format(r.limit) }}{% if r.over %} &middot; {{ currency() }}{{ "{:,.2f}".format(r.over) }} over{% endif %}</span>{% endif %}</span>
       {% endfor %}
-      <div class="trend-toggles">
-        <label class="trend-toggle-row trend-toggle-total trend-toggle-checked"><span class="toggle"><input type="checkbox" data-series="total" checked><span class="toggle-track"></span></span><span class="trend-toggle-label">Total</span></label>
-        <label class="trend-toggle-row trend-toggle-comics"><span class="toggle"><input type="checkbox" data-series="comics"><span class="toggle-track"></span></span><span class="trend-toggle-label">Items</span></label>
-        <label class="trend-toggle-row trend-toggle-shipping"><span class="toggle"><input type="checkbox" data-series="shipping"><span class="toggle-track"></span></span><span class="trend-toggle-label">Shipping</span></label>
-      </div>
     </div>
-    <div class="trend-tooltip" id="trend-tooltip" style="display:none;">
-      <div class="trend-tooltip-label"></div>
-      <div class="trend-tooltip-row"><span>Items</span><span class="trend-tooltip-comics mono"></span></div>
-      <div class="trend-tooltip-row"><span>Shipping</span><span class="trend-tooltip-shipping mono"></span></div>
-      <div class="trend-tooltip-row trend-tooltip-total"><span>Total</span><span class="mono"></span></div>
-      <div class="trend-tooltip-count"></div>
-    </div>
+    <div class="catbudget-foot">{{ currency() }}{{ "{:,.2f}".format(category_budget_total) }}{% if monthly_budget %} of {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }} overall{% endif %} &middot; <a href="/settings#category-limits">Set limits</a></div>
   </div>
 </div>
+{% endif %}
 
 {% endblock %}
 
 {% block extra_script %}
+// Bars or line for the Spending chart, remembered on this device
+(function () {
+  var box = document.getElementById('chart-style'), multi = document.getElementById('chart-multi');
+  if (!box || !multi) return;
+  var card = multi.closest('.chart-card');
+  function set(style) {
+    card.classList.toggle('show-line', style === 'line');
+    box.querySelectorAll('button').forEach(function (b) {
+      var on = b.dataset.style === style;
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  set(KC.pref.get('dashboard.trend.style', 'bars') === 'line' ? 'line' : 'bars');
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-style]'); if (!b) return;
+    set(b.dataset.style); KC.pref.set('dashboard.trend.style', b.dataset.style);
+  });
+})();
+
 (function () {
   var tabsContainer = document.getElementById('chart-tabs');
   if (!tabsContainer) return;
@@ -462,6 +506,9 @@
     tooltip.querySelector('.trend-tooltip-comics').textContent = '{{ currency() }}' + d.comics;
     tooltip.querySelector('.trend-tooltip-shipping').textContent = '{{ currency() }}' + d.shipping;
     tooltip.querySelector('.trend-tooltip-total .mono').textContent = '{{ currency() }}' + d.total;
+    var dueRow = tooltip.querySelector('.trend-tooltip-due');
+    dueRow.style.display = parseFloat(d.due || 0) > 0 ? '' : 'none';
+    dueRow.querySelector('.mono').textContent = '{{ currency() }}' + d.due;
     tooltip.querySelector('.trend-tooltip-count').textContent = d.count + (d.count == '1' ? ' item' : ' items') + ' this period';
     tooltip.style.display = 'block';
     var cx = parseFloat(d.cx), cy = parseFloat(d.cy);
@@ -482,23 +529,6 @@
     tooltip.style.top = (cursorY - 10) + 'px';
   }
 
-  var chartMulti = document.getElementById('chart-multi');
-  if (chartMulti) {
-    var savedSeries = KC.pref.get('dashboard.trend.series', {});
-    chartMulti.querySelectorAll('.trend-toggle-row input[data-series]').forEach(function (input) {
-      if (savedSeries && typeof savedSeries[input.dataset.series] === 'boolean') input.checked = savedSeries[input.dataset.series];
-      applySeriesState(input);
-      input.addEventListener('change', function () {
-        applySeriesState(input);
-        var state = KC.pref.get('dashboard.trend.series', {}) || {};
-        state[input.dataset.series] = input.checked;
-        KC.pref.set('dashboard.trend.series', state);
-      });
-    });
-  }
-  function applySeriesState(input) {
-    chartMulti.classList.toggle('hide-' + input.dataset.series, !input.checked);
-  }
 })();
 
 document.querySelectorAll('.tw-menu-btn').forEach(function (btn) {

@@ -318,12 +318,43 @@ def _backfill_categories(conn):
     conn.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id)")
 
 
+RETIRED_DASHBOARD_CARDS = ("dash.rings", "dash.year", "dash.backup", "dash.stillorder")
+
+
+def _retire_old_dashboard_cards(conn):
+    """v3.3 replaced four Dashboard cards with the hero and key figures. A
+    Dashboard card order saved before then would put the new cards last, so
+    it's reset (the Dashboard goes back to its default order); the other
+    pages' orders are untouched. Hidden-card entries for the old cards are
+    dropped too."""
+    import json
+    row = conn.execute("SELECT value FROM settings WHERE key = 'card_order'").fetchone()
+    if row:
+        try:
+            orders = json.loads(row[0] or "{}")
+        except ValueError:
+            orders = {}
+        if isinstance(orders, dict) and any(c in RETIRED_DASHBOARD_CARDS for c in orders.get("/", [])):
+            orders.pop("/", None)
+            conn.execute("UPDATE settings SET value = ? WHERE key = 'card_order'", (json.dumps(orders),))
+    row = conn.execute("SELECT value FROM settings WHERE key = 'hidden_cards'").fetchone()
+    if row:
+        try:
+            hidden = json.loads(row[0] or "[]")
+        except ValueError:
+            hidden = []
+        if isinstance(hidden, list) and any(c in RETIRED_DASHBOARD_CARDS for c in hidden):
+            hidden = [c for c in hidden if c not in RETIRED_DASHBOARD_CARDS]
+            conn.execute("UPDATE settings SET value = ? WHERE key = 'hidden_cards'", (json.dumps(hidden),))
+
+
 def init_db():
     conn = get_db()
     conn.executescript(SCHEMA)
     _migrate(conn)
     # Older import screens saved the word "None" as a note; clear it.
     conn.execute("UPDATE items SET note = NULL WHERE note = 'None'")
+    _retire_old_dashboard_cards(conn)
     _backfill_sync_columns(conn)
     _seed_categories(conn)
     _backfill_categories(conn)
