@@ -515,7 +515,7 @@
         <button type="submit" class="submit-btn">Save password</button>
       </form>
       {% elif login_enabled() %}
-      <p class="warn-hint">Login is <b style="color:var(--neon-green);">on</b>. Every page, export and the old /classic/ view asks for the password. Changing it signs every other device out.</p>
+      <p class="warn-hint">Login is <b style="color:var(--neon-green);">on</b>. Every page and export asks for the password. Changing it signs every other device out.</p>
       <form method="post" action="/settings/security/password" class="sec-form">
         <label class="field-label"><span>Current password</span><input class="field-input" type="password" name="current" autocomplete="current-password" required></label>
         <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="12" required></label>

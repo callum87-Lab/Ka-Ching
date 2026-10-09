@@ -75,20 +75,6 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 0 8px color-mix(in srgb, var(--neon-blue) 30%, transparent);
 }
 
-.bulk-toolbar {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  position: sticky;
-  top: 8px;
-  z-index: 20;
-  background: var(--surface-raised);
-  border: 1px solid var(--neon-blue);
-  border-radius: var(--radius);
-  padding: 10px 14px;
-  margin-bottom: 18px;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--neon-blue) 25%, transparent);
-}
 
 .bulk-select {
   width: 16px;
@@ -626,8 +612,26 @@ input[type="file"] {
   .card-icon-badge { width: 26px; height: 26px; border-radius: var(--radius-xs); background: color-mix(in srgb, var(--text) 4.4%, transparent); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--neon-blue); flex: 0 0 auto; }
   .card-icon-badge svg { width: 14px; height: 14px; }
 
-  .bulk-toolbar { position: fixed; left: 236px; right: 0; bottom: 0; display: none; align-items: center; justify-content: center; gap: 14px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--border-strong); padding: 14px; z-index: 20; }
+  /* Bulk selection: a small floating bar, centred over the page */
+  .bulk-toolbar { --sbw: 236px; position: fixed; bottom: 20px; left: var(--sbw); right: 0; margin: 0 auto; width: fit-content;
+    display: none; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - var(--sbw) - 32px);
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+    padding: 8px 8px 8px 16px; z-index: 70; box-shadow: 0 10px 30px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08); }
+  body.sb-rail .bulk-toolbar { --sbw: 76px; }
   .bulk-toolbar.visible { display: flex; }
+  .bulk-count { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; }
+  .bulk-sep { width: 1px; height: 22px; background: var(--border-strong); margin: 0 4px; }
+  .bulk-delay { position: relative; display: inline-flex; }
+  .bulk-delay .bulk-btn { display: inline-flex; align-items: center; gap: 6px; }
+  .bulk-delay-menu { position: absolute; bottom: calc(100% + 8px); left: 0; display: flex; flex-direction: column; min-width: 130px; padding: 6px;
+    background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); box-shadow: 0 10px 28px rgba(0,0,0,0.2); }
+  .bulk-delay-menu[hidden] { display: none; }
+  .bulk-delay-menu button { text-align: left; background: none; border: none; color: var(--text); font: inherit; font-size: 13.5px; padding: 8px 10px; border-radius: var(--radius-xs); cursor: pointer; }
+  .bulk-delay-menu button:hover { background: var(--hover); }
+  .bulk-close { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: none; background: none; color: var(--text-muted); cursor: pointer; margin-left: 2px; }
+  .bulk-close:hover { background: var(--hover); color: var(--text); }
+  body.has-bulk .main { padding-bottom: 110px; }
+  @media (max-width: 900px) { body .bulk-toolbar, body.sb-rail .bulk-toolbar { --sbw: 0px; bottom: 12px; } }
   .bulk-btn { font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; }
   .bulk-btn.confirm { background: var(--neon-blue); color: var(--on-accent); border-color: transparent; }
   .bulk-btn.danger { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
@@ -647,6 +651,7 @@ input[type="file"] {
     padding: 6px; box-shadow: 0 14px 34px rgba(0,0,0,0.5), 0 0 0 1px color-mix(in srgb, var(--neon-blue) 5%, transparent);
   }
   .cat-option { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border-radius: var(--radius-xs); font-size: 14px; color: var(--text); cursor: pointer; white-space: nowrap; }
+  .cat-option-hint { padding: 8px 11px 4px; margin-top: 4px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-dim); white-space: normal; }
   .cat-option:hover, .cat-option.is-highlighted { background: color-mix(in srgb, var(--neon-blue) 10%, transparent); color: var(--neon-blue); }
   .cat-option.is-current { color: var(--neon-blue); font-weight: 600; }
   .cat-option-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
@@ -1050,6 +1055,15 @@ input[type="file"] {
   .layout-preset:hover, .theme-choice:hover { border-color: var(--neon-blue); }
   .cal-day { transition: border-color var(--dur) var(--ease); }
 
+  /* Form boxes: a border you can see on every theme, and an accent ring while typing */
+  body :is(.field-input, .search-input-big, .paste-textarea, .main select, .main textarea,
+           .main input:is([type="text"], [type="number"], [type="date"], [type="password"], [type="email"], [type="url"], [type="search"])) {
+    border-color: var(--input-border); }
+  body :is(.field-input, .search-input-big, .paste-textarea, .main select, .main textarea, .main input:is([type="text"], [type="number"], [type="date"], [type="password"], [type="email"], [type="url"], [type="search"])):focus {
+    outline: none; border-color: var(--neon-blue) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--neon-blue) 22%, transparent) !important; }
+  /* Small text buttons for undo-type actions in lists */
+  .row-undo { background: none; border: none; padding: 2px 0; color: var(--neon-blue); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .row-undo:hover { text-decoration: underline; }
   /* One focus ring for keyboard users */
   :is(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--neon-blue); outline-offset: 2px; }
 
@@ -1749,12 +1763,23 @@ if ('serviceWorker' in navigator) {
 <form id="bulk-form" method="post" action="/items/bulk-action">
   <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
   <input type="hidden" name="bulk_action" id="bulk-action-input" value="">
+  <input type="hidden" name="days" id="bulk-days-input" value="">
 </form>
-<div class="bulk-toolbar" id="bulk-toolbar">
-  <span id="bulk-count" class="mono">0 selected</span>
+<div class="bulk-toolbar" id="bulk-toolbar" role="region" aria-label="Selected items">
+  <span id="bulk-count" class="bulk-count">0 selected</span>
+  <span class="bulk-sep" aria-hidden="true"></span>
   <button type="button" class="bulk-btn confirm" onclick="submitBulk('paid')">Mark paid</button>
-  <button type="button" class="bulk-btn" onclick="submitBulk('cancel')">Cancel</button>
+  <span class="bulk-delay">
+    <button type="button" class="bulk-btn" id="bulk-delay-btn" aria-haspopup="true" aria-expanded="false">Delay <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="bulk-delay-menu" id="bulk-delay-menu" hidden>
+      <button type="button" onclick="submitBulk('delay', 30)">+30 days</button>
+      <button type="button" onclick="submitBulk('delay', 60)">+60 days</button>
+      <button type="button" onclick="submitBulk('delay', 90)">+90 days</button>
+    </span>
+  </span>
+  <button type="button" class="bulk-btn" onclick="submitBulk('cancel')">Cancel items</button>
   <button type="button" class="bulk-btn danger" onclick="submitBulk('remove')">Remove</button>
+  <button type="button" class="bulk-close" onclick="clearBulk()" aria-label="Clear selection" title="Clear selection (Esc)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
 </div>
 
 <script>
@@ -1767,6 +1792,7 @@ if ('serviceWorker' in navigator) {
 
   function updateToolbar() {
     const checked = document.querySelectorAll('.bulk-select:checked');
+    document.body.classList.toggle('has-bulk', checked.length > 0);
     if (checked.length > 0) {
       toolbar.classList.add('visible');
       countSpan.textContent = checked.length + ' selected';
@@ -1779,11 +1805,30 @@ if ('serviceWorker' in navigator) {
     if (e.target.classList.contains('bulk-select')) updateToolbar();
   });
 
-  window.submitBulk = function (action) {
+  const delayBtn = document.getElementById('bulk-delay-btn');
+  const delayMenu = document.getElementById('bulk-delay-menu');
+  function setDelayMenu(open) {
+    delayMenu.hidden = !open;
+    delayBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  delayBtn.addEventListener('click', function (e) { e.stopPropagation(); setDelayMenu(delayMenu.hidden); });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.bulk-delay')) setDelayMenu(false); });
+
+  window.clearBulk = function () {
+    document.querySelectorAll('.bulk-select:checked').forEach(function (c) { c.checked = false; });
+    setDelayMenu(false);
+    updateToolbar();
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && toolbar.classList.contains('visible')) clearBulk();
+  });
+
+  window.submitBulk = function (action, days) {
     const checked = document.querySelectorAll('.bulk-select:checked');
     if (checked.length === 0) return;
     if (action === 'remove' && !confirm('Remove ' + checked.length + ' item(s) permanently? This cannot be undone.')) return;
     actionInput.value = action;
+    document.getElementById('bulk-days-input').value = days || '';
     bulkForm.submit();
   };
 })();
@@ -1925,6 +1970,9 @@ document.addEventListener('click', function () {
     }).join('');
     if (text && !exact) {
       html += '<div class="cat-option cat-option-new" data-value="' + text.replace(/"/g, '&quot;') + '">+ Add &ldquo;' + text.replace(/</g, '&lt;') + '&rdquo;</div>';
+    }
+    if (!text) {
+      html += '<div class="cat-option-hint">Not listed? Type a name to add a new category.</div>';
     }
     panel.innerHTML = html || '<div class="cat-option-empty">No categories</div>';
     highlighted = -1;

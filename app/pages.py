@@ -2107,6 +2107,7 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
     else:
         days_since_last_alert = None
 
+    dismissed_alerts = find_dismissed_alerts(cur)
     conn.close()
     return render("alerts.html", {
         "request": request,
@@ -2119,6 +2120,7 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
         "resolved_this_month": resolved_this_month,
         "category_overages": category_overages,
         "undated_items": undated_items,
+        "dismissed_alerts": dismissed_alerts,
         "currently_open": currently_open,
         "days_since_last_alert": days_since_last_alert,
         "test_result": test_result,
@@ -2243,12 +2245,49 @@ def dismiss_duplicate(name: str = Form(...), release_date: str = Form(...), next
     return RedirectResponse(url=next or "/", status_code=303)
 
 
+@app.post("/alerts/fine")
+def mark_alert_fine(item_id: int = Form(...), kind: str = Form(...), next: str | None = Form(None)):
+    """'Fine as it is': stop counting this item in an alert it can't (or
+    shouldn't) be fixed for. Put back with /alerts/unfine."""
+    next = safe_redirect(next, "/alerts")
+    if kind in DISMISSIBLE_ALERTS:
+        conn = db.get_db()
+        conn.execute(
+            "INSERT OR REPLACE INTO dismissed_alerts (item_id, kind, dismissed_at) VALUES (?, ?, ?)",
+            (item_id, kind, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+        conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
+@app.post("/alerts/unfine")
+def unmark_alert_fine(item_id: int = Form(...), kind: str = Form(...), next: str | None = Form(None)):
+    next = safe_redirect(next, "/alerts")
+    conn = db.get_db()
+    conn.execute("DELETE FROM dismissed_alerts WHERE item_id = ? AND kind = ?", (item_id, kind))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
+@app.post("/duplicates/undismiss")
+def undismiss_duplicate(name: str = Form(...), release_date: str = Form(...), next: str | None = Form(None)):
+    next = safe_redirect(next, "/alerts")
+    conn = db.get_db()
+    conn.execute("DELETE FROM dismissed_duplicates WHERE name = ? AND release_date = ?", (name, release_date))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
 @app.post("/ghost-items/remove-all")
 def remove_all_ghost_items():
     conn = db.get_db()
     cur = conn.cursor()
     cur.execute(
-        "SELECT id, name, price FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'",
+        "SELECT id, name, price FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'"
+        " AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'ghost')",
         (DEFAULT_SOURCE,),
     )
     to_remove = cur.fetchall()
@@ -2257,7 +2296,8 @@ def remove_all_ghost_items():
         len(to_remove), [(r["id"], r["name"], r["price"]) for r in to_remove],
     )
     cur.execute(
-        "DELETE FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'",
+        "DELETE FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'"
+        " AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'ghost')",
         (DEFAULT_SOURCE,),
     )
     conn.commit()

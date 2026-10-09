@@ -383,7 +383,7 @@
     {% if ghost_items %}
     <a class="alert-line" href="/alerts">
       <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px color-mix(in srgb, var(--neon-violet) 50%, transparent);"></span>
-      <span class="txt"><b>{{ ghost_items|length }}</b> ghost item{{ "s" if ghost_items|length != 1 else "" }}</span>
+      <span class="txt"><b>{{ ghost_items|length }}</b> with no order number</span>
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}

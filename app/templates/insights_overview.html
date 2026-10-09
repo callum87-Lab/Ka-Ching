@@ -18,6 +18,8 @@
   .recent-row .rp { font-weight: 600; }
   .recent-list-tab { padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
   .overview-card { grid-column: span 8; }
+  /* Narrow desktop windows (portrait monitors): the gauge needs more than a third of the row */
+  @media (min-width: 901px) and (max-width: 1180px) { .ratio-card, .overview-card { grid-column: span 6; } }
   .stat-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
   .mini-stat-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
   .mini-stat-value { font-size: 23.5px; font-weight: 800; }
@@ -140,16 +142,16 @@
       <div style="display:flex; align-items:center; gap:8px; font-size:12.5px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--neon-violet);display:inline-block;"></span>Released<span class="mono" style="margin-left:auto; color:var(--neon-violet); font-weight:700;">{{ released_pct }}%</span></div>
       <div style="padding-left:20px; font-size:12.5px; color:var(--text-dim);">{{ released_count }} of {{ total_issues }} items, already out</div>
     </div>
-    <div class="card-note" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">{{ preorder_pct }}% of what you're tracking is still to come: {{ preorder_count }} issue{{ "s" if preorder_count != 1 else "" }} on order, not yet released.</div>
+    <div class="card-note" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">{{ preorder_pct }}% of what you're tracking is still to come: {{ preorder_count }} item{{ "s" if preorder_count != 1 else "" }} on order, not yet released.</div>
   </div>
 
   <div class="card overview-card" data-card="ov.releases">
     <div class="card-head" style="margin-bottom:8px;">
-      <div class="card-title" style="margin-bottom:0;">10 releases</div>
+      <div class="card-title" style="margin-bottom:0;">Already out</div>
       <div class="recent-list-tabs" style="display:flex; gap:6px;">
-        <button type="button" class="recent-list-tab active" data-list="recent">Recent</button>
-        <button type="button" class="recent-list-tab" data-list="expensive">Most expensive</button>
-        <button type="button" class="recent-list-tab" data-list="lowest">Lowest</button>
+        <button type="button" class="recent-list-tab active" data-list="recent">Latest 10</button>
+        <button type="button" class="recent-list-tab" data-list="expensive">Priciest</button>
+        <button type="button" class="recent-list-tab" data-list="lowest">Cheapest</button>
       </div>
     </div>
     <div class="recent-list" data-list-panel="recent">
@@ -207,15 +209,15 @@
 
 <div class="grid">
   <div class="card issue-card" data-card="ov.issue">
-    <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Per issue</div>
+    <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Per item</div>
     <div class="stat-trio">
       <div><div class="mini-stat-label">Total tracked</div><div class="mini-stat-value mono">{{ total_issues }}</div><div class="mini-stat-sub">{{ currency() }}{{ "{:,.2f}".format(total_all_spend) }} total, all time</div></div>
       <div><div class="mini-stat-label">Priciest item</div>{% if priciest_item %}<div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</div>{% endif %}</div>
-      <div><div class="mini-stat-label">Average issue</div><div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(avg_per_issue) }}</div></div>
+      <div><div class="mini-stat-label">Average item</div><div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(avg_per_issue) }}</div></div>
     </div>
     {% if priciest_item %}
     <div class="full-bar-row">
-      <div class="full-bar-label"><span>Average issue vs priciest</span><span>{{ avg_issue_bar_pct }}% of your priciest so far</span></div>
+      <div class="full-bar-label"><span>Average item vs priciest</span><span>{{ avg_issue_bar_pct }}% of your priciest so far</span></div>
       <div class="full-bar-track"><div class="full-bar-fill" style="width:{{ avg_issue_bar_pct }}%;background:var(--neon-violet);"></div></div>
     </div>
     {% endif %}
@@ -241,7 +243,7 @@
   <div class="card weekday-card" data-card="ov.ship">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6-9 6-9-6z"/><path d="M3 9v6l9 6 9-6V9"/></svg></span>Shipping and patterns</div>
     <div class="weekday-trio">
-      <div><div class="mini-stat-label">Busiest release day</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday[:3] }} ({{ busiest_weekday_count }}){% else %}&mdash;{% endif %}</div></div>
+      <div><div class="mini-stat-label">Busiest day of the week</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday[:3] }} ({{ busiest_weekday_count }}){% else %}&mdash;{% endif %}</div></div>
       <div><div class="mini-stat-label">Saved by cancelling</div><div class="mini-stat-value mono" style="font-size:16px;">{{ currency() }}{{ "{:,.2f}".format(cancelled_saved) }}</div></div>
       <div><div class="mini-stat-label">Shipping vs cover</div><div class="mini-stat-value mono" style="font-size:16px;">{{ shipping_ratio_pct }}%</div></div>
     </div>

@@ -190,6 +190,7 @@ def mark_item(item_id: int, action: str = Form(...), next: str | None = Form(Non
 def bulk_item_action(
     item_ids: list[str] = Form(...),
     bulk_action: str = Form(...),
+    days: int | None = Form(None),
     next: str | None = Form(None),
 ):
     next = safe_redirect(next, None)
@@ -229,9 +230,36 @@ def bulk_item_action(
             [(now, i) for i in now_ids],
         )
         logger.info("BULK ACTION: marked %d items paid: %s", len(now_ids), now_ids)
+    elif bulk_action == "delay" and days in (30, 60, 90):
+        # Same as the one-tap Delay on an item's edit page, for every
+        # selected item that has a release date (logged in its history).
+        moved = 0
+        for i in now_ids:
+            row = cur.execute("SELECT release_date FROM items WHERE id = ?", (i,)).fetchone()
+            if row is None or not row["release_date"]:
+                continue
+            new_date = (date.fromisoformat(row["release_date"]) + timedelta(days=days)).isoformat()
+            cur.execute(
+                "INSERT INTO item_history (item_id, changed_at, field_name, old_value, new_value) VALUES (?, ?, ?, ?, ?)",
+                (i, now, "release_date", row["release_date"], new_date),
+            )
+            cur.execute("UPDATE items SET release_date = ?, manual_override = 1, updated_at = ? WHERE id = ?",
+                        (new_date, now, i))
+            moved += 1
+        logger.info("BULK ACTION: delayed %d items by %d days: %s", moved, days, now_ids)
     else:
         logger.warning("BULK ACTION: unknown action=%s, no changes made", bulk_action)
 
+    n = len(now_ids)
+    things = f"{n} item{'s' if n != 1 else ''}"
+    done = {
+        "paid": f"Marked {things} paid.",
+        "cancel": f"Cancelled {things}. Undo any of them from Orders, Recently cancelled.",
+        "remove": f"Removed {things}.",
+        "delay": f"Moved {things} back {days} days." if days in (30, 60, 90) else None,
+    }.get(bulk_action)
+    if done and n:
+        set_flash(cur, done)
     conn.commit()
     conn.close()
     return RedirectResponse(url=next or "/", status_code=303)

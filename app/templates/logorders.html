@@ -8,7 +8,7 @@
   .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
   .settings-form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
   .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; }
-  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; color-scheme: dark; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
   .field-input:focus { outline: none; border-color: var(--neon-blue); }
 
   .comic-row { display: grid; grid-template-columns: 1fr 240px 130px 32px; gap: 10px; align-items: center; margin-bottom: 8px; }
@@ -92,7 +92,7 @@
                  value="{{ default_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60" style="min-width:230px; width:auto;">
         </div>
         <textarea name="order_text" class="paste-textarea" placeholder="Paste order history here..." required></textarea>
-        <p class="warn-hint" style="max-width:none; margin:10px 0 0;">Mixed order? Pick the most common category here, then change individual items on the import preview before saving.</p>
+        <p class="warn-hint" style="max-width:none; margin:10px 0 0;">Mixed order? Pick the most common category here, then change individual items on the import preview before saving. Not listed? Type a new name in the box and it's added when you import.</p>
         <div style="display:flex; gap:10px;">
           <button type="submit" class="submit-btn" style="margin-top:0;">Import</button>
           <button type="button" id="clear-paste-btn" class="clear-btn">Clear</button>

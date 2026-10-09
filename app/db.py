@@ -48,6 +48,13 @@ CREATE TABLE IF NOT EXISTS orders (
     last_seen_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS dismissed_alerts (
+    item_id INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    dismissed_at TEXT NOT NULL,
+    PRIMARY KEY (item_id, kind)
+);
+
 CREATE TABLE IF NOT EXISTS dismissed_duplicates (
     name TEXT NOT NULL,
     release_date TEXT NOT NULL,

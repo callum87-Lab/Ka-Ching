@@ -41,7 +41,7 @@
   .day-group.day-filter-first { border-top: none; padding-top: 4px; }
   .mini-cal-legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
   .shop-legend-row { display: flex; align-items: center; gap: 7px; font-size: 13px; margin-bottom: 5px; }
-  .shop-legend-name { color: var(--text-muted); flex: 1; }
+  .shop-legend-name { color: var(--text-muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .shop-legend-pct { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-dim); }
   .shop-legend-bar { height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; margin-bottom: 12px; }
   .shop-legend-bar div { height: 100%; border-radius: 3px; }
@@ -196,7 +196,7 @@
             <span class="cal-day-num">{% if day.count > 0 %}<span class="cal-day-dot" style="background: rgba(47,216,255,{{ 0.25 + day.intensity * 0.75 }});"></span>{% endif %}{{ day.day }}</span>
             {% if day.count > 0 %}
             <span class="cal-day-total mono">{{ currency() }}{{ "{:,.2f}".format(day.total) }}</span>
-            <span class="cal-day-count">{{ day.count }} issue{{ "s" if day.count != 1 else "" }}</span>
+            <span class="cal-day-count">{{ day.count }} item{{ "s" if day.count != 1 else "" }}</span>
             {% endif %}
           </div>
           {% endif %}
@@ -279,7 +279,8 @@
 {% block extra_script %}
 
 // Clicking a day (mini or big calendar) filters the releases card to that
-// day; clicking it again, or "Show whole month", clears it. Not remembered.
+// day; clicking it again, or "Show whole month", clears it, and the same
+// button then offers "Back to <day>" to return to it. Not remembered.
 (function () {
   var card = document.querySelector('.list-card');
   var title = document.getElementById('releases-title');
@@ -287,6 +288,7 @@
   if (!card || !title || !clearBtn) return;
   var groups = Array.prototype.slice.call(card.querySelectorAll('.day-group'));
   var selected = null;
+  var lastDay = null;
 
   function dayLabel(iso) {
     // Same style as the day-group labels, e.g. "Wed 9 Sep"
@@ -318,7 +320,9 @@
       }
     });
     title.textContent = iso ? 'Releases on ' + dayLabel(iso) : title.dataset.monthTitle;
-    clearBtn.hidden = !iso;
+    if (iso) lastDay = iso;
+    clearBtn.hidden = !iso && !lastDay;
+    clearBtn.textContent = iso ? 'Show whole month' : (lastDay ? 'Back to ' + dayLabel(lastDay) : '');
   }
 
   function pick(iso) { apply(selected === iso ? null : iso, true); }
@@ -337,7 +341,7 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(el.dataset.day); }
     });
   });
-  clearBtn.addEventListener('click', function () { apply(null, false); });
+  clearBtn.addEventListener('click', function () { apply(selected ? null : lastDay, false); });
 })();
 
 (function () {

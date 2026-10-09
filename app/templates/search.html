@@ -14,9 +14,10 @@
   .filter-menu a.active { color: var(--neon-blue); }
 
   .filter-card { grid-column: span 12; }
-  .settings-form-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+  .settings-form-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .settings-form-grid-4 .field-input { width: 100%; min-width: 0; }
   .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; }
-  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; color-scheme: dark; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
   .field-input:focus { outline: none; border-color: var(--neon-blue); }
   .search-submit-btn { width: 100%; padding: 10px; border-radius: var(--radius-sm); background: var(--neon-blue); color: var(--on-accent); border: none; font-weight: 700; font-size: 12.5px; cursor: pointer; }
 
@@ -170,10 +171,10 @@
         <div class="row-name"><span class="cancelled-tag">Cancelled</span>{{ item.name }}</div>
         <div></div>
         <div class="row-price mono muted">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
-        <form method="post" action="/items/{{ item.id }}/mark" style="grid-column: 5 / 7; display:flex; justify-content:flex-end;">
+        <form method="post" action="/items/{{ item.id }}/mark" style="grid-column: 5 / 7; display:flex; justify-content:flex-end; min-width:0;">
           <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
           <input type="hidden" name="action" value="undo">
-          <button type="submit" class="warn-action-btn">Undo</button>
+          <button type="submit" class="row-undo" title="Restore this item">Undo</button>
         </form>
       </div>
       {% else %}

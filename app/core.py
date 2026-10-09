@@ -1264,6 +1264,7 @@ def find_ghost_items(cur):
         """
         SELECT * FROM items
         WHERE source = ? AND order_number IS NULL AND status != 'cancelled'
+          AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'ghost')
         ORDER BY release_date DESC
         """,
         (DEFAULT_SOURCE,),
@@ -1280,10 +1281,30 @@ def find_undated_items(cur):
         """
         SELECT * FROM items
         WHERE status != 'cancelled' AND release_date IS NULL AND placed_date IS NULL
+          AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'undated')
         ORDER BY name
         """
     )
     return [dict(r) for r in cur.fetchall()]
+
+
+DISMISSIBLE_ALERTS = {"ghost": "No order number", "undated": "No release date"}
+
+
+def find_dismissed_alerts(cur):
+    """Everything marked "Fine as it is" (or "Not a duplicate"), newest
+    first, so each one can be put back on the Alerts page."""
+    cur.execute(
+        """
+        SELECT d.item_id, d.kind, d.dismissed_at, i.name, i.price FROM dismissed_alerts d
+        JOIN items i ON i.id = d.item_id
+        ORDER BY d.dismissed_at DESC
+        """
+    )
+    rows = [dict(r, label=DISMISSIBLE_ALERTS.get(r["kind"], r["kind"])) for r in cur.fetchall()]
+    cur.execute("SELECT name, release_date, dismissed_at FROM dismissed_duplicates ORDER BY dismissed_at DESC")
+    dups = [dict(r) for r in cur.fetchall()]
+    return {"items": rows, "duplicates": dups, "count": len(rows) + len(dups)}
 
 
 RESTORE_COPIES_KEPT = 3
@@ -1563,9 +1584,9 @@ CARD_LAYOUT = [
     ]},
     {"page": "Insights \u00b7 Overview", "path": "/insights", "cards": [
         {"id": "ov.ratio", "name": "Pre-order vs released", "desc": "How much is still on order", "preorder": True},
-        {"id": "ov.releases", "name": "10 releases", "desc": "Recent, priciest and cheapest"},
+        {"id": "ov.releases", "name": "Already out", "desc": "The latest, priciest and cheapest 10 items already released"},
         {"id": "ov.spend", "name": "Spend overview", "desc": "Monthly spend at a glance", "essential": True},
-        {"id": "ov.issue", "name": "Per issue", "desc": "Priciest item and average issue"},
+        {"id": "ov.issue", "name": "Per item", "desc": "Priciest item and the average item"},
         {"id": "ov.dist", "name": "Price distribution", "desc": "Items by price bracket"},
         {"id": "ov.ship", "name": "Shipping and patterns", "desc": "Busiest day, savings, shipping vs cover"},
         {"id": "ov.cum", "name": "Cumulative spend", "desc": "This month against your budget"},
@@ -1588,8 +1609,8 @@ CARD_LAYOUT = [
     ]},
     {"page": "Insights \u00b7 Top titles", "path": "/insights/top-titles", "cards": [
         {"id": "titles.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
-        {"id": "titles.hero", "name": "Priciest issue tracked", "desc": "Your single priciest item"},
-        {"id": "titles.priciest", "name": "Priciest issues, all time", "desc": "Top items by price", "essential": True},
+        {"id": "titles.hero", "name": "Priciest item tracked", "desc": "Your single priciest item"},
+        {"id": "titles.priciest", "name": "Priciest items, all time", "desc": "Top items by price", "essential": True},
         {"id": "titles.series", "name": "Top series by total spend", "desc": "Series ranked by spend"},
         {"id": "titles.compare", "name": "All series, compared", "desc": "Full comparison table"},
     ]},

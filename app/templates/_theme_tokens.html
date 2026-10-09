@@ -16,6 +16,7 @@
    tokens; the accent (--neon-blue) is set separately from the theme's
    swatch list. --shop-1..8 colour the shops in charts and lists. ---- */
 :root {
+  color-scheme: light;
   --font-display: "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "Inter", -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -45,6 +46,7 @@
   --track: rgba(0, 70, 67, 0.08);
   --hover: rgba(0, 70, 67, 0.05);
   --input-bg: #fdfcf9;
+  --input-border: rgba(0, 70, 67, 0.24);
   --overlay: rgba(22, 33, 31, 0.35);
   --chart-bar: #d6d0c2;
   --chart-bar-future: #e8e3d8;
@@ -53,6 +55,7 @@
   --glow: 0;
 }
 :root[data-theme="grey"] {
+  color-scheme: dark;
   --page-bg: linear-gradient(155deg, #34373d 0%, #1c1e22 45%, #111214 100%);
   --bg-1: #131417;
   --bg-2: #1c1e22;
@@ -75,6 +78,7 @@
   --track: rgba(255, 255, 255, 0.08);
   --hover: rgba(255, 255, 255, 0.045);
   --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.28);
   --overlay: rgba(0, 0, 0, 0.55);
   --chart-bar: rgba(255, 255, 255, 0.22);
   --chart-bar-future: rgba(255, 255, 255, 0.08);
@@ -82,6 +86,7 @@
   --shop-5: #fda4af; --shop-6: #bef264; --shop-7: #93c5fd; --shop-8: #fcd34d;
 }
 :root[data-theme="blue"] {
+  color-scheme: dark;
   --page-bg: linear-gradient(155deg, #123a7a 0%, #0b2350 40%, #071430 100%);
   --bg-1: #08173a;
   --bg-2: #0b2350;
@@ -104,6 +109,7 @@
   --track: rgba(160, 200, 255, 0.13);
   --hover: rgba(255, 255, 255, 0.05);
   --input-bg: rgba(255, 255, 255, 0.06);
+  --input-border: rgba(255, 255, 255, 0.28);
   --overlay: rgba(2, 6, 20, 0.6);
   --chart-bar: rgba(160, 200, 255, 0.40);
   --chart-bar-future: rgba(160, 200, 255, 0.12);
@@ -111,6 +117,7 @@
   --shop-5: #fda4af; --shop-6: #bae6fd; --shop-7: #fde68a; --shop-8: #f0abfc;
 }
 :root[data-theme="noir"] {
+  color-scheme: dark;
   --page-bg: linear-gradient(160deg, #1a1916 0%, #0e0e0d 50%, #080808 100%);
   --bg-1: #0b0b0a;
   --bg-2: #141412;
@@ -133,6 +140,7 @@
   --track: rgba(255, 240, 210, 0.08);
   --hover: rgba(255, 240, 210, 0.05);
   --input-bg: rgba(255, 240, 210, 0.04);
+  --input-border: rgba(255, 240, 210, 0.28);
   --overlay: rgba(0, 0, 0, 0.6);
   --chart-bar: rgba(255, 240, 210, 0.18);
   --chart-bar-future: rgba(255, 240, 210, 0.07);

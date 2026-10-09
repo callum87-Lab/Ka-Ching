@@ -69,7 +69,7 @@
 {% if top_titles or series_totals %}
 <div class="grid">
   <div class="card plain-stat" data-card="titles.stats">
-    <div class="plain-stat-label">Priciest single issue</div>
+    <div class="plain-stat-label">Priciest single item</div>
     {% if priciest_item %}
     <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</div>
     <div class="plain-stat-sub">{{ priciest_item.name }}</div>
@@ -103,7 +103,7 @@
 <div class="grid">
   <div class="card titles-hero" data-card="titles.hero">
     <div>
-      <div class="titles-hero-eyebrow">Priciest issue tracked</div>
+      <div class="titles-hero-eyebrow">Priciest item tracked</div>
       <div class="titles-hero-title">{{ priciest_item.name }}</div>
       <div class="titles-hero-sub">{{ priciest_item.source }} &middot; {{ priciest_item.release_date_label }}</div>
     </div>
@@ -115,7 +115,7 @@
   </div>
 
   <div class="card titles-table-card" data-card="titles.priciest">
-    <div class="card-title" style="margin-bottom:14px;">Priciest issues, all time</div>
+    <div class="card-title" style="margin-bottom:14px;">Priciest items, all time</div>
     <table class="titles-table">
       <thead><tr><th class="rank-col">#</th><th>Title</th><th>Series</th><th class="num">Price</th><th>Shop</th></tr></thead>
       <tbody>
