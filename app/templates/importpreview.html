@@ -6,10 +6,10 @@
   .close-x-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
   .close-x-btn:hover { color: var(--text); border-color: var(--border-strong); }
 
-  .preview-meta-tag { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--neon-blue); background: rgba(47,216,255,0.10); border: 1px solid rgba(47,216,255,0.3); padding: 5px 12px; border-radius: 999px; margin-bottom: 16px; }
-  .preview-meta-tag.generic { color: var(--text-dim); background: rgba(255,255,255,0.04); border-color: var(--border); }
+  .preview-meta-tag { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 10%, transparent); border: 1px solid color-mix(in srgb, var(--neon-blue) 30%, transparent); padding: 5px 12px; border-radius: 999px; margin-bottom: 16px; }
+  .preview-meta-tag.generic { color: var(--text-dim); background: color-mix(in srgb, var(--text) 4%, transparent); border-color: var(--border); }
 
-  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; width: 100%; max-width: 100%; box-sizing: border-box; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; width: 100%; max-width: 100%; box-sizing: border-box; }
   .field-input:focus { outline: none; border-color: var(--neon-blue); }
 
   .preview-row { display: grid; grid-template-columns: 34px 1fr 200px 100px 130px 32px; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
@@ -20,16 +20,16 @@
   .preview-duplicate-flag { color: var(--neon-pink); font-weight: 600; }
 
   .preview-keep-toggle { width: 28px; height: 16px; border-radius: 999px; background: var(--neon-blue); position: relative; cursor: pointer; flex: 0 0 auto; }
-  .preview-keep-toggle:not(.on) { background: rgba(255,255,255,0.08); }
+  .preview-keep-toggle:not(.on) { background: color-mix(in srgb, var(--text) 8%, transparent); }
   .preview-keep-toggle::after { content:""; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#fff; transition: left 0.15s ease; }
   .preview-keep-toggle.on::after { left: 14px; }
   .preview-row.removed { opacity: 0.4; }
   .preview-row input { margin: 0; }
 
-  .row-remove-btn { width: 30px; height: 30px; border-radius: 8px; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 16px; }
-  .row-remove-btn:hover { color: var(--neon-pink); border-color: rgba(255,77,141,0.3); }
+  .row-remove-btn { width: 30px; height: 30px; border-radius: var(--radius-xs); background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 16px; }
+  .row-remove-btn:hover { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
   .add-row-btn { font-size: 14px; font-weight: 600; color: var(--neon-blue); background: none; border: none; cursor: pointer; padding: 8px 0; }
-  .submit-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: #04121a; border: none; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; }
+  .submit-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px; }
   .btn-secondary { font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; }
   .warn-hint { font-size: 13.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5; max-width: 72ch; }
 
@@ -51,7 +51,7 @@
 <div class="grid">
   <div class="card" style="grid-column: span 12;">
     <span class="preview-meta-tag">Detected: Forbidden Planet release-date-change email</span>
-    <p class="warn-hint" style="max-width:none;">This looks like a release-date update, not a new order &mdash; nothing new gets added, just the date(s) below refreshed on whatever's already tracked under that order number.</p>
+    <p class="warn-hint" style="max-width:none;">This looks like a release-date update, not a new order. Nothing new gets added, just the date(s) below refreshed on whatever's already tracked under that order number.</p>
     {% for u in preview.release_updates %}
     <div class="preview-simple-row">
       <span>{{ u.name }}</span>
@@ -74,7 +74,7 @@
 <div class="grid">
   <div class="card" style="grid-column: span 12;">
     <span class="preview-meta-tag">Detected: Forbidden Planet order-detail page</span>
-    <p class="warn-hint" style="max-width:none;">This is a single order's detail page, not the order-history list &mdash; it only ever gives you exact shipping figures, never the items themselves. To log the books/items in this order, paste the order-history list page instead (or add them by hand on Log Orders) &mdash; this screen just saves the shipping cost(s) below for order #{{ preview.postage_samples[0].order_number if preview.postage_samples }}, so future forecasts for that shop are more accurate.</p>
+    <p class="warn-hint" style="max-width:none;">This is a single order's detail page, not the order-history list. It only ever gives you exact shipping figures, never the items themselves. To log the books/items in this order, paste the order-history list page instead (or add them by hand on Log Orders). This screen just saves the shipping cost(s) below for order #{{ preview.postage_samples[0].order_number if preview.postage_samples }}, so future forecasts for that shop are more accurate.</p>
     {% for s in preview.postage_samples %}
     <div class="preview-simple-row">
       <span>Shipment {{ s.shipment_index + 1 }}</span>
@@ -99,15 +99,15 @@
     {% if preview.parser == 'forbidden_planet' %}
     <span class="preview-meta-tag">Detected: Forbidden Planet</span>
     {% if preview.skipped_no_order %}
-    <span class="muted">&middot; {{ preview.skipped_no_order }} item(s) skipped &mdash; couldn't tell which order they belonged to</span>
+    <span class="muted">&middot; {{ preview.skipped_no_order }} item(s) skipped. Couldn't tell which order they belonged to</span>
     {% endif %}
     {% elif preview.multi_order %}
     <span class="preview-meta-tag">Detected: {{ preview.order_count }} separate eBay orders</span>
-    <span class="muted">&middot; each row below is tagged with its own shop &mdash; check they look right</span>
+    <span class="muted">&middot; each row below is tagged with its own shop. Check they look right</span>
     {% elif preview.source_guess %}
     <span class="preview-meta-tag">Detected: {{ preview.source_guess }}</span>
     {% else %}
-    <span class="preview-meta-tag generic">Shop not recognised automatically &mdash; confirm below</span>
+    <span class="preview-meta-tag generic">Shop not recognised automatically. Confirm below</span>
     {% endif %}
 
     <form method="post" action="/import/confirm" id="preview-form" style="margin-top:16px;">

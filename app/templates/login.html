@@ -1,66 +1,162 @@
+{% from "_logo_mark.html" import kc_mark %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ ui_theme().theme }}" style="--neon-blue: {{ ui_theme().accent }};">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sign in &middot; Ka-Ching!</title>
-<link rel="icon" type="image/png" href="/static/img/logo.png?v={{ app_version }}">
+<link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg?v={{ app_version }}">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png?v={{ app_version }}">
 <link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#0a1224">
-<link rel="apple-touch-icon" href="/static/img/icon-192.png?v={{ app_version }}">
+<meta name="theme-color" content="{{ ui_theme().chrome }}">
+<link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png?v={{ app_version }}">
 <style>
-  :root { --bg: #060a17; --surface: #101a30; --raised: #16213d; --border: rgba(94,156,255,0.14); --border-strong: rgba(94,156,255,0.30);
-    --text: #e7ecfa; --muted: #7c89ad; --dim: #566089; --blue: #2fd8ff; --pink: #ff4d8d; }
+{% include "_theme_tokens.html" %}
+  :root { --bg: var(--bg-1); --raised: var(--surface-raised); --muted: var(--text-muted); --dim: var(--text-dim);
+    --blue: var(--neon-blue); --pink: var(--neon-pink); }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; display: flex; align-items: center; justify-content: center; padding: 24px;
-    background: radial-gradient(circle at 50% 0%, rgba(47,216,255,0.10), transparent 55%), var(--bg);
-    color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  .box { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 30px 26px 26px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
-  .logo { width: 150px; height: auto; filter: drop-shadow(0 0 14px rgba(47,216,255,0.45)); }
+    background-color: var(--bg-1); background-image: var(--page-bg); background-attachment: fixed;
+    color: var(--text); font-family: var(--font-body); }
+  .box { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 30px 26px 26px; text-align: center; box-shadow: var(--card-shadow), 0 20px 60px rgba(0,0,0,0.18); }
+  .logo { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .logo span { font-weight: 700; font-size: 34px; letter-spacing: -0.035em; color: var(--text); line-height: 1; }
   .sub { color: var(--muted); font-size: 14px; margin: 10px 0 20px; }
   input[type=password] { width: 100%; background: var(--raised); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 15px; font-family: inherit; outline: none; }
-  input[type=password]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,216,255,0.15); }
+  input[type=password]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--neon-blue) 15%, transparent); }
   .remember { display: flex; align-items: center; gap: 9px; margin: 14px 2px 18px; font-size: 13.5px; color: var(--muted); cursor: pointer; text-align: left; }
   .remember input { width: 16px; height: 16px; accent-color: var(--blue); }
-  button { width: 100%; height: 42px; border: none; border-radius: 999px; background: var(--blue); color: #04121a; font-weight: 700; font-size: 14.5px; font-family: inherit; cursor: pointer; }
+  button { width: 100%; height: 42px; border: none; border-radius: 999px; background: var(--blue); color: var(--on-accent); font-weight: 700; font-size: 14.5px; font-family: inherit; cursor: pointer; }
   .pw-wrap { position: relative; display: block; }
   .pw-wrap input { padding-right: 66px; }
   .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: auto; height: auto; background: none;
     color: var(--blue); font-size: 13px; font-weight: 600; padding: 6px 8px; border-radius: 8px; }
-  .pw-eye:hover { box-shadow: none; background: rgba(47,216,255,0.1); }
-  button:hover { box-shadow: 0 0 18px rgba(47,216,255,0.55); }
+  .pw-eye:hover { box-shadow: none; background: color-mix(in srgb, var(--neon-blue) 10%, transparent); }
+  button:hover { filter: brightness(1.06); }
   button:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
-  .err { color: var(--pink); background: rgba(255,77,141,0.08); border: 1px solid rgba(255,77,141,0.35); border-radius: 12px; padding: 9px 12px; font-size: 13px; margin: 0 0 14px; }
+  .err { color: var(--pink); background: color-mix(in srgb, var(--neon-pink) 8%, transparent); border: 1px solid color-mix(in srgb, var(--neon-pink) 35%, transparent); border-radius: 12px; padding: 9px 12px; font-size: 13px; margin: 0 0 14px; }
+
+  /* ---- split layout: brand panel + form ---- */
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; margin: 0; }
+  .auth { display: grid; grid-template-columns: 1.05fr 1fr; width: min(980px, 100%); min-height: 560px; border-radius: 24px; overflow: hidden;
+    background: var(--card-bg); border: 1px solid var(--border); box-shadow: 0 30px 80px rgba(0,0,0,0.18); }
+  :root[data-theme="grey"] .auth, :root[data-theme="blue"] .auth, :root[data-theme="noir"] .auth { background: var(--surface); }
+  .auth-brand { position: relative; padding: 44px; display: flex; flex-direction: column; color: #fff;
+    background: linear-gradient(155deg, #123a7a 0%, #0b2350 45%, #071430 100%); overflow: hidden;
+    --kc-mark: #ffffff; --neon-blue: #67E8F9; }
+  .auth-brand::before { content: ''; position: absolute; left: -140px; bottom: -160px; width: 520px; height: 520px;
+    background: radial-gradient(closest-side, rgba(103,232,249,0.16), transparent); }
+  .auth-brand > * { position: relative; }
+  .auth-brand .bm { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 22px; letter-spacing: -0.035em; }
+  .auth-brand .tag { margin-top: auto; font-family: var(--font-figure); font-size: 44px; line-height: 1.06; letter-spacing: -0.01em; }
+  .auth-brand .foot { margin-top: 16px; font-size: 14px; color: #a3b6d8; }
+  .auth .box { box-shadow: none; border: none; background: transparent; max-width: none; width: 100%; margin: 0;
+    padding: 56px 52px; display: flex; flex-direction: column; justify-content: center; border-radius: 0; text-align: left; }
+  .auth .box h1 { font-size: 28px; font-weight: 650; letter-spacing: -0.03em; margin: 0 0 6px; color: var(--text); }
+  .auth .box .sub { text-align: left; margin: 0 0 24px; }
+  .logo-small { display: none; align-items: center; gap: 10px; margin-bottom: 22px; font-weight: 700; font-size: 20px; letter-spacing: -0.035em; color: var(--text); }
+  .caps { display: none; margin: 8px 0 0; font-size: 13px; color: var(--neon-amber); font-weight: 600; }
+  .show-caps .caps { display: block; }
+  .forgot { align-self: flex-start; width: auto; height: auto; margin-top: 18px; padding: 0; font-size: 13.5px; font-weight: 600;
+    color: var(--neon-blue); background: none; border: none; cursor: pointer; }
+  .forgot:hover { box-shadow: none; filter: none; text-decoration: underline; }
+  .forgot-note { display: none; margin-top: 12px; font-size: 13px; line-height: 1.55; color: var(--text-muted); background: var(--surface-raised);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .forgot-note code { font-size: 12.5px; background: var(--hover); padding: 1px 5px; border-radius: 5px; color: var(--text); }
+  .show-forgot .forgot-note { display: block; }
+  .state-wrong .pw-wrap input { border-color: var(--neon-pink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--neon-pink) 18%, transparent); }
+  .state-wrong { animation: kc-shake 0.4s; }
+  @keyframes kc-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  @media (prefers-reduced-motion: reduce) { .state-wrong { animation: none; } }
+  .state-ok #go { background: var(--neon-green); color: #fff; }
+  .lock { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; margin-bottom: 16px;
+    background: color-mix(in srgb, var(--neon-pink) 9%, transparent); color: var(--neon-pink); font-size: 13.5px; font-weight: 600; }
+  .lock b { font-family: var(--font-figure); font-size: 26px; font-weight: 400; color: var(--text); margin-left: auto; }
+  @media (max-width: 760px) {
+    body { padding: 14px; align-items: flex-start; }
+    .auth { grid-template-columns: 1fr; min-height: 0; margin-top: 4vh; }
+    .auth-brand { display: none; }
+    .logo-small { display: flex; }
+    .auth .box { padding: 30px 24px 32px; }
+  }
 </style>
 </head>
 <body>
-  <form class="box" method="post" action="/login">
-    <img class="logo" src="/static/img/logo.png?v={{ app_version }}" alt="Ka-Ching!">
-    <div class="sub">Enter your password to continue</div>
-    {% if locked or error == 'locked' %}<div class="err">Too many wrong tries. Wait a minute, then try again.</div>
-    {% elif error == 'wrong' %}<div class="err">That password isn't right.</div>{% endif %}
+<div class="auth">
+  <div class="auth-brand" aria-hidden="true">
+    <div class="bm">{{ kc_mark("brand", 44, 33) }}<span>Ka-Ching!</span></div>
+    <div class="tag">Know what your<br>collecting costs.</div>
+    <div class="foot">Self-hosted and private. Your data never leaves home.</div>
+  </div>
+  <form class="box{{ ' state-wrong' if error == 'wrong' else '' }}" method="post" action="/login" id="login-form">
+    <div class="logo-small">{{ kc_mark("login", 40, 30) }}<span>Ka-Ching!</span></div>
+    <h1>Welcome back</h1>
+    <div class="sub">Enter your password to continue.</div>
+    {% if locked %}
+    <div class="lock" id="lock" data-wait="{{ lock_wait }}">Too many tries. Locked for a moment.<b id="lock-left">{{ '%d:%02d'|format(lock_wait // 60, lock_wait % 60) }}</b></div>
+    {% elif error == 'locked' %}
+    <div class="err">You can try again now.</div>
+    {% elif error == 'wrong' %}
+    <div class="err">That password isn't right.{% if tries_left %} {{ tries_left }} {{ 'try' if tries_left == 1 else 'tries' }} left before a short lock.{% endif %}</div>
+    {% endif %}
     <input type="hidden" name="next" value="{{ next }}">
     <span class="pw-wrap"><input type="password" name="password" id="pw" placeholder="Password" autocomplete="current-password" autofocus required><button type="button" class="pw-eye" id="pw-eye" aria-label="Show password">Show</button></span>
+    <div class="caps" id="caps" role="status">&#8682; Caps Lock is on</div>
     <label class="remember"><input type="checkbox" name="remember" value="1" checked> Keep me signed in for 30 days on this device</label>
-    <button type="submit"{% if locked %} disabled{% endif %}>Sign in</button>
+    <button type="submit" id="go"{% if locked %} disabled{% endif %}>Sign in</button>
+    <button type="button" class="forgot" id="forgot" aria-expanded="false">Forgotten your password?</button>
+    <div class="forgot-note" id="forgot-note">
+      There's no email reset - Ka-Ching! has no accounts. On the server, add <code>KACHING_PASSWORD=something</code>
+      under <code>environment:</code> in docker-compose.yml and rebuild; that password always works. Sign in, set a new
+      one in Settings &rarr; Security, then remove the line and rebuild again.
+    </div>
   </form>
-{% if locked or error == 'locked' %}
+</div>
 <script>
-// The lock lasts a minute; let them try again after that without a reload
-setTimeout(function () {
-  var b = document.querySelector('button[type=submit]'); if (b) b.disabled = false;
-  var e = document.querySelector('.err'); if (e) e.textContent = 'You can try again now.';
-}, 61000);
-</script>
-{% endif %}
-<script>
-document.getElementById('pw-eye').addEventListener('click', function () {
-  var i = document.getElementById('pw'), shown = i.type === 'text';
-  i.type = shown ? 'password' : 'text';
-  this.textContent = shown ? 'Show' : 'Hide';
-  this.setAttribute('aria-label', shown ? 'Show password' : 'Hide password');
-});
+(function () {
+  var pw = document.getElementById('pw'), form = document.getElementById('login-form'), go = document.getElementById('go');
+  document.getElementById('pw-eye').addEventListener('click', function () {
+    var shown = pw.type === 'text';
+    pw.type = shown ? 'password' : 'text';
+    this.textContent = shown ? 'Show' : 'Hide';
+    this.setAttribute('aria-label', shown ? 'Show password' : 'Hide password');
+  });
+  // Caps Lock warning
+  function caps(e) { if (e.getModifierState) document.body.classList.toggle('show-caps', e.getModifierState('CapsLock')); }
+  pw.addEventListener('keydown', caps); pw.addEventListener('keyup', caps);
+  // Forgotten password: show the recovery steps
+  var fb = document.getElementById('forgot');
+  fb.addEventListener('click', function () {
+    var open = document.body.classList.toggle('show-forgot'); fb.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  // Locked: count down, then let them try again without a reload
+  var lock = document.getElementById('lock');
+  if (lock) {
+    var left = parseInt(lock.dataset.wait, 10) || 60, out = document.getElementById('lock-left');
+    var t = setInterval(function () {
+      left -= 1;
+      if (left <= 0) { clearInterval(t); lock.className = 'err'; lock.textContent = 'You can try again now.'; go.disabled = false; pw.focus(); return; }
+      out.textContent = Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2);
+    }, 1000);
+  }
+  // Sign in without leaving the page, so a correct password can show a
+  // moment of confirmation; a wrong one reloads into the error state.
+  // (Without JavaScript the form simply posts as normal.)
+  form.addEventListener('submit', function (e) {
+    if (!window.fetch) return;
+    e.preventDefault();
+    go.disabled = true;
+    fetch('/login', { method: 'POST', body: new URLSearchParams(new FormData(form)), credentials: 'same-origin', redirect: 'follow' })
+      .then(function (r) {
+        var u = new URL(r.url);
+        if (u.pathname === '/login') { window.location = u.pathname + u.search; return; }
+        document.body.classList.add('state-ok'); go.textContent = '\u2713 Signed in';
+        setTimeout(function () { window.location = u.pathname + u.search + u.hash; }, 450);
+      })
+      .catch(function () { form.submit(); });
+  });
+})();
 </script>
 </body>
 </html>

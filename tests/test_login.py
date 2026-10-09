@@ -133,3 +133,15 @@ def test_pages_not_cached_and_no_server_banner(client):
 def test_hsts_only_over_https(client):
     assert "strict-transport-security" not in client.get("/").headers
     assert "max-age" in client.get("/", headers={"x-forwarded-proto": "https"}).headers["strict-transport-security"]
+
+
+def test_sign_in_page_counts_tries_and_locks(client):
+    pw = _turn_on(client)
+    anon = TestClient(app)
+    anon.post("/login", data={"password": "nope", "next": "/"})
+    assert "4 tries left" in anon.get("/login?error=wrong").text
+    for _ in range(4):
+        anon.post("/login", data={"password": "nope", "next": "/"})
+    page = anon.get("/login?error=locked").text
+    assert 'id="lock"' in page and 'data-wait="' in page and "Locked for a moment" in page
+    assert "Forgotten your password?" in page and "KACHING_PASSWORD" in page

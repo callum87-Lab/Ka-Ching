@@ -11,7 +11,7 @@
   .list-total b { color: var(--text); font-family: var(--font-mono); }
   .month-nav { display: flex; align-items: center; gap: 8px; }
   .month-nav-btn { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-raised); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); cursor: pointer; }
-  .month-nav-today { font-size: 11px; font-weight: 700; color: var(--neon-blue); background: rgba(47,216,255,0.10); border: 1px solid rgba(47,216,255,0.3); border-radius: 999px; padding: 4px 10px; cursor: pointer; margin-left: 2px; }
+  .month-nav-today { font-size: 11px; font-weight: 700; color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 10%, transparent); border: 1px solid color-mix(in srgb, var(--neon-blue) 30%, transparent); border-radius: 999px; padding: 4px 10px; cursor: pointer; margin-left: 2px; }
 
   .day-group { border-top: 1px solid var(--border); padding: 12px 0; }
   .day-group:first-of-type { border-top: none; padding-top: 4px; }
@@ -36,20 +36,20 @@
 
   .page-btn { font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; }
   .paid-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; display: flex; align-items: center; justify-content: center; color: transparent; flex: 0 0 auto; cursor: pointer; }
-  .paid-check.checked { background: var(--neon-green); border-color: var(--neon-green); color: #06111f; box-shadow: 0 0 7px rgba(60,242,166,0.4); }
+  .paid-check.checked { background: var(--neon-green); border-color: var(--neon-green); color: var(--on-accent); box-shadow: 0 0 7px color-mix(in srgb, var(--neon-green) 40%, transparent); }
   .paid-check svg { width: 11px; height: 11px; }
 
   .row-name { font-size: 13.5px; }
-  .row-name .late-tag { font-size: 10px; color: var(--neon-pink); background: rgba(255,77,141,0.10); padding: 2px 7px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
+  .row-name .late-tag { font-size: 10px; color: var(--neon-pink); background: color-mix(in srgb, var(--neon-pink) 10%, transparent); padding: 2px 7px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
   .row-price { font-size: 13.5px; font-weight: 600; text-align: right; }
   .row-check { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--border-strong); background: transparent; cursor: pointer; accent-color: var(--neon-blue); }
 
   .row-menu-wrap { position: relative; display: flex; justify-content: flex-end; }
-  .row-menu-btn { width: 22px; height: 22px; border-radius: 7px; background: transparent; border: 1px solid transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+  .row-menu-btn { width: 22px; height: 22px; border-radius: var(--radius-xs); background: transparent; border: 1px solid transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; }
   .row-menu-btn:hover { background: var(--surface-raised); border-color: var(--border); }
-  .row-actions-drawer { position: fixed; z-index: 9999; background: #1a2540; border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); min-width: 104px; }
+  .row-actions-drawer { position: fixed; z-index: 9999; background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,0.6); min-width: 104px; }
   .row-actions-drawer a, .row-actions-drawer button { text-align: left; background: none; border: none; color: var(--text); font-size: 12px; padding: 7px 9px; border-radius: 6px; cursor: pointer; font-family: inherit; text-decoration: none; display: block; }
-  .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: rgba(255,255,255,0.05); }
+  .row-actions-drawer a:hover, .row-actions-drawer button:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
   .row-actions-drawer .danger:hover { color: var(--neon-pink); }
   .drawer-template { display: none; }
 
@@ -100,7 +100,7 @@
 <div class="tab-row" data-shop-tabs>
   {% if active_source %}<a class="tab-pill" href="?{% if month %}month={{ month }}{% endif %}">All shops</a>{% else %}<span class="tab-pill active">All shops</span>{% endif %}
   {% for s in filter_tab_sources %}
-  <a class="tab-pill{{ ' active' if active_source == s else '' }}" href="?source={{ s }}{% if month %}&month={{ month }}{% endif %}"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:{{ source_colors.get(s, '#7c89ad') }};margin-right:5px;"></span>{{ s }}</a>
+  <a class="tab-pill{{ ' active' if active_source == s else '' }}" href="?source={{ s }}{% if month %}&month={{ month }}{% endif %}"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:{{ source_colors.get(s, 'var(--text-muted)') }};margin-right:5px;"></span>{{ s }}</a>
   {% endfor %}
 </div>
 <div class="grid">
@@ -210,7 +210,7 @@
   <div class="grid">
     <div class="card list-card">
       <div class="list-card-head">
-        <div class="list-title"><span class="card-icon-badge" style="background:rgba(255,77,141,0.14); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>Unpaid</div>
+        <div class="list-title"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-pink) 14%, transparent); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>Unpaid</div>
         <span class="list-total">{{ unpaid_count }} item{{ "s" if unpaid_count != 1 else "" }} &middot; <b>{{ currency() }}{{ "{:,.2f}".format(unpaid_total) }}</b> outstanding</span>
       </div>
 
@@ -232,7 +232,7 @@
                   <input type="hidden" name="action" value="paid">
                   <button type="submit" class="paid-check" title="Mark as paid"></button>
                 </form>
-                <div class="row-name">{{ item.name }}{% if item.is_awaiting_charge %}<span class="mono" style="font-size: 11.5px;color:var(--neon-pink);background:rgba(255,77,141,0.1);padding:2px 7px;border-radius:999px;margin-left:8px;">awaiting charge</span>{% endif %}</div>
+                <div class="row-name">{{ item.name }}{% if item.is_awaiting_charge %}<span class="mono" style="font-size: 11.5px;color:var(--neon-pink);background:color-mix(in srgb, var(--neon-pink) 10%, transparent);padding:2px 7px;border-radius:999px;margin-left:8px;">awaiting charge</span>{% endif %}</div>
                 <div class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</div>
                 <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
                 <div class="row-menu-wrap">
@@ -258,7 +258,7 @@
           </div>
         </div>
         {% endfor %}
-        <div class="card-note">Sorted oldest first &mdash; the longer something sits unpaid, the more likely it's worth a second look. Items flagged "awaiting charge" also show up on the Alerts page.</div>
+        <div class="card-note">Sorted oldest first. The longer something sits unpaid, the more likely it's worth a second look. Items flagged "awaiting charge" also show up on the Alerts page.</div>
       {% else %}
       <div class="empty-note">Nothing unpaid right now.</div>
       {% endif %}

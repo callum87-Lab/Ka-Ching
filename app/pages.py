@@ -1,3 +1,4 @@
+import re
 """Page routes: Dashboard, Orders, Calendar, Search, Insights, Alerts, and redirects for old addresses."""
 from .core import *  # noqa: F401,F403 - the shared app, templates and helpers
 import html
@@ -165,6 +166,201 @@ def render_trend_svg(chart_data, range_key, style="curve", label_font_size=12):
     return "".join(parts)
 
 
+def _chart_hits(chart_data, xs, ys, H):
+    """Invisible hover targets shared by the bar and line charts, so the
+    same tooltip works for both."""
+    out = []
+    slot = (xs[1] - xs[0]) if len(xs) > 1 else 40
+    for c, cx, cy in zip(chart_data, xs, ys):
+        due = max(0.0, c["total"] - c.get("paid_total", c["total"]))
+        out.append(
+            f'<rect class="trend-hit" x="{cx - slot / 2:.1f}" y="0" width="{slot:.1f}" height="{H}" fill="transparent" '
+            f'data-label="{html.escape(str(c["label"]))}" data-total="{c["total"]:.2f}" '
+            f'data-comics="{c["comics_total"]:.2f}" data-shipping="{c["shipping_total"]:.2f}" '
+            f'data-due="{due:.2f}" data-count="{c["count"]}" data-cx="{cx:.1f}" data-cy="{cy:.1f}"/>')
+    return out
+
+
+def render_bars_svg(chart_data, range_key, budget=None, label_font_size=12, W=900, H=250):
+    """The Dashboard's spend chart as bars: one per period, split into what's
+    already paid (solid) and what's still due (hatched), the current
+    period in the accent colour, the amount above each bar, and (when the
+    range matches the budget cycle) a dashed line at the budget."""
+    if len(chart_data) < 2:
+        return ""
+    pad_l, pad_r, top, bottom = 14, 14, 26, 30
+    n = len(chart_data)
+    slot = (W - pad_l - pad_r) / n
+    bw = min(56, slot * 0.62)
+    narrow = W < 600
+    peak = max([c["total"] for c in chart_data] + ([budget] if budget else [0])) or 1
+    scale = (H - top - bottom) / (peak * 1.12)
+    base_y = H - bottom
+    pid = f"{range_key}-{W}"
+    cur_sym = html.escape(_currency_ctx.get())
+    parts = [f'<svg class="trend-svg bars-svg" viewBox="0 0 {W} {H}" preserveAspectRatio="none" role="img" '
+             f'aria-label="Spend per period, paid and still due">',
+             f'<defs><pattern id="due-cur-{pid}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+             f'<rect width="7" height="7" fill="color-mix(in srgb, var(--neon-blue) 14%, transparent)"/>'
+             f'<line x1="0" y1="0" x2="0" y2="7" stroke="var(--neon-blue)" stroke-width="2.6" opacity="0.55"/></pattern>'
+             f'<pattern id="due-{pid}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+             f'<rect width="7" height="7" fill="color-mix(in srgb, var(--text) 4%, transparent)"/>'
+             f'<line x1="0" y1="0" x2="0" y2="7" stroke="var(--chart-bar)" stroke-width="2.6"/></pattern></defs>']
+    xs, ys = [], []
+    for i, c in enumerate(chart_data):
+        cx = pad_l + slot * i + slot / 2
+        cur = c["is_current"]
+        solid = "var(--neon-blue)" if cur else "var(--chart-bar)"
+        y = base_y
+        if not c["total"]:
+            parts.append(f'<rect x="{cx - bw / 2:.1f}" y="{base_y - 3:.1f}" width="{bw:.1f}" height="3" rx="1.5" fill="var(--track)"/>')
+        paid = c.get("paid_total", c["total"])
+        due = max(0.0, c["total"] - paid)
+        hp, hd = paid * scale, due * scale
+        if hp > 0.5:
+            y -= hp
+            parts.append(f'<rect x="{cx - bw / 2:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{hp:.1f}" rx="5" fill="{solid}"/>')
+        if hd > 0.5:
+            y -= hd
+            parts.append(f'<rect x="{cx - bw / 2:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{max(hd - 1.5, 1):.1f}" rx="5" '
+                         f'fill="url(#due-{"cur-" if cur else ""}{pid})" stroke="{solid}" stroke-width="1" stroke-opacity="0.7"/>')
+        xs.append(cx); ys.append(y)
+        if c["total"] and not (narrow and n > 10 and not cur):
+            colour = "var(--neon-blue)" if cur else "var(--text-muted)"
+            parts.append(f'<text x="{cx:.1f}" y="{y - 7:.1f}" text-anchor="middle" font-size="12" font-weight="{"650" if cur else "500"}" '
+                         f'fill="{colour}">{cur_sym}{c["total"]:,.0f}</text>')
+        lab_col = "var(--text)" if cur else "var(--text-dim)"
+        alt_class = " trend-axis-label-alt" if i % 2 == 1 else ""
+        parts.append(f'<text class="trend-axis-label{alt_class}" x="{cx:.1f}" y="{H - 9}" text-anchor="middle" '
+                     f'font-size="{label_font_size}" font-weight="{"650" if cur else "500"}" fill="{lab_col}">'
+                     f'{html.escape(str(c["label"]))}</text>')
+    if budget:
+        by = base_y - budget * scale
+        parts.append(f'<line x1="{pad_l}" x2="{W - pad_r}" y1="{by:.1f}" y2="{by:.1f}" stroke="var(--neon-pink)" '
+                     f'stroke-width="1.2" stroke-dasharray="5 5" opacity="0.9"/>')
+        parts.append(f'<text x="{W - pad_r}" y="{by - 7:.1f}" text-anchor="end" font-size="11.5" font-weight="600" '
+                     f'fill="var(--neon-pink)">Budget {cur_sym}{budget:,.0f}</text>')
+    parts += _chart_hits(chart_data, xs, ys, H)
+    parts.append(f'<line class="trend-guide" y1="{top}" x2="0" stroke="var(--neon-blue)" stroke-width="1" '
+                 f'stroke-dasharray="3,3" opacity="0" style="display:none;" y2="{base_y}"/>')
+    parts.append('<circle class="trend-dot" r="0" fill="none" style="display:none;"/>')
+    parts.append('</svg>')
+    return "".join(parts)
+
+
+def render_line_svg(chart_data, range_key, budget=None, label_font_size=12, W=900, H=250):
+    """The same spend data as a smooth line with a soft fill: the current
+    period tagged with its total, the periods still to come shaded, and
+    the budget as a dashed line. Curves use flat tangents at each point,
+    so the line never dips below zero or overshoots a value."""
+    if len(chart_data) < 2:
+        return ""
+    narrow = W < 600
+    pad_l, pad_r, top, bottom = (36, 16, 30, 30) if narrow else (46, 70, 30, 30)
+    n = len(chart_data)
+    peak = max([c["total"] for c in chart_data] + ([budget] if budget else [0])) or 1
+    top_val = peak * 1.12
+    base_y = H - bottom
+    def X(i): return pad_l + (W - pad_l - pad_r) * i / (n - 1)
+    def Y(v): return base_y - v / top_val * (base_y - top)
+    pid = f"{range_key}-{W}"
+    cur_sym = html.escape(_currency_ctx.get())
+    ci = next((i for i, c in enumerate(chart_data) if c["is_current"]), n - 1)
+    P = [(X(i), Y(c["total"])) for i, c in enumerate(chart_data)]
+    d = f"M{P[0][0]:.1f} {P[0][1]:.1f}"
+    for (x0, y0), (x1, y1) in zip(P, P[1:]):
+        mx = (x0 + x1) / 2
+        d += f" C{mx:.1f} {y0:.1f}, {mx:.1f} {y1:.1f}, {x1:.1f} {y1:.1f}"
+    parts = [f'<svg class="trend-svg line-svg" viewBox="0 0 {W} {H}" preserveAspectRatio="none" role="img" aria-label="Spend per period">',
+             f'<defs><linearGradient id="line-fill-{pid}" x1="0" y1="0" x2="0" y2="1">'
+             f'<stop offset="0" stop-color="var(--neon-blue)" stop-opacity="0.22"/>'
+             f'<stop offset="1" stop-color="var(--neon-blue)" stop-opacity="0"/></linearGradient></defs>']
+    for v in (0, top_val / 2, top_val):
+        parts.append(f'<line x1="{pad_l}" x2="{W - pad_r}" y1="{Y(v):.1f}" y2="{Y(v):.1f}" stroke="var(--border)" stroke-dasharray="2 5"/>')
+        parts.append(f'<text x="{pad_l - 8}" y="{Y(v) + 4:.1f}" text-anchor="end" font-size="11" fill="var(--text-dim)">{cur_sym}{v:,.0f}</text>')
+    if ci < n - 1:
+        parts.append(f'<rect x="{X(ci):.1f}" y="{top - 12}" width="{W - pad_r - X(ci):.1f}" height="{base_y - top + 12}" '
+                     f'fill="color-mix(in srgb, var(--text) 3%, transparent)"/>')
+        if not narrow:
+            parts.append(f'<text x="{W - pad_r - 8}" y="{top + 2}" text-anchor="end" font-size="11.5" fill="var(--text-dim)">Still to come</text>')
+    parts.append(f'<path d="{d} L{P[-1][0]:.1f} {base_y} L{P[0][0]:.1f} {base_y} Z" fill="url(#line-fill-{pid})"/>')
+    parts.append(f'<path d="{d}" fill="none" stroke="var(--neon-blue)" stroke-width="2.4" stroke-linejoin="round"/>')
+    if budget:
+        parts.append(f'<line x1="{pad_l}" x2="{W - pad_r}" y1="{Y(budget):.1f}" y2="{Y(budget):.1f}" stroke="var(--neon-pink)" '
+                     f'stroke-width="1.2" stroke-dasharray="5 5"/>')
+        if not narrow:
+            parts.append(f'<text x="{W - pad_r + 6}" y="{Y(budget) + 4:.1f}" font-size="11.5" font-weight="600" fill="var(--neon-pink)">Budget</text>')
+    for i, ((x, y), c) in enumerate(zip(P, chart_data)):
+        cur = i == ci
+        parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{5.5 if cur else 3}" fill="{"var(--neon-blue)" if cur else "var(--card-bg)"}" '
+                     f'stroke="var(--neon-blue)" stroke-width="2"/>')
+        alt_class = " trend-axis-label-alt" if i % 2 == 1 else ""
+        parts.append(f'<text class="trend-axis-label{alt_class}" x="{x:.1f}" y="{H - 9}" text-anchor="middle" font-size="{label_font_size}" '
+                     f'font-weight="{"650" if cur else "500"}" fill="{"var(--text)" if cur else "var(--text-dim)"}">{html.escape(str(c["label"]))}</text>')
+    cx, cy = P[ci]
+    tag = f'{cur_sym}{chart_data[ci]["total"]:,.0f}'
+    tw = 16 + 8 * len(tag)
+    parts.append(f'<rect x="{cx - tw / 2:.1f}" y="{cy - 38:.1f}" width="{tw}" height="24" rx="7" fill="var(--neon-blue)"/>')
+    parts.append(f'<text x="{cx:.1f}" y="{cy - 21.5:.1f}" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--on-accent)">{tag}</text>')
+    parts += _chart_hits(chart_data, [p[0] for p in P], [p[1] for p in P], H)
+    parts.append(f'<line class="trend-guide" y1="{top}" x2="0" stroke="var(--neon-blue)" stroke-width="1" '
+                 f'stroke-dasharray="3,3" opacity="0.45" style="display:none;" y2="{base_y}"/>')
+    parts.append('<circle class="trend-dot" r="6" fill="var(--neon-blue)" stroke="var(--card-bg)" stroke-width="2.5" style="display:none;"/>')
+    parts.append('</svg>')
+    return "".join(parts)
+
+
+def render_creep_strip(rows):
+    """Price creep: every tracked series as one dot on a single % scale.
+    Unchanged series cluster neatly at 0%; series that rose sit to the
+    right (amber, or red and named from +25%); any that got cheaper sit
+    left of zero in green, stacked at the edge if off the scale. A shaded
+    band marks normal creep (0 to +10%)."""
+    if not rows:
+        return ""
+    W, H, pl, pr = 560, 150, 18, 18
+    lo = -25 if min(r["change_pct"] for r in rows) < 0 else 0
+    hi = max(55, min(150, max(r["change_pct"] for r in rows) + 8))
+    def x(p):
+        p = max(lo, min(hi, p))
+        return pl + (W - pl - pr) * (p - lo) / (hi - lo)
+    out = [f'<svg class="creep-strip" viewBox="0 0 {W} {H}" role="img" aria-label="Price change for each series">']
+    out.append(f'<rect x="{x(0) - 4:.1f}" y="64" width="{x(10) - x(0) + 8:.1f}" height="38" rx="10" fill="var(--track)" opacity="0.7"/>')
+    out.append(f'<line x1="{pl}" x2="{W - pr}" y1="92" y2="92" stroke="var(--border-strong)"/>')
+    for t in sorted({t for t in (lo, 0, 10, 25, 50, 100) if lo <= t <= hi}):
+        out.append(f'<line x1="{x(t):.1f}" x2="{x(t):.1f}" y1="86" y2="98" stroke="var(--border-strong)"/>')
+        out.append(f'<text x="{x(t):.1f}" y="116" text-anchor="middle" font-size="11.5" fill="var(--text-dim)">{"+" if t > 0 else ""}{t}%</text>')
+    out.append(f'<text x="{(x(0) + x(10)) / 2:.1f}" y="138" text-anchor="middle" font-size="11" fill="var(--text-dim)">normal creep</text>')
+    flat = [r for r in rows if r["change_pct"] == 0]
+    for k, r in enumerate(flat):
+        cx, cy = x(0) + 4 + (k // 3) * 10.5, 92 - (k % 3) * 10.5
+        out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="4.6" fill="var(--chart-bar)" stroke="var(--card-bg)" stroke-width="1.5">'
+                   f'<title>{html.escape(r["series"])}: no change</title></circle>')
+    named = 0
+    edge = 0
+    for r in sorted((r for r in rows if r["change_pct"] != 0), key=lambda r: r["change_pct"]):
+        p = r["change_pct"]
+        colour = "var(--neon-green)" if p < 0 else "var(--neon-pink)" if p >= 25 else "var(--neon-amber)"
+        cy = 92
+        if p <= lo:
+            cy = 92 - edge * 11.5
+            edge += 1
+        out.append(f'<circle cx="{x(p):.1f}" cy="{cy}" r="5.4" fill="{colour}" stroke="var(--card-bg)" stroke-width="1.5">'
+                   f'<title>{html.escape(r["series"])}: {"+" if p > 0 else ""}{p}%</title></circle>')
+        if p >= 25:
+            short = re.sub(r"^(Star Wars: )?(Hyperspace Stories: )?", "", r["series"])
+            short = short if len(short) <= 22 else short[:21] + "\u2026"
+            ly = 76 - (named % 2) * 16
+            out.append(f'<text x="{x(p):.1f}" y="{ly}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--text)">'
+                       f'{html.escape(short)} {"+" if p > 0 else ""}{p}%</text>')
+            named += 1
+    out.append("</svg>")
+    return "".join(out)
+
+
+templates.env.globals["creep_strip"] = render_creep_strip
+
+
 def source_tab_group(source: str) -> str:
     """Groups per-seller eBay sources ('eBay - sad_lemon_comics', 'eBay -
     bearsgames', ...) into one 'eBay' entry for filter tabs - a separate
@@ -249,18 +445,24 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
         dated_items = [i for i in period_items if i["release_date"]]
         groups = group_by_date(dated_items)
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
-        return comics_total, shipping_total, len(period_items)
+        # How much of the period is already paid: charged items, plus their
+        # share of the shipping (shipping is charged with its items).
+        paid_items = sum(i["price"] for i in period_items if i["charge_status"] == "charged")
+        paid_share = (paid_items / comics_total) if comics_total else 1.0
+        paid_total = round(paid_items + shipping_total * paid_share, 2)
+        return comics_total, shipping_total, len(period_items), paid_total
 
     if unit == "week":
         for delta in range(-cfg["back"], cfg["forward"] + 1):
             w_start = today + timedelta(days=delta * 7)
             w_end = w_start + timedelta(days=6)
-            comics_total, shipping_total, n = totals_between(w_start, w_end)
+            comics_total, shipping_total, n, paid_total = totals_between(w_start, w_end)
             chart.append({
                 "label": w_start.strftime("%d %b"),
                 "comics_total": comics_total,
                 "shipping_total": shipping_total,
                 "total": round(comics_total + shipping_total, 2),
+                "paid_total": min(paid_total, round(comics_total + shipping_total, 2)),
                 "count": n,
                 "is_current": delta == 0,
                 "is_future": delta > 0,
@@ -269,12 +471,13 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
         for delta in range(-cfg["back"], cfg["forward"] + 1):
             m_start = shift_month(today, delta)
             m_end = m_start.replace(day=calendar.monthrange(m_start.year, m_start.month)[1])
-            comics_total, shipping_total, n = totals_between(m_start, m_end)
+            comics_total, shipping_total, n, paid_total = totals_between(m_start, m_end)
             chart.append({
                 "label": m_start.strftime("%b"),
                 "comics_total": comics_total,
                 "shipping_total": shipping_total,
                 "total": round(comics_total + shipping_total, 2),
+                "paid_total": min(paid_total, round(comics_total + shipping_total, 2)),
                 "count": n,
                 "is_current": delta == 0,
                 "is_future": delta > 0,
@@ -835,7 +1038,7 @@ def _build_insights_context(request: Request, category_ids=None):
         shop = source_tab_group(it["source"])
         weekday_shop_counts[wd][shop] = weekday_shop_counts[wd].get(shop, 0) + 1
     weekday_shops = sorted({source_tab_group(it["source"]) for it in dated_items})
-    weekday_shop_colors = {s: source_color(s) for s in weekday_shops}
+    weekday_shop_colors = {s: shop_color(s) for s in weekday_shops}
     weekday_chart_by_shop = []
     for day in weekday_order:
         day_total = weekday_counts.get(day, 0)
@@ -871,7 +1074,7 @@ def _build_insights_context(request: Request, category_ids=None):
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
         raw_shop_stats.append({
             "source": source,
-            "color": source_color(source),
+            "color": shop_color(source),
             "total": round(comics_total + shipping_total, 2),
             "count": len(items),
         })
@@ -885,7 +1088,7 @@ def _build_insights_context(request: Request, category_ids=None):
         if group_name not in grouped:
             grouped[group_name] = {
                 "source": group_name,
-                "color": source_color(group_name),
+                "color": shop_color(group_name),
                 "total": 0.0,
                 "count": 0,
                 "sub_shops": [],
@@ -1002,7 +1205,7 @@ def _build_insights_context(request: Request, category_ids=None):
         "series": [
             {
                 "name": name,
-                "color": source_color(name),
+                "color": shop_color(name),
                 "data": [round(monthly_shop_raw.get(m, {}).get(name, 0), 2) for m in month_keys],
             }
             for name in top_shop_names
@@ -1196,6 +1399,10 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
             most_recent_backup = {
                 "label": mtime.strftime("%d %b, %H:%M"),
                 "size_label": size_label,
+                "age_hours": (datetime.now() - mtime).total_seconds() / 3600,
+                "when": ("today " + mtime.strftime("%H:%M")) if mtime.date() == date.today()
+                        else ("yesterday " + mtime.strftime("%H:%M")) if mtime.date() == date.today() - timedelta(days=1)
+                        else mtime.strftime("%d %b"),
             }
 
     date_changes_flash = None
@@ -1291,7 +1498,20 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
 
     active_chart_range = chart_range if chart_range in RANGE_CONFIGS else DEFAULT_CHART_RANGE
     chart_data_all = {key: build_chart_data(cur, today, key) for key in RANGE_CONFIGS}
-    chart_svg_all = {key: render_trend_svg(data, key) for key, data in chart_data_all.items()}
+    # The budget line only appears where the chart's periods match the
+    # budget cycle (months for a monthly budget, weeks for a weekly one).
+    _budget_for = {"month": monthly_budget if budget_cycle == "monthly" else None,
+                   "week": monthly_budget if budget_cycle == "weekly" else None}
+    _bars_h = 205 if _wide_layout() == "compact" else 250   # Compact draws a shorter chart
+    chart_svg_all = {key: render_bars_svg(data, key, budget=_budget_for.get(key), H=_bars_h)
+                     for key, data in chart_data_all.items()}
+    # a narrower drawing for phones, so the text stays readable
+    chart_svg_narrow = {key: render_bars_svg(data, key, budget=_budget_for.get(key), label_font_size=11, W=420, H=260)
+                        for key, data in chart_data_all.items()}
+    line_svg_all = {key: render_line_svg(data, key, budget=_budget_for.get(key), H=_bars_h)
+                    for key, data in chart_data_all.items()}
+    line_svg_narrow = {key: render_line_svg(data, key, budget=_budget_for.get(key), label_font_size=11, W=420, H=260)
+                       for key, data in chart_data_all.items()}
 
     year_stats = get_year_to_date(cur, today)
     cur.execute(
@@ -1313,7 +1533,7 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
     awaiting_charge = find_awaiting_charge(cur, today)
     all_sources = get_all_sources(cur)
     filter_tab_sources = get_filter_tab_sources(cur)
-    source_colors = {s: source_color(s) for s in all_sources}
+    source_colors = {s: shop_color(s) for s in all_sources}
     source_shipping_rates = {s: get_shipping_estimate(cur, s)[0] for s in all_sources}
 
     cur.execute("SELECT COUNT(*) AS n FROM items")
@@ -1356,6 +1576,18 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
         biggest_still_to_come["due_label"] = date.fromisoformat(biggest_still_to_come["release_date"]).strftime("%-d %b")
         biggest_still_to_come["days_until_due"] = (date.fromisoformat(biggest_still_to_come["release_date"]) - today).days
     still_to_come_count = len(still_to_come_items)
+
+    # Backup status, shown as one line in the Alerts card: quiet and green
+    # when all is well, red (and counted as needing attention) when backups
+    # are off or the last one is more than two days old.
+    if not auto_backup_on:
+        backup_state = {"ok": False, "text": "Automatic backups are off", "action": True}
+    elif most_recent_backup is None:
+        backup_state = {"ok": True, "text": "On · first backup tonight at 03:00"}
+    elif most_recent_backup["age_hours"] > 48:
+        backup_state = {"ok": False, "text": f"Last backup {int(most_recent_backup['age_hours'] // 24)} days ago"}
+    else:
+        backup_state = {"ok": True, "text": f"Last one {most_recent_backup['when']} · next tonight"}
     still_to_come_total = round(sum(i["price"] for i in still_to_come_items), 2)
 
     conn.close()
@@ -1371,6 +1603,14 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
         "week_remaining": week_remaining,
         "hero_spent_total": hero_spent_total,
         "hero_remaining_total": hero_remaining_total,
+        "hero_spent_total": hero_spent_total,
+        "hero_remaining_count": len(hero_items) - hero_spent_count,
+        "hero_days_left": (hero_end - today).days,
+        "backup_state": backup_state,
+        "chart_svg_narrow": chart_svg_narrow,
+        "line_svg_all": line_svg_all,
+        "line_svg_narrow": line_svg_narrow,
+        "attention_counts": alert_counts(cur, today),
         "hero_grand_total": hero_grand_total,
         "still_due_ring_svg": still_due_ring_svg,
         "budget_ring_svg": budget_ring_svg,
@@ -1505,11 +1745,27 @@ def _cover_price_creep(ctx):
                     mk = c["release_date"][:7]
                     month_extra[mk] = month_extra.get(mk, 0) + rise
                     total_extra += rise
+    # The chart runs from the first price rise (if that's more than a year
+    # ago) or the last 12 months, so its end point always equals the
+    # all-time total shown in the headline.
+    base_keys = [pt["month_key"] for pt in json.loads(ctx["creep_cumulative_json"])]
+    start = min([k for k in month_extra if month_extra[k] > 0] + base_keys[:1]) if base_keys else None
+    keys = []
+    if start:
+        cur = datetime.strptime(start, "%Y-%m").date()
+        last = datetime.strptime(base_keys[-1], "%Y-%m").date()
+        while cur <= last:
+            keys.append(cur.strftime("%Y-%m"))
+            cur = (cur.replace(day=28) + timedelta(days=4)).replace(day=1)
+    long_span = len(keys) > 13
     cumulative = []
     running = 0.0
-    for pt in json.loads(ctx["creep_cumulative_json"]):
-        running += month_extra.get(pt["month_key"], 0)
-        cumulative.append(dict(pt, value=round(running, 2)))
+    for i, mk in enumerate(keys):
+        running += month_extra.get(mk, 0)
+        d = datetime.strptime(mk, "%Y-%m")
+        label = d.strftime("%b") + ((" '" + d.strftime("%y")) if long_span and (i == 0 or d.month == 1) else "")
+        cumulative.append({"month_key": mk, "label": label, "value": round(running, 2)})
+    since = datetime.strptime(keys[0], "%Y-%m").strftime("%B %Y") if keys and long_span else None
 
     return {
         "all_series_stats": series_rows,
@@ -1521,6 +1777,7 @@ def _cover_price_creep(ctx):
         "creep_buckets": buckets,
         "creep_total_extra": round(total_extra, 2),
         "creep_cumulative_json": json.dumps(cumulative),
+        "creep_since": since,
     }
 
 
@@ -1619,7 +1876,7 @@ def _build_search_context(
             r["release_date_label"] = (
                 date.fromisoformat(r["release_date"]).strftime("%d %b %Y") if r["release_date"] else "no date set"
             )
-            r["source_color"] = source_color(r["source"])
+            r["source_color"] = shop_color(r["source"])
 
     conn.close()
     return {
@@ -1694,7 +1951,7 @@ def _build_calendar_context(request: Request, month: str | None = None, source: 
         [
             {
                 "source": src,
-                "color": source_color(src),
+                "color": shop_color(src),
                 "total": round(amt, 2),
                 "pct": round((amt / month_shop_total) * 100, 1),
             }
@@ -1807,7 +2064,7 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
         alert_events.append({
             "at": r["dismissed_at"],
             "kind": "duplicate",
-            "text": f'Duplicate dismissed — "{r["name"]}"',
+            "text": f'Duplicate dismissed: "{r["name"]}"',
         })
     cur.execute(
         """
@@ -1821,7 +2078,7 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
         alert_events.append({
             "at": r["changed_at"],
             "kind": "awaiting_charge",
-            "text": f'Awaiting charge resolved — "{r["name"]}" marked paid',
+            "text": f'Awaiting charge resolved: "{r["name"]}" marked paid',
         })
     cur.execute(
         """
@@ -1834,7 +2091,7 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
         alert_events.append({
             "at": r["changed_at"],
             "kind": "ghost_item",
-            "text": f'Ghost item removed — "{r["name"]}"',
+            "text": f'Ghost item removed: "{r["name"]}"',
         })
     alert_events.sort(key=lambda e: e["at"], reverse=True)
     alert_history = alert_events

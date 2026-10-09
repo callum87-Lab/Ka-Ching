@@ -95,7 +95,7 @@ app = FastAPI(title="Ka-Ching!", lifespan=_lifespan)
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
 
-APP_VERSION = "3.2.0"
+APP_VERSION = "3.3.0"
 
 
 templates.env.globals["app_version"] = APP_VERSION
@@ -746,6 +746,20 @@ def source_color(name: str) -> str:
     return SOURCE_PALETTE[h % len(SOURCE_PALETTE)]
 
 
+def shop_color(name: str) -> str:
+    """A shop's colour for the web pages, as a theme token, so every theme
+    can give shops colours that suit it (source_color() keeps the fixed
+    hex values for the Android app's API)."""
+    if name == DEFAULT_SOURCE:
+        return "var(--shop-1)"
+    if name == "eBay":
+        return "var(--shop-2)"
+    if name == "Whatnot" or name.startswith("Whatnot -"):
+        return "var(--shop-3)"
+    h = int(hashlib.md5(name.encode("utf-8")).hexdigest(), 16)
+    return "var(--shop-%d)" % (4 + h % 5)
+
+
 def _per_request(fn):
     """Work a value out once per page load. Several parts of a page (the
     bell, the Alerts card, the side panel, the sidebar budget box) need the
@@ -895,7 +909,7 @@ def group_by_date(items):
         source_groups = [
             {
                 "source": src,
-                "color": source_color(src),
+                "color": shop_color(src),
                 "entries": entries,
                 "subtotal": round(sum(i["price"] for i in entries), 2),
             }
@@ -1534,14 +1548,12 @@ templates.env.globals["sync_enabled"] = _sync_enabled
 # "preorder" marks the cards the "I don't pre-order" preset switches off.
 CARD_LAYOUT = [
     {"page": "Dashboard", "path": "/", "cards": [
-        {"id": "dash.rings", "name": "Still due & budget", "desc": "This month's still-due and budget rings", "preorder": True},
-        {"id": "dash.year", "name": "Your spending", "desc": "This year and all time, and this year's share", "essential": True},
+        {"id": "dash.hero", "name": "This month", "desc": "Still due, budget, and the biggest thing still to come", "essential": True},
+        {"id": "dash.figures", "name": "Key figures", "desc": "This year, all time, still on order, and what needs attention", "essential": True},
         {"id": "dash.catbudget", "name": "Budget by category", "desc": "This cycle's spend split by category, with any limits"},
         {"id": "dash.week", "name": "This week", "desc": "What's due in the next 7 days, by shipment", "preorder": True},
-        {"id": "dash.alerts", "name": "Alerts", "desc": "Awaiting charge, duplicates, ghost items", "essential": True},
-        {"id": "dash.backup", "name": "Backup", "desc": "When the last backup was taken"},
-        {"id": "dash.stillorder", "name": "Biggest still to come", "desc": "Priciest item not yet released, and your total still on order", "preorder": True},
-        {"id": "dash.trend", "name": "Spend trend", "desc": "Week / Month / 6M chart", "essential": True},
+        {"id": "dash.alerts", "name": "Alerts", "desc": "Awaiting charge, duplicates, ghost items, and backups", "essential": True},
+        {"id": "dash.trend", "name": "Spending", "desc": "Spend per week or month, with your budget", "essential": True},
     ]},
     {"page": "Calendar", "path": "/calendar", "cards": [
         {"id": "cal.mini", "name": "Mini calendar & spend by shop", "desc": "Small month view and this month's shop split"},
@@ -1587,34 +1599,17 @@ CARD_LAYOUT = [
 CARD_IDS = {c["id"] for pg in CARD_LAYOUT for c in pg["cards"]}
 
 
-# Wide landscape screens (1900px+) only. "columns" lays cards out three to
-# a row using these widths (out of 12); "panel" adds the At a glance column.
-WIDE_LAYOUTS = ("standard", "columns", "panel")
-
-
-WIDE_SPANS = {
-    "dash.rings": 4, "dash.year": 4, "dash.alerts": 4, "dash.week": 8, "dash.backup": 4,
-    "dash.catbudget": 12, "dash.stillorder": 12, "dash.trend": 12,
-    "cal.mini": 3, "cal.big": 9, "cal.heatmap": 12, "cal.list": 12,
-    "ov.ratio": 4, "ov.releases": 8, "ov.spend": 8, "ov.issue": 4, "ov.dist": 4, "ov.ship": 4,
-    "ov.cum": 4, "ov.cat": 12, "ov.trend": 12,
-    "shop.stats": 12, "shop.donut": 4, "shop.breakdown": 8, "shop.compare": 12, "shop.overtime": 12,
-    "creep.stats": 12, "creep.hero": 4, "creep.dist": 8, "creep.table": 12, "creep.chart": 12,
-    "titles.stats": 12, "titles.hero": 4, "titles.priciest": 8, "titles.series": 12, "titles.compare": 12,
-}
-
-
-# Default order in three columns where it differs from the normal one
-WIDE_ORDER = {
-    "/": ["dash.rings", "dash.year", "dash.alerts", "dash.week", "dash.backup",
-          "dash.catbudget", "dash.stillorder", "dash.trend"],
-}
+# Settings -> Appearance -> Layout. "compact" tightens every page (any screen
+# size); "panel" adds the At a glance column on wide landscape screens.
+WIDE_LAYOUTS = ("standard", "compact", "panel")
 
 
 def _wide_layout():
     conn = db.get_db()
     v = notifications.get_setting(conn.cursor(), "wide_layout", "standard")
     conn.close()
+    if v == "columns":      # Three columns was replaced by Compact in v3.3
+        v = "compact"
     return v if v in WIDE_LAYOUTS else "standard"
 
 
@@ -1661,10 +1656,75 @@ def _glance():
 templates.env.globals["wide_layout"] = _wide_layout
 
 
+# ---------------------------------------------------------------------------
+# Appearance: three themes, each with its own set of accent colours. The
+# accents are a fixed, contrast-checked list per theme (not a free colour
+# picker), so text and charts stay readable whichever one is chosen, and
+# warning colours (over budget, unpaid) never change.
+# ---------------------------------------------------------------------------
+UI_THEMES = {
+    "sand": {
+        "name": "Sand", "chrome": "#f6f3ec", "default": "cyprus",
+        "accents": [("cyprus", "Cyprus", "#004643"), ("persian", "Persian", "#27187e"),
+                    ("plum", "Plum", "#5b2149"), ("forest", "Forest", "#1f5133"),
+                    ("ink", "Ink", "#1f2a44"), ("clay", "Clay", "#8a4b2a")],
+    },
+    "grey": {
+        "name": "Grey", "chrome": "#1c1e22", "default": "ice",
+        "accents": [("ice", "Ice blue", "#7dd3fc"), ("mint", "Mint", "#5eead4"),
+                    ("lilac", "Lilac", "#a5b4fc"), ("lime", "Lime", "#bef264"),
+                    ("rose", "Rose", "#fda4af"), ("white", "White", "#f4f4f5")],
+    },
+    "blue": {
+        "name": "Blue", "chrome": "#0b2350", "default": "aqua",
+        "accents": [("aqua", "Aqua", "#67e8f9"), ("mint", "Mint", "#6ee7b7"),
+                    ("ice", "Ice", "#bae6fd"), ("lilac", "Lilac", "#c4b5fd"),
+                    ("rose", "Rose", "#fda4af"), ("silver", "Silver", "#e2e8f0")],
+    },
+    "noir": {
+        "name": "Noir", "chrome": "#0e0e0d", "default": "gold",
+        "accents": [("gold", "Gold", "#c9a25b"), ("champagne", "Champagne", "#e3cf9f"),
+                    ("rosegold", "Rose gold", "#d8a48f"), ("silver", "Silver", "#c9ccd1"),
+                    ("kiwi", "Kiwi", "#9fd83a"), ("ivory", "Ivory", "#f0eadb")],
+    },
+}
+DEFAULT_UI_THEME = "sand"
+RETIRED_UI_THEMES = {"white": "sand"}     # White was replaced by Sand in v3.3
+
+
+def resolve_ui_theme(theme, accent):
+    """A valid (theme, accent id, accent colour) from stored values -
+    anything unknown falls back to the defaults."""
+    if theme in RETIRED_UI_THEMES:
+        theme, accent = RETIRED_UI_THEMES[theme], ""
+    if theme not in UI_THEMES:
+        theme = DEFAULT_UI_THEME
+    accents = UI_THEMES[theme]["accents"]
+    by_id = {a[0]: a for a in accents}
+    if accent not in by_id:
+        accent = UI_THEMES[theme]["default"]
+    return theme, accent, by_id[accent][2]
+
+
+@_per_request
+def _ui_theme():
+    conn = db.get_db()
+    cur = conn.cursor()
+    theme, accent_id, accent = resolve_ui_theme(
+        notifications.get_setting(cur, "ui_theme", DEFAULT_UI_THEME),
+        notifications.get_setting(cur, "ui_accent", ""),
+    )
+    conn.close()
+    return {"theme": theme, "accent_id": accent_id, "accent": accent, "chrome": UI_THEMES[theme]["chrome"]}
+
+
+templates.env.globals["ui_theme"] = _ui_theme
+templates.env.globals["UI_THEMES"] = UI_THEMES
+
+
 templates.env.globals["glance"] = _glance
 
 
-templates.env.globals["wide_layout_json"] = lambda: json.dumps({"spans": WIDE_SPANS, "order": WIDE_ORDER})
 
 
 def _hidden_cards():

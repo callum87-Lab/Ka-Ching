@@ -26,12 +26,26 @@ def _safe_next(value, default="/"):
     return default if target.startswith("/login") else target
 
 
+def _attempts(ip):
+    """(tries left before the lock, seconds until the lock lifts)."""
+    now = datetime.now().timestamp()
+    recent = sorted(t for t in _login_fails.get(ip, []) if now - t < LOGIN_LOCK_SECONDS)
+    _login_fails[ip] = recent
+    left = max(0, LOGIN_MAX_FAILS - len(recent))
+    wait = 0
+    if len(recent) >= LOGIN_MAX_FAILS:
+        wait = max(1, int(LOGIN_LOCK_SECONDS - (now - recent[-LOGIN_MAX_FAILS])) + 1)
+    return left, wait
+
+
 @app.get("/login")
 def login_page(request: Request, next: str = "/", error: str | None = None):
     if not login_enabled():
         return RedirectResponse(url=_safe_next(next), status_code=303)
-    locked = _locked_out(_client_ip(request))
-    return render("login.html", {"request": request, "next": _safe_next(next), "error": error, "locked": locked})
+    tries_left, lock_wait = _attempts(_client_ip(request))
+    return render("login.html", {"request": request, "next": _safe_next(next), "error": error,
+                                 "locked": lock_wait > 0, "lock_wait": lock_wait, "tries_left": tries_left,
+                                 "env_password": bool(_env_password())})
 
 
 @app.post("/login")

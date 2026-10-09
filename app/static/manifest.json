@@ -1,13 +1,15 @@
 {
   "name": "Ka-Ching!",
   "short_name": "Ka-Ching!",
-  "description": "Comic pre-order budget tracker",
+  "description": "Track what your collecting costs: what's due, and how it compares to your budget",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#060a17",
-  "theme_color": "#0a1224",
+  "background_color": "#0b2350",
+  "theme_color": "#0b2350",
   "icons": [
-    { "src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/static/img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/static/img/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

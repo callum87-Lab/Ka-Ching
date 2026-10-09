@@ -26,19 +26,19 @@
   .cat-spend-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .cat-spend-name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cat-spend-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
-  .cat-spend-track { height: 10px; border-radius: 6px; background: rgba(255,255,255,0.05); overflow: hidden; }
+  .cat-spend-track { height: 10px; border-radius: 6px; background: color-mix(in srgb, var(--text) 5%, transparent); overflow: hidden; }
   .cat-spend-fill { height: 100%; border-radius: 6px; }
   .cat-spend-amount { text-align: right; }
   @media (max-width: 700px) { .cat-spend-row { grid-template-columns: 120px 1fr 80px; gap: 10px; font-size: 13px; } }
   .trend-pill { font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-top: 4px; display: inline-block; }
-  .trend-up { color: var(--neon-pink); background: rgba(255,77,141,0.10); }
-  .trend-down { color: var(--neon-green); background: rgba(60,242,166,0.10); }
+  .trend-up { color: var(--neon-pink); background: color-mix(in srgb, var(--neon-pink) 10%, transparent); }
+  .trend-down { color: var(--neon-green); background: color-mix(in srgb, var(--neon-green) 10%, transparent); }
 
   .full-bar-row { margin-top: 14px; }
   .full-bar-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
-  .full-bar-track { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .full-bar-track { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; }
   .full-bar-fill { height: 100%; border-radius: 4px; }
-  .split-bar-track { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.06); }
+  .split-bar-track { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--text) 6%, transparent); }
 
   .coming-mini-title { font-size: 12.5px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin: 14px 0 8px; border-top: 1px solid var(--border); padding-top: 12px; }
   .coming-mini-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13.5px; }
@@ -69,11 +69,11 @@
   .cm-sub { font-size: 13px; color: var(--text-muted); }
   .cm-over { color: var(--neon-pink); font-weight: 700; }
   .cm-under { color: var(--neon-green); font-weight: 700; }
-  .cm-bar { position: relative; height: 14px; border-radius: 999px; background: rgba(255,255,255,0.05); margin: 12px 0 6px; }
+  .cm-bar { position: relative; height: 14px; border-radius: 999px; background: color-mix(in srgb, var(--text) 5%, transparent); margin: 12px 0 6px; }
   .cm-bar .seg { position: absolute; top: 0; height: 100%; }
-  .cm-bar .spent { left: 0; background: linear-gradient(90deg, var(--neon-blue), var(--neon-violet)); border-radius: 999px 0 0 999px; box-shadow: 0 0 10px rgba(47,216,255,0.35); }
+  .cm-bar .spent { left: 0; background: linear-gradient(90deg, var(--neon-blue), var(--neon-violet)); border-radius: 999px 0 0 999px; box-shadow: 0 0 10px color-mix(in srgb, var(--neon-blue) 35%, transparent); }
   .cm-bar .spent.full { border-radius: 999px; }
-  .cm-bar .due { background: repeating-linear-gradient(135deg, rgba(47,216,255,0.35) 0 5px, rgba(47,216,255,0.12) 5px 10px); }
+  .cm-bar .due { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--neon-blue) 35%, transparent) 0 5px, color-mix(in srgb, var(--neon-blue) 12%, transparent) 5px 10px); }
   .cm-bar .due.end { border-radius: 0 999px 999px 0; }
   .cm-bar .due.only { border-radius: 999px; }
   .cm-bar .mark { position: absolute; top: -5px; width: 2px; height: 24px; background: var(--neon-pink); border-radius: 2px; }
@@ -84,7 +84,7 @@
   .cm-bar-lbls { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-muted); }
   .cm-chart { position: relative; margin-top: 8px; }
   .cm-chart svg { display: block; width: 100%; height: auto; cursor: crosshair; }
-  .cm-tip { position: absolute; top: 6px; pointer-events: none; background: #0b1428; border: 1px solid var(--border-strong); border-radius: 10px; padding: 9px 11px; font-size: 12.5px; min-width: 190px; max-width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none; z-index: 5; }
+  .cm-tip { position: absolute; top: 6px; pointer-events: none; background: var(--bg-1); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 11px; font-size: 12.5px; min-width: 190px; max-width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none; z-index: 5; }
   .cm-tip .t { font-weight: 700; margin-bottom: 4px; }
   .cm-tip .r { display: flex; justify-content: space-between; gap: 14px; color: var(--text-muted); }
   .cm-tip .r b { color: var(--text); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -116,7 +116,7 @@
 </div>
 
 {% if not has_data %}
-<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">Nothing tracked yet &mdash; insights will show up here once you've logged some orders.</div></div>
+<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">Nothing tracked yet. Insights will show up here once you've logged some orders.</div></div>
 {% else %}
 
 <div class="grid">
@@ -140,7 +140,7 @@
       <div style="display:flex; align-items:center; gap:8px; font-size:12.5px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--neon-violet);display:inline-block;"></span>Released<span class="mono" style="margin-left:auto; color:var(--neon-violet); font-weight:700;">{{ released_pct }}%</span></div>
       <div style="padding-left:20px; font-size:12.5px; color:var(--text-dim);">{{ released_count }} of {{ total_issues }} items, already out</div>
     </div>
-    <div class="card-note" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">{{ preorder_pct }}% of what you're tracking is still to come &mdash; {{ preorder_count }} issue{{ "s" if preorder_count != 1 else "" }} on order, not yet released.</div>
+    <div class="card-note" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">{{ preorder_pct }}% of what you're tracking is still to come: {{ preorder_count }} issue{{ "s" if preorder_count != 1 else "" }} on order, not yet released.</div>
   </div>
 
   <div class="card overview-card" data-card="ov.releases">
@@ -223,7 +223,7 @@
       <div class="full-bar-label"><span>Items vs shipping, all time</span><span>{{ currency() }}{{ "{:,.2f}".format(total_all_comics) }} items &middot; {{ currency() }}{{ "{:,.2f}".format(total_all_shipping) }} shipping</span></div>
       <div class="split-bar-track"><div style="width:{{ comics_share_pct }}%;background:var(--neon-blue);"></div><div style="width:{{ shipping_share_pct }}%;background:var(--neon-pink);"></div></div>
     </div>
-    {% if priciest_item %}<a class="card-note" style="color:var(--neon-blue); text-decoration:none;" href="/items/{{ priciest_item.id }}/edit">Edit priciest item &rarr;</a>{% endif %}
+    {% if priciest_item %}<a class="card-note" style="color:var(--neon-blue); text-decoration:none;" href="/items/{{ priciest_item.id }}/edit">Edit priciest item</a>{% endif %}
   </div>
 
   <div class="card dist-card" data-card="ov.dist">
@@ -250,7 +250,7 @@
       <div class="weekday-bar-wrap">
         <div class="weekday-bar" style="height:{{ w.bar_pct }}%; display:flex; flex-direction:column-reverse; overflow:hidden;">
           {% for seg in w.segments %}
-          <div class="weekday-bar-seg" data-shop="{{ seg.shop }}" style="height:{{ seg.pct_of_day }}%; background:{{ weekday_shop_colors.get(seg.shop, '#7c89ad') }};" title="{{ seg.shop }}: {{ seg.count }}"></div>
+          <div class="weekday-bar-seg" data-shop="{{ seg.shop }}" style="height:{{ seg.pct_of_day }}%; background:{{ weekday_shop_colors.get(seg.shop, 'var(--text-muted)') }};" title="{{ seg.shop }}: {{ seg.count }}"></div>
           {% endfor %}
         </div>
         <span class="weekday-label">{{ w.label }}</span>
@@ -260,7 +260,7 @@
     {% if weekday_shops %}
     <div class="trend-toggles shop-toggles-row" style="margin-top:12px;">
       {% for shop in weekday_shops %}
-      <label class="trend-toggle-row trend-toggle-checked shop-toggle" data-shop-label="{{ shop }}" style="--shop-color: {{ weekday_shop_colors.get(shop, '#7c89ad') }};"><span class="toggle"><input type="checkbox" data-shop-toggle="{{ shop }}" checked><span class="toggle-track"></span></span><span class="trend-toggle-label">{{ shop.split(' - ')[0] }}</span></label>
+      <label class="trend-toggle-row trend-toggle-checked shop-toggle" data-shop-label="{{ shop }}" style="--shop-color: {{ weekday_shop_colors.get(shop, 'var(--text-muted)') }};"><span class="toggle"><input type="checkbox" data-shop-toggle="{{ shop }}" checked><span class="toggle-track"></span></span><span class="trend-toggle-label">{{ shop.split(' - ')[0] }}</span></label>
       {% endfor %}
     </div>
     {% endif %}
@@ -439,38 +439,38 @@
     var ticks = niceTicks(Math.max(maxV, 1) * 1.15); maxV = ticks[ticks.length - 1];
     var x = function (d) { return pad.l + (d - 1) * (W - pad.l - pad.r) / (M.days_in_month - 1); };
     var y = function (v) { return pad.t + (H - pad.t - pad.b) * (1 - v / maxV); };
-    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '"><defs><linearGradient id="cm-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2fd8ff"/><stop offset="1" stop-color="#9b7bff"/></linearGradient></defs>';
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '"><defs><linearGradient id="cm-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--neon-blue)"/><stop offset="1" stop-color="var(--neon-violet)"/></linearGradient></defs>';
     ticks.forEach(function (t) {
-      s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="rgba(94,156,255,.10)"/>' +
-           '<text x="' + (pad.l - 8) + '" y="' + (y(t) + 4) + '" fill="#566089" font-size="10.5" text-anchor="end" font-family="ui-monospace,Menlo,monospace">' + CUR + t + '</text>';
+      s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="color-mix(in srgb, var(--text) 5.5%, transparent)"/>' +
+           '<text x="' + (pad.l - 8) + '" y="' + (y(t) + 4) + '" fill="var(--text-dim)" font-size="10.5" text-anchor="end" font-family="ui-monospace,Menlo,monospace">' + CUR + t + '</text>';
     });
     [1, 5, 10, 15, 20, 25, M.days_in_month].forEach(function (d) {
       var isT = d === M.today;
-      s += '<text x="' + x(d) + '" y="' + (H - 6) + '" fill="' + (isT ? '#2fd8ff' : '#566089') + '" font-size="10.5" text-anchor="middle" font-weight="' + (isT ? 700 : 400) + '">' + d + '</text>';
+      s += '<text x="' + x(d) + '" y="' + (H - 6) + '" fill="' + (isT ? 'var(--neon-blue)' : 'var(--text-dim)') + '" font-size="10.5" text-anchor="middle" font-weight="' + (isT ? 700 : 400) + '">' + d + '</text>';
     });
     if ([1, 5, 10, 15, 20, 25, M.days_in_month].indexOf(M.today) === -1)
-      s += '<text x="' + x(M.today) + '" y="' + (H - 6) + '" fill="#2fd8ff" font-size="10.5" text-anchor="middle" font-weight="700">' + M.today + '</text>';
+      s += '<text x="' + x(M.today) + '" y="' + (H - 6) + '" fill="var(--neon-blue)" font-size="10.5" text-anchor="middle" font-weight="700">' + M.today + '</text>';
     var bw = Math.max(6, (W - pad.l - pad.r) / M.days_in_month * (narrow ? 0.9 : 0.62));
     for (var d = 1; d <= M.days_in_month; d++) {
       var e = M.days[iso(d)]; if (!e) continue;
       var fut = d > M.today, vals = [];
       if (sTotal) vals = [[e.items + e.ship, 'url(#cm-grad)']];
-      else { if (sItems) vals.push([e.items, '#3cf2a6']); if (sShip) vals.push([e.ship, '#ff4d8d']); }
+      else { if (sItems) vals.push([e.items, 'var(--neon-green)']); if (sShip) vals.push([e.ship, 'var(--neon-pink)']); }
       var base = 0;
       vals.forEach(function (v) {
         var y0 = y(base + v[0]), hh = y(base) - y0;
         s += '<rect x="' + (x(d) - bw / 2) + '" y="' + y0 + '" width="' + bw + '" height="' + Math.max(hh, 1) + '" rx="3" fill="' + v[1] + '" opacity="' + (fut ? 0.35 : 0.9) + '"' +
-             (fut ? ' stroke="#2fd8ff" stroke-opacity=".8" stroke-width="1"' : '') + '/>';
+             (fut ? ' stroke="var(--neon-blue)" stroke-opacity=".8" stroke-width="1"' : '') + '/>';
         base += v[0];
       });
     }
-    s += '<line x1="' + x(M.today) + '" x2="' + x(M.today) + '" y1="' + pad.t + '" y2="' + (H - pad.b) + '" stroke="rgba(47,216,255,.35)" stroke-dasharray="2 3"/>';
+    s += '<line x1="' + x(M.today) + '" x2="' + x(M.today) + '" y1="' + pad.t + '" y2="' + (H - pad.b) + '" stroke="color-mix(in srgb, var(--neon-blue) 35%, transparent)" stroke-dasharray="2 3"/>';
     s += '<line class="cm-hover" x1="0" x2="0" y1="' + pad.t + '" y2="' + (H - pad.b) + '" stroke="rgba(231,236,250,.35)" style="display:none"/></svg>';
     h += '<div class="cm-chart"><div class="cm-tip"></div>' + s + '</div>';
 
-    var leg = '<span><i style="background:' + (sTotal ? 'linear-gradient(#2fd8ff,#9b7bff)' : (sItems ? '#3cf2a6' : '#ff4d8d')) + '"></i>Spent that day</span>';
-    if (!sTotal && sItems && sShip) leg = '<span><i style="background:#3cf2a6"></i>Items</span><span><i style="background:#ff4d8d"></i>Shipping</span>';
-    if (due > 0.005) leg += '<span><i style="border:1px solid #2fd8ff;background:rgba(47,216,255,.2)"></i>Scheduled</span>';
+    var leg = '<span><i style="background:' + (sTotal ? 'linear-gradient(var(--neon-blue),var(--neon-violet))' : (sItems ? 'var(--neon-green)' : 'var(--neon-pink)')) + '"></i>Spent that day</span>';
+    if (!sTotal && sItems && sShip) leg = '<span><i style="background:var(--neon-green)"></i>Items</span><span><i style="background:var(--neon-pink)"></i>Shipping</span>';
+    if (due > 0.005) leg += '<span><i style="border:1px solid var(--neon-blue);background:color-mix(in srgb, var(--neon-blue) 20%, transparent)"></i>Scheduled</span>';
     if (M.budget) leg += '<span><i style="background:var(--neon-pink);width:3px;border-radius:2px"></i>Budget mark</span>';
     h += '<div class="cm-legend">' + leg + '</div>';
     body.innerHTML = h;
