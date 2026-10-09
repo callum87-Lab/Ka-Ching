@@ -751,7 +751,7 @@ The app exposes a small JSON endpoint at `/api/summary`:
 
 ```bash
 export NTFY_TOPIC=kaching           # required
-export KACHING_URL=http://192.168.0.178:8091   # default shown, override if needed
+export KACHING_URL=http://localhost:8091   # default shown, override if needed
 export NTFY_URL=https://ntfy.sh     # default shown, point at your own ntfy server if self-hosted
 
 ./scripts/ntfy-digest.sh weekly     # "This week: £27.88 across 3 issue(s)."

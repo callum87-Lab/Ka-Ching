@@ -8,7 +8,7 @@
 #
 # Config via environment variables (set these before calling, or export
 # them in the crontab / a wrapper script):
-#   KACHING_URL   - where Ka-Ching! is reachable (default: http://192.168.0.178:8091)
+#   KACHING_URL   - where Ka-Ching! is reachable (default: http://localhost:8091)
 #   NTFY_URL      - your ntfy server (default: https://ntfy.sh)
 #   NTFY_TOPIC    - required, your ntfy topic name
 #
@@ -22,7 +22,7 @@
 set -euo pipefail
 
 MODE="${1:-weekly}"
-KACHING_URL="${KACHING_URL:-http://192.168.0.178:8091}"
+KACHING_URL="${KACHING_URL:-http://localhost:8091}"
 NTFY_URL="${NTFY_URL:-https://ntfy.sh}"
 NTFY_TOPIC="${NTFY_TOPIC:?Set NTFY_TOPIC to your ntfy topic name}"
 
