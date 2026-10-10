@@ -278,6 +278,35 @@ async def save_layout(request: Request):
     return {"ok": True, "hidden": hidden}
 
 
+@app.post("/settings/tracking")
+async def save_tracking(request: Request):
+    """What you track. "save" stores the kinds and the pre-order answer and
+    updates only the cards those decide (your other toggles stay as they
+    are); "reset" puts every card back to the preset."""
+    form = await request.form()
+    kinds = [k for k in db.KINDS if k in form.getlist("kinds")]
+    preorder = form.get("preorder", "yes") != "no"
+    action = form.get("action", "save")
+    conn = db.get_db()
+    cur = conn.cursor()
+    notifications.set_setting(cur, "tracking_types", json.dumps(kinds))
+    notifications.set_setting(cur, "tracking_preorder", "yes" if preorder else "no")
+    preset = preset_hidden(kinds, preorder)
+    try:
+        current = set(json.loads(notifications.get_setting(cur, "hidden_cards", "[]")))
+    except (ValueError, TypeError):
+        current = set()
+    if action == "reset":
+        hidden = preset
+    else:
+        decided = set(TYPE_CARDS) | set(_preorder_cards())
+        hidden = (current - decided) | preset
+    notifications.set_setting(cur, "hidden_cards", json.dumps(sorted(h for h in hidden if h in CARD_IDS)))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=safe_redirect(form.get("next"), "/settings#layout"), status_code=303)
+
+
 @app.get("/settings")
 def settings_v2(
     request: Request,

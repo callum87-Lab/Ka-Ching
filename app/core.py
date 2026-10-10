@@ -1664,6 +1664,7 @@ CARD_LAYOUT = [
         {"id": "shop.overtime", "name": "Spend by shop over time", "desc": "6 / 12 month chart"},
     ]},
     {"page": "Insights \u00b7 Price creep", "path": "/insights/price-creep", "cards": [
+        {"id": "page.creep", "name": "Show this page", "desc": "Price creep in the sidebar (comics and manga: needs issue numbers)", "page_toggle": True},
         {"id": "creep.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
         {"id": "creep.hero", "name": "Biggest jumper", "desc": "The series with the steepest rise"},
         {"id": "creep.dist", "name": "Increase distribution", "desc": "Series by size of increase"},
@@ -1671,6 +1672,7 @@ CARD_LAYOUT = [
         {"id": "creep.chart", "name": "Extra spend from creep", "desc": "Running total chart"},
     ]},
     {"page": "Insights \u00b7 Top titles", "path": "/insights/top-titles", "cards": [
+        {"id": "page.titles", "name": "Show this page", "desc": "Top titles in the sidebar", "page_toggle": True},
         {"id": "titles.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
         {"id": "titles.hero", "name": "Priciest item tracked", "desc": "Your single priciest item"},
         {"id": "titles.priciest", "name": "Priciest items, all time", "desc": "Top items by price", "essential": True},
@@ -1809,6 +1811,90 @@ templates.env.globals["UI_THEMES"] = UI_THEMES
 templates.env.globals["glance"] = _glance
 
 
+
+
+# ---------------------------------------------------------------------------
+# What you track (Settings -> Appearance): presets per kind. Only these
+# cards depend on the kinds picked; pre-order cards follow the pre-order
+# answer; everything else is on in every preset.
+# ---------------------------------------------------------------------------
+TYPE_CARDS = ("page.creep", "page.titles", "titles.series", "titles.compare")
+
+
+def _preorder_cards():
+    return [c["id"] for pg in CARD_LAYOUT for c in pg["cards"] if c.get("preorder")]
+
+
+def preset_hidden(kinds, preorder=True):
+    """The cards a preset hides, for the kinds picked and the pre-order
+    answer. Nothing picked hides nothing."""
+    kinds = [k for k in (kinds or []) if k in db.KINDS]
+    hidden = set()
+    if kinds:
+        if not any(db.KINDS[k]["numbered"] for k in kinds):
+            hidden.add("page.creep")
+        if all(k == db.DEFAULT_KIND for k in kinds):
+            hidden.update(("page.titles", "titles.series", "titles.compare"))
+        elif not any(k in ("comics", "manga", "cards") for k in kinds):
+            hidden.add("titles.compare")
+    if not preorder:
+        hidden.update(_preorder_cards())
+    return hidden
+
+
+def _tracking():
+    """{"kinds": [...], "preorder": bool, "saved": bool}. Until it's been
+    saved, the kinds are worked out from the categories in use and
+    pre-order from whether its cards are showing."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    raw = notifications.get_setting(cur, "tracking_types", "")
+    pre = notifications.get_setting(cur, "tracking_preorder", "")
+    kinds, saved = [], False
+    try:
+        kinds = [k for k in json.loads(raw) if k in db.KINDS] if raw else []
+        saved = bool(raw)
+    except (ValueError, TypeError):
+        kinds = []
+    if not saved:
+        rows = cur.execute(
+            """
+            SELECT DISTINCT COALESCE(c.kind, ?) FROM items i JOIN categories c ON c.id = i.category_id
+            WHERE i.status != 'cancelled' AND i.deleted_at IS NULL
+            """, (db.DEFAULT_KIND,)).fetchall()
+        kinds = [k for k in db.KINDS if k in {r[0] for r in rows}]
+    conn.close()
+    if pre in ("yes", "no"):
+        preorder = pre == "yes"
+    else:
+        preorder = not set(_preorder_cards()) <= set(_hidden_cards())
+    return {"kinds": kinds, "preorder": preorder, "saved": saved}
+
+
+def nav_titles_label():
+    """Top titles' sidebar name: "Top sets" etc. when everything tracked
+    shares one group word (other than Series), otherwise "Top titles"."""
+    groups = {db.KINDS[k]["group"] for k in _tracking()["kinds"]}
+    if len(groups) == 1:
+        g = groups.pop()
+        if g != "Series":   # comics and manga keep the familiar name
+            return "Top " + g.lower() + "s"
+    return "Top titles"
+
+
+def _tracking_summary():
+    """For the What you track card: the preset's name and which cards
+    differ from it right now."""
+    tr = _tracking()
+    preset = preset_hidden(tr["kinds"], tr["preorder"])
+    changed = sorted(set(_hidden_cards()) ^ preset)
+    return dict(tr, names=" + ".join(db.KINDS[k]["name"] for k in tr["kinds"]), changed=changed)
+
+
+templates.env.globals["tracking_summary"] = _tracking_summary
+templates.env.globals["tracking"] = _tracking
+templates.env.globals["preset_hidden"] = preset_hidden
+templates.env.globals["nav_titles_label"] = nav_titles_label
 
 
 def _hidden_cards():

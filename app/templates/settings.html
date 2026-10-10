@@ -83,6 +83,24 @@
   .wide-head { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; margin: 14px 0 4px; }
   .wide-choices .layout-preset { cursor: pointer; font-family: inherit; }
   /* every option box in a row the same height, whatever its text */
+  .track-types { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 6px 0 14px; }
+  .track-type { position: relative; display: block; border: 1px solid var(--border); background: var(--input-bg); border-radius: var(--radius-md); padding: 11px 36px 11px 14px; cursor: pointer; transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease); }
+  .track-type:hover { border-color: var(--border-strong); }
+  .track-type input { position: absolute; opacity: 0; pointer-events: none; }
+  .track-type b { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+  .track-type span { display: block; font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+  .track-type .tick { position: absolute; top: 11px; right: 12px; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-strong); }
+  .track-type:has(input:checked) { border-color: var(--neon-blue); box-shadow: 0 0 0 1px var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 5%, var(--input-bg)); }
+  .track-type:has(input:checked) .tick { background: var(--neon-blue); border-color: var(--neon-blue); }
+  .track-type:has(input:checked) .tick::after { content: ""; position: absolute; left: 5px; top: 2px; width: 5px; height: 9px; border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .track-type:has(input:focus-visible) { outline: 2px solid var(--neon-blue); outline-offset: 2px; }
+  .track-pre { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .track-pre > span { font-weight: 600; }
+  .track-pre label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; color: var(--text-muted); }
+  .track-pre input { accent-color: var(--neon-blue); }
+  .track-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+  .track-status { font-size: 13.5px; color: var(--text-muted); }
+  .track-status b { color: var(--text); }
   .layout-presets { align-items: stretch; }
   .layout-preset { height: 100%; min-height: 72px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .layout-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 6px 0 18px; }
@@ -454,6 +472,33 @@
       </form>
     </div>
 
+    <div class="card settings-card" id="tracking-card">
+      {% set _tr = tracking_summary() %}
+      {% set _changed = _tr.changed %}
+      <div class="card-title" style="margin-bottom:4px;">What you track</div>
+      <p class="warn-hint">Pick everything you collect. Ka-Ching! uses the right words for each (series, set, line&hellip;) and switches on the pages and cards that suit it. You can still turn any card on or off under <b style="color:var(--text);">Cards on each page</b> below.</p>
+      <form method="post" action="/settings/tracking">
+        <input type="hidden" name="next" value="/settings#layout">
+        <div class="track-types">
+          {% for k, info in KINDS.items() %}
+          <label class="track-type"><input type="checkbox" name="kinds" value="{{ k }}"{{ ' checked' if k in _tr.kinds else '' }}><i class="tick" aria-hidden="true"></i><b>{{ info.name }}</b><span>{{ info.examples }}</span></label>
+          {% endfor %}
+        </div>
+        <div class="track-pre">
+          <span>Do you pre-order?</span>
+          <label><input type="radio" name="preorder" value="yes"{{ ' checked' if _tr.preorder else '' }}> Yes</label>
+          <label><input type="radio" name="preorder" value="no"{{ '' if _tr.preorder else ' checked' }}> No, I buy things already out</label>
+        </div>
+        <div class="track-foot">
+          <span class="track-status">{% if _tr.kinds %}Preset: <b>{{ _tr.names }}</b>{% else %}Nothing picked: every card is on{% endif %}{% if _changed %} &middot; {{ _changed|length }} card{{ 's' if _changed|length != 1 else '' }} changed by you{% endif %}</span>
+          <span style="flex:1"></span>
+          {% if _changed %}<button type="submit" name="action" value="reset" class="btn-secondary">Reset cards to preset</button>{% endif %}
+          <button type="submit" name="action" value="save" class="submit-btn" style="margin-top:0;">Save</button>
+        </div>
+        <p class="warn-hint" style="margin:10px 0 0;">Saving only changes the cards your picks decide (Price creep, Top titles and the pre-order cards). Reset puts every card back to the preset.</p>
+      </form>
+    </div>
+
     <div class="card settings-card" id="layout-card">
       <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Layout</div>
       <p class="warn-hint">Choose which cards show on each page. Changes apply straight away. You can also use &#9881; Customise on each page.</p>
@@ -467,11 +512,6 @@
         <button type="submit" name="layout" value="panel" class="layout-preset{{ ' sel' if _wl == 'panel' else '' }}"><b>Side panel</b><span>An "At a glance" column on the right of every page, on wide screens</span></button>
       </form>
       <div class="wide-head" style="margin-top:22px;">Cards on each page</div>
-      <div class="layout-presets">
-        <button type="button" class="layout-preset" data-preset="all"><b>Everything</b><span>Every card on every page</span></button>
-        <button type="button" class="layout-preset" data-preset="nopre"><b>I don't pre-order</b><span>Hides still-due, this week and on-order cards</span></button>
-        <button type="button" class="layout-preset" data-preset="essential"><b>Just the essentials</b><span>Totals, alerts, trends and the main lists</span></button>
-      </div>
       {% set _hid = hidden_cards() %}
       <div class="layout-md">
         <div class="layout-pages" role="tablist">
