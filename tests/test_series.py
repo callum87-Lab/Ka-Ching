@@ -91,3 +91,52 @@ def test_csv_export_has_series_column(client, fresh_db):
     add_item(fresh_db, "Star Wars: Jedi Knights #3", 3.99, 5)
     csv_text = client.get("/settings/export-all.csv").text
     assert "Series / Set" in csv_text.splitlines()[0] and "Star Wars: Jedi Knights" in csv_text.splitlines()[1]
+
+
+def _set_series(path, name, series):
+    conn = sqlite3.connect(path)
+    conn.execute("UPDATE items SET series = ? WHERE name = ?", (series, name))
+    conn.commit(); conn.close()
+
+
+def _cat(path, name):
+    return _q(path, "SELECT id FROM categories WHERE name = ?", name)[0][0]
+
+
+def test_top_titles_groups_cards_by_set(client, fresh_db):
+    cards = _cat(fresh_db, "Pokémon sealed products")
+    add_item(fresh_db, "Fusion Strike ETB", 44.99, -30, category=cards)
+    add_item(fresh_db, "Fusion Strike booster bundle", 24.99, -30, category=cards)
+    add_item(fresh_db, "Silver Tempest ETB", 39.99, -60, category=cards)
+    add_item(fresh_db, "Mystery tin", 19.99, -10, category=cards)
+    _set_series(fresh_db, "Fusion Strike ETB", "Fusion Strike")
+    _set_series(fresh_db, "Fusion Strike booster bundle", "Fusion Strike")
+    _set_series(fresh_db, "Silver Tempest ETB", "Silver Tempest")
+    page = client.get(f"/insights/top-titles?cats={cards}").text
+    assert "Top sets by total spend" in page and "All sets, compared" in page
+    assert "Fusion Strike" in page and "£69.98" in page and "2 cards" in page
+    assert "Mystery tin</td>" not in page.split("All sets, compared")[1]
+
+
+def test_top_titles_comics_still_use_the_title(client, fresh_db):
+    comics = _cat(fresh_db, "Comics")
+    add_item(fresh_db, "Star Wars: Jedi Knights #1", 3.99, -30, category=comics)
+    add_item(fresh_db, "Star Wars: Jedi Knights #2", 3.99, -10, category=comics)
+    page = client.get(f"/insights/top-titles?cats={comics}").text
+    assert "Top series by total spend" in page and "Star Wars: Jedi Knights" in page and "2 issues" in page
+
+
+def test_top_titles_mixed_kinds_mixed_words(client, fresh_db):
+    comics, cards = _cat(fresh_db, "Comics"), _cat(fresh_db, "Pokémon cards")
+    add_item(fresh_db, "Book Of Boba Fett #1", 3.75, -30, category=comics)
+    add_item(fresh_db, "Surging Sparks booster", 4.5, -30, category=cards)
+    _set_series(fresh_db, "Surging Sparks booster", "Surging Sparks")
+    page = client.get(f"/insights/top-titles?cats={comics},{cards}").text
+    assert "Top series and sets by total spend" in page and "Surging Sparks" in page and "Book Of Boba Fett" in page
+
+
+def test_top_titles_default_chips_include_cards(client, fresh_db):
+    cards = _cat(fresh_db, "Pokémon cards")
+    add_item(fresh_db, "Surging Sparks booster", 4.5, -30, category=cards)
+    _set_series(fresh_db, "Surging Sparks booster", "Surging Sparks")
+    assert "Surging Sparks" in client.get("/insights/top-titles").text

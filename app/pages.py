@@ -566,7 +566,7 @@ def build_search_query(q, source, status, start_date, end_date, min_price=None, 
     return where_clause, params
 
 
-def _insights_category_chips(cats_param):
+def _insights_category_chips(cats_param, default="numbered"):
     """Category filter chips for the Price creep / Top titles pages.
 
     Only categories that currently have (non-cancelled) items get a chip.
@@ -577,7 +577,7 @@ def _insights_category_chips(cats_param):
     conn = db.get_db()
     default_id = db.default_category_id(conn)
     cats = [dict(r) for r in conn.execute(
-        "SELECT id, name, color, has_series FROM categories ORDER BY sort_order, id"
+        "SELECT id, name, color, has_series, kind FROM categories ORDER BY sort_order, id"
     ).fetchall()]
     known_ids = {c["id"] for c in cats}
     counts = {}
@@ -590,7 +590,11 @@ def _insights_category_chips(cats_param):
 
     chips = [c for c in cats if counts.get(c["id"], 0) > 0]
     chip_ids = [c["id"] for c in chips]
-    defaults = [c["id"] for c in chips if c["has_series"]] or list(chip_ids)
+    if default == "grouped":
+        # Top titles: everything that has a Series / Set word of its own
+        defaults = [c["id"] for c in chips if (c["kind"] or db.DEFAULT_KIND) != db.DEFAULT_KIND] or list(chip_ids)
+    else:
+        defaults = [c["id"] for c in chips if c["has_series"]] or list(chip_ids)
     for c in chips:
         c["is_default"] = c["id"] in defaults
 
@@ -1781,9 +1785,9 @@ def _cover_price_creep(ctx):
     }
 
 
-def _insights_category_ctx(request: Request):
+def _insights_category_ctx(request: Request, default="numbered"):
     cats_param = request.query_params.get("cats")
-    chips, selected = _insights_category_chips(cats_param)
+    chips, selected = _insights_category_chips(cats_param, default)
     ctx = _build_insights_context(request, category_ids=selected)
     ctx["category_chips"] = chips
     ctx["category_none_on"] = bool(chips) and not selected
@@ -2324,9 +2328,87 @@ def insights_price_creep_v2(request: Request):
     return render("insights_pricecreep.html", ctx)
 
 
+def _plural(word):
+    return word if word.lower().endswith(("series", "s")) else word + "s"
+
+
+def _group_words(kinds):
+    """How to name groups and items for the categories on show: one kind
+    (or kinds sharing a word) uses its own ("Sets", "cards"); a mix joins
+    the group words ("Series and sets") and calls items "items"."""
+    kinds = [k for k in kinds if k in db.KINDS] or [db.DEFAULT_KIND]
+    groups = []
+    for k in kinds:
+        g = db.KINDS[k]["group"]
+        if g not in groups:
+            groups.append(g)
+    items = {db.KINDS[k]["item"] for k in kinds}
+    one = groups[0] if len(groups) == 1 else " / ".join(groups[:2])
+    many = _plural(groups[0]) if len(groups) == 1 else " and ".join(_plural(g).lower() for g in groups[:2]).capitalize()
+    item_one = items.pop() if len(items) == 1 else "item"
+    return {"one": one, "many": many, "many_lower": many.lower(), "item": item_one, "item_many": _plural(item_one),
+            "numbered_only": all(db.KINDS[k]["numbered"] for k in kinds)}
+
+
+def _group_totals(items, cat_kind):
+    """Top titles: total spend per Series / Set. Typed boxes win; comics
+    and manga without one fall back to the series in the title; anything
+    else with an empty box isn't grouped."""
+    groups = {}
+    for it in items:
+        key = item_series(it, cat_kind.get(it.get("category_id")))
+        if not key:
+            continue
+        groups.setdefault(key, []).append(it)
+    out = []
+    for key, entries in groups.items():
+        total = round(sum(e["price"] for e in entries), 2)
+        dates = [e["release_date"] or e["placed_date"] for e in entries if e["release_date"] or e["placed_date"]]
+        first, latest = (min(dates), max(dates)) if dates else (None, None)
+        out.append({
+            "series": key, "total": total, "count": len(entries),
+            "avg_price": round(total / len(entries), 2),
+            "first_date": first, "latest_date": latest,
+            "first_date_label": date.fromisoformat(first).strftime("%b %Y") if first else "\u2014",
+            "latest_date_label": date.fromisoformat(latest).strftime("%b %Y") if latest else "\u2014",
+        })
+    return out
+
+
 @app.get("/insights/top-titles")
 def insights_top_titles_v2(request: Request):
-    ctx = _insights_category_ctx(request)
+    ctx = _insights_category_ctx(request, default="grouped")
+    selected = {c["id"] for c in ctx.get("category_chips", []) if c["on"]}
+    conn = db.get_db()
+    cats = get_categories(conn.cursor())
+    cat_kind = {c["id"]: c["kind"] for c in cats}
+    default_id = db.default_category_id(conn)
+    items = [dict(r) for r in conn.execute("SELECT * FROM items WHERE status != 'cancelled'").fetchall()]
+    conn.close()
+    for it in items:
+        if it.get("category_id") not in cat_kind:
+            it["category_id"] = default_id
+    if ctx.get("category_chips"):
+        items = [it for it in items if it["category_id"] in selected]
+
+    totals = _group_totals(items, cat_kind)
+    totals.sort(key=lambda s: -s["total"])
+    longest = min((s for s in totals if s["first_date"]), key=lambda s: s["first_date"], default=None)
+    if longest:
+        longest = dict(longest, years_running=round((date.today() - date.fromisoformat(longest["first_date"])).days / 365.25, 1))
+    # The shared Insights context fills "series" from the title; put back
+    # what's actually stored so a typed Series / Set box wins.
+    stored = {it["id"]: it.get("series") for it in items}
+    for t in (ctx.get("top_titles") or []) + ([ctx["priciest_item"]] if ctx.get("priciest_item") else []):
+        t["series"] = item_series(dict(t, series=stored.get(t.get("id"))), cat_kind.get(t.get("category_id"))) or ""
+    ctx.update({
+        "series_totals": totals[:10],
+        "all_series_totals": totals,
+        "top_series_by_spend": totals[0] if totals else None,
+        "most_collected_series": max(totals, key=lambda s: s["count"], default=None),
+        "longest_running_series": longest,
+        "gw": _group_words([cat_kind.get(i) for i in selected] if ctx.get("category_chips") else [c["kind"] for c in cats]),
+    })
     return render("insights_toptitles.html", ctx)
 
 
