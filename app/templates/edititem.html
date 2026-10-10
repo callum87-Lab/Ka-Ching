@@ -42,9 +42,9 @@
 
 <div class="grid">
   <div class="card" style="grid-column: span 7;">
-    <form method="post" action="{{ form_action }}">
+    <form method="post" action="{{ form_action }}" data-series-row>
       <input type="hidden" name="next" value="{{ form_next }}">
-      <label class="field-label"><span>Name</span><input class="field-input" type="text" name="name" required value="{{ item.name if item else '' }}" placeholder="e.g. Batman #1 or Pokémon booster box"></label>
+      <label class="field-label"><span>Name</span><input class="field-input" type="text" name="name" data-item-name required value="{{ item.name if item else '' }}" placeholder="e.g. Batman #1 or Pokémon booster box"></label>
 
       <div class="settings-form-grid">
         <label class="field-label"><span>Price</span><input class="field-input" type="number" name="price" step="0.01" min="0" max="100000" required value="{{ item.price if item else '' }}"></label>
@@ -67,6 +67,10 @@
                  value="{{ current_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60">
         </label>
       </div>
+
+      <label class="field-label"><span><span class="series-label">Series</span> <span style="color:var(--text-dim); font-weight:400;">(optional)</span></span>
+        <input class="field-input series-input" type="text" name="series" value="{{ item.series if item and item.series else '' }}" autocomplete="off" maxlength="120">
+      </label>
 
       <label class="field-label"><span>Tracking number <span style="color:var(--text-dim); font-weight:400;">(optional)</span></span><input class="field-input" type="text" name="tracking_number" value="{{ item.tracking_number if item and item.tracking_number else '' }}" placeholder="e.g. NP678811691GB"></label>
 

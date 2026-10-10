@@ -2388,11 +2388,12 @@ def export_search_csv(
     cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
     rows = [dict(r) for r in cur.fetchall()]
     category_names = _sync_category_names(cur)
+    category_kinds = {c["id"]: c["kind"] for c in get_categories(cur)}
     conn.close()
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category"])
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category", "Series / Set"])
     for r in rows:
         writer.writerow([
             _csv_safe(r["name"]),
@@ -2403,6 +2404,7 @@ def export_search_csv(
             "Yes" if r["charge_status"] == "charged" else "No",
             _csv_safe(r["order_number"]) if r["order_number"] else "",
             _csv_safe(category_names.get(r.get("category_id")) or category_names.get(None) or ""),
+            _csv_safe(item_series(r, category_kinds.get(r.get("category_id"))) or ""),
         ])
 
     return Response(

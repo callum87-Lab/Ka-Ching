@@ -655,6 +655,7 @@ input[type="file"] {
   .cat-new-row { position: sticky; top: -6px; z-index: 1; padding: 9px 11px; margin: -6px -6px 4px; border-bottom: 1px solid var(--border); background: var(--surface-raised); color: var(--neon-blue); font-size: 14px; font-weight: 600; cursor: pointer; border-radius: var(--radius-md) var(--radius-md) 0 0; }
   .cat-new-row:hover { background: color-mix(in srgb, var(--neon-blue) 8%, var(--surface-raised)); }
   .cat-option-new { color: var(--neon-blue); font-weight: 600; }
+  .series-input.series-from-title::placeholder { font-style: italic; }
   .cat-option:hover, .cat-option.is-highlighted { background: color-mix(in srgb, var(--neon-blue) 10%, transparent); color: var(--neon-blue); }
   .cat-option.is-current { color: var(--neon-blue); font-weight: 600; }
   .cat-option-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
@@ -1929,6 +1930,76 @@ document.addEventListener('click', function () {
       });
     }
   });
+})();
+
+/* Series / Set boxes: the label and hint follow the row's category. A
+   row is the nearest .comic-row / .preview-row / [data-series-row]; its
+   .category-input decides the kind, [data-item-name] gives comics their
+   series from the title, and suggestions come from what's been typed
+   before for that kind. */
+(function () {
+  var KINDS = {{ KINDS | tojson }};
+  var CAT_KIND = {};
+  {% for c in all_categories() %}CAT_KIND[{{ c.name | lower | tojson }}] = {{ c.kind | tojson }};
+  {% endfor %}
+  var KNOWN = {{ known_series() | tojson }};
+  var HINTS = [
+    ['cards', ['pokémon', 'pokemon', 'magic', 'mtg', 'yu-gi-oh', 'yugioh', 'lorcana', 'trading card', 'tcg', 'booster', 'sealed']],
+    ['manga', ['manga', 'book', 'novel']],
+    ['comics', ['comic', 'omnibus', 'graphic novel', 'trade paperback', 'tpb', 'collected edition']],
+    ['figures', ['funko', 'figure', 'statue', 'toy', 'lego', 'pop!']],
+    ['vinyl', ['vinyl', 'record', 'music', 'cd', 'cassette', 'album']],
+    ['film', ['dvd', 'blu-ray', 'bluray', '4k', 'film', 'movie', 'steelbook']],
+    ['games', ['game', 'console', 'nintendo', 'playstation', 'xbox', 'switch']]
+  ];
+  function kindOf(catName) {
+    var low = (catName || '').trim().toLowerCase();
+    if (CAT_KIND[low]) return CAT_KIND[low];
+    for (var i = 0; i < HINTS.length; i++) {
+      if (HINTS[i][1].some(function (w) { return low.indexOf(w) !== -1; })) return HINTS[i][0];
+    }
+    return 'general';
+  }
+  /* one datalist per kind, made once */
+  Object.keys(KINDS).forEach(function (k) {
+    if (document.getElementById('series-list-' + k)) return;
+    var dl = document.createElement('datalist');
+    dl.id = 'series-list-' + k;
+    (KNOWN[k] || []).forEach(function (v) { var o = document.createElement('option'); o.value = v; dl.appendChild(o); });
+    document.body.appendChild(dl);
+  });
+  function rowOf(el) { return el.closest('.comic-row, .preview-row, [data-series-row]'); }
+  function update(row) {
+    if (!row) return;
+    var box = row.querySelector('.series-input');
+    if (!box) return;
+    var cat = row.querySelector('.category-input');
+    var kind = kindOf(cat ? cat.value : '');
+    var info = KINDS[kind] || KINDS.general;
+    var nameEl = row.querySelector('[data-item-name]');
+    var fromTitle = '';
+    if (info.numbered && nameEl) {
+      var m = /^(.*?)\s*#\d+/.exec(nameEl.value || '');
+      if (m && m[1].trim()) fromTitle = m[1].trim();
+    }
+    var known = KNOWN[kind] || [];
+    box.placeholder = fromTitle ? fromTitle + ' (from the title)'
+      : info.group + (known.length ? ', e.g. ' + known[0] : '') + ' (optional)';
+    box.setAttribute('aria-label', info.group + ' (optional)');
+    box.title = info.numbered ? 'Leave blank to use the series from the title' : 'Optional: groups items on Top titles';
+    box.setAttribute('list', 'series-list-' + kind);
+    box.classList.toggle('series-from-title', !!fromTitle);
+    var label = row.querySelector('.series-label');
+    if (label) label.textContent = info.group;
+  }
+  document.addEventListener('input', function (e) {
+    if (e.target.matches && e.target.matches('.category-input, [data-item-name]')) update(rowOf(e.target));
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.matches && e.target.matches('.category-input, [data-item-name]')) update(rowOf(e.target));
+  });
+  window.KCSeries = { refresh: update };
+  document.querySelectorAll('.series-input').forEach(function (b) { update(rowOf(b)); });
 })();
 
 /* Category boxes: a styled pick-or-type dropdown. Clicking shows every

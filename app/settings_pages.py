@@ -344,6 +344,20 @@ def toggle_category_series(category_id: int, next: str = Form("/settings")):
     return RedirectResponse(url=next, status_code=303)
 
 
+@app.post("/settings/categories/{category_id}/kind")
+def set_category_kind(category_id: int, kind: str = Form(...), next: str = Form("/settings")):
+    """What kind of thing a category holds. Also sets Numbered issues to
+    match (on for comics and manga, off otherwise) - still changeable."""
+    next = safe_redirect(next, '/settings')
+    if kind in db.KINDS:
+        conn = db.get_db()
+        conn.execute("UPDATE categories SET kind = ?, has_series = ? WHERE id = ?",
+                     (kind, 1 if db.KINDS[kind]["numbered"] else 0, category_id))
+        conn.commit()
+        conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
 @app.post("/settings/categories/{category_id}/remove")
 def remove_category(category_id: int, next: str = Form("/settings")):
     """Only removes a category nothing uses - items are never left without
@@ -562,11 +576,12 @@ def export_all_csv():
     cur.execute("SELECT * FROM items ORDER BY release_date DESC, name")
     rows = [dict(r) for r in cur.fetchall()]
     category_names = _sync_category_names(cur)
+    category_kinds = {c["id"]: c["kind"] for c in get_categories(cur)}
     conn.close()
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category"])
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category", "Series / Set"])
     for r in rows:
         writer.writerow([
             _csv_safe(r["name"]),
@@ -577,6 +592,7 @@ def export_all_csv():
             "Yes" if r["charge_status"] == "charged" else "No",
             _csv_safe(r["order_number"]) if r["order_number"] else "",
             _csv_safe(category_names.get(r.get("category_id")) or category_names.get(None) or ""),
+            _csv_safe(item_series(r, category_kinds.get(r.get("category_id"))) or ""),
         ])
     csv_bytes = buffer.getvalue().encode("utf-8")
     filename = f"kaching-full-export-{date.today().isoformat()}.csv"

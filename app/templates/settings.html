@@ -19,7 +19,8 @@
   .search-pagination { display: flex; align-items: center; gap: 14px; justify-content: center; }
   .btn-secondary.danger { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
   .cat-list { border-top: 1px solid var(--border); }
-  .cat-row { display: grid; grid-template-columns: 14px 1fr 90px 150px 60px; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .kind-select { padding: 6px 28px 6px 10px; font-size: 13px; width: 100%; }
+  .cat-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) 90px 170px 150px 60px; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
   .cat-head { font-size: 12.5px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 4px; }
   .cat-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .cat-count { font-family: var(--font-mono); font-size: 13.5px; color: var(--text-muted); }
@@ -35,7 +36,8 @@
   .add-cat-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; cursor: pointer; }
   @media (max-width: 700px) {
     .cat-row { grid-template-columns: 14px 1fr 70px; }
-    .cat-row .series-cell { grid-column: 2 / span 2; }
+    .cat-row .series-cell, .cat-row .kind-cell { grid-column: 2 / span 2; }
+    .cat-row.cat-head .kind-cell { display: none; }
     .cat-row .cat-remove-wrap { grid-column: 2; }
     .cat-row .cat-remove { text-align: left; }
     .cat-head { display: none; }
@@ -348,14 +350,20 @@
         <button type="button" class="collapse-btn" data-target="categories-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="categories-body">
-        <p class="warn-hint">What kinds of things you track. <b style="color:var(--text);">Numbered issues</b>: turn on for anything sold as #1, #2, #3&hellip; (comics, manga volumes): Price creep and Top titles then track price rises per series.</p>
+        <p class="warn-hint">What kinds of things you track. <b style="color:var(--text);">Type</b> sets the words used for that category (Series for comics, Set for trading cards, Line for figures&hellip;). <b style="color:var(--text);">Numbered issues</b>: on for anything sold as #1, #2, #3&hellip; (comics, manga volumes), so Price creep can track price rises per series; it follows the type, and you can still change it.</p>
         <div class="cat-list">
-          <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span>Numbered issues</span><span></span></div>
+          <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span class="kind-cell">Type</span><span>Numbered issues</span><span></span></div>
           {% for c in categories_with_counts %}
           <div class="cat-row">
             <span class="cat-dot" style="background:{{ c.color }};"></span>
             <span>{{ c.name }}</span>
             <span class="cat-count">{{ c.item_count }} item{{ "s" if c.item_count != 1 else "" }}</span>
+            <form method="post" action="/settings/categories/{{ c.id }}/kind" class="kind-cell">
+              <input type="hidden" name="next" value="/settings#categories-card">
+              <select name="kind" class="field-input kind-select" aria-label="Type: {{ c.name }}" onchange="this.form.submit()">
+                {% for k, info in KINDS.items() %}<option value="{{ k }}"{{ ' selected' if (c.kind or 'general') == k else '' }}>{{ info.name }}</option>{% endfor %}
+              </select>
+            </form>
             <span class="series-cell">
               <form method="post" action="/settings/categories/{{ c.id }}/series">
                 <input type="hidden" name="next" value="/settings#categories-card">

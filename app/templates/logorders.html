@@ -11,7 +11,7 @@
   .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
   .field-input:focus { outline: none; border-color: var(--neon-blue); }
 
-  .comic-row { display: grid; grid-template-columns: 1fr 240px 130px 32px; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .comic-row { display: grid; grid-template-columns: minmax(0, 1.5fr) 210px minmax(0, 1fr) 110px 32px; gap: 10px; align-items: center; margin-bottom: 8px; }
   .comic-row .field-input { margin: 0; }
   .row-remove-btn { width: 30px; height: 30px; border-radius: var(--radius-xs); background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 18px; }
   .row-remove-btn:hover { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
@@ -40,7 +40,11 @@
   @media (max-width: 900px) {
     /* Phone: item name on its own line, then category, price, remove */
     .comic-row { grid-template-columns: minmax(0, 1fr) 92px 32px; }
-    .comic-row > .comic-row-name { grid-column: 1 / -1; }
+    .comic-row > .comic-row-name, .comic-row > .series-input { grid-column: 1 / -1; }
+    .comic-row > .series-input { order: 1; }
+    .comic-row > .category-input { order: 2; }
+    .comic-row > .comic-row-price { order: 3; }
+    .comic-row > .row-remove-btn { order: 4; }
     .comic-row > * { min-width: 0; }
   }
 {% endblock %}
@@ -128,11 +132,12 @@
 
         <div id="comic-rows">
           <div class="comic-row">
-            <input type="text" name="name" class="field-input comic-row-name" placeholder="Item name" required>
+            <input type="text" name="name" class="field-input comic-row-name" data-item-name placeholder="Item name" required>
             {% set default_cat = default_category_id() %}
             {% set default_cat_name = (all_categories() | selectattr('id', 'equalto', default_cat) | map(attribute='name') | first) or '' %}
             <input type="text" name="category_id" class="field-input category-input" aria-label="Category"
                    value="{{ default_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60">
+            <input type="text" name="series" class="field-input series-input" autocomplete="off" maxlength="120">
             <input type="text" inputmode="decimal" pattern="^\d*\.?\d{0,2}$" name="price" class="field-input comic-row-price" placeholder="Price" required>
             <button type="button" class="row-remove-btn">&times;</button>
           </div>
@@ -181,7 +186,8 @@ document.getElementById('add-row-btn').addEventListener('click', function () {
   var row = document.createElement('div');
   row.className = 'comic-row';
   row.innerHTML =
-    '<input type="text" name="name" class="field-input comic-row-name" placeholder="Item name" required>' +
+    '<input type="text" name="name" class="field-input comic-row-name" data-item-name placeholder="Item name" required>' +
+    '<input type="text" name="series" class="field-input series-input" autocomplete="off" maxlength="120">' +
     '<input type="text" inputmode="decimal" pattern="^\\d*\\.?\\d{0,2}$" name="price" class="field-input comic-row-price" placeholder="Price" required>' +
     '<button type="button" class="row-remove-btn">&times;</button>';
   /* new rows start with the same category as the row above - orders are usually one kind of thing */
@@ -191,6 +197,7 @@ document.getElementById('add-row-btn').addEventListener('click', function () {
   box.setAttribute('value', lastBox.value);
   row.insertBefore(box, row.children[1]);
   container.appendChild(row);
+  if (window.KCSeries) window.KCSeries.refresh(row);
   row.querySelector('.comic-row-name').focus();
 });
 container.addEventListener('click', function (e) {

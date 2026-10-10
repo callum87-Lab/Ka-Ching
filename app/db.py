@@ -127,6 +127,10 @@ MIGRATIONS = {
         ("updated_at", "TEXT"),
         ("deleted_at", "TEXT"),
         ("category_id", "INTEGER"),
+        ("series", "TEXT"),
+    ],
+    "categories": [
+        ("kind", "TEXT"),
     ],
     "shipment_postage": [
         ("source", "TEXT NOT NULL DEFAULT 'Forbidden Planet'"),
@@ -255,20 +259,66 @@ def _backfill_sync_columns(conn):
 # the default, since every item that existed before categories did was a
 # comic. After seeding, the list is the user's to edit in Settings.
 STARTER_CATEGORIES = [
-    ("Comics", "#2fd8ff", 1),
-    ("Manga", "#9b7bff", 1),
-    ("Omnibus / collected editions", "#6aa8ff", 1),
-    ("Pokémon cards", "#ffcb3c", 0),
-    ("Pokémon sealed products", "#ff9f43", 0),
-    ("Magic: The Gathering", "#ff4d8d", 0),
-    ("Funko Pop", "#3cf2a6", 0),
-    ("DVD / Blu-ray", "#c77dff", 0),
-    ("Books", "#8fd3c9", 0),
-    ("Vinyl", "#f07167", 0),
-    ("Coins", "#d4a373", 0),
-    ("Gold / silver", "#e9c46a", 0),
-    ("Other", "#7c89ad", 0),
+    ("Comics", "#2fd8ff", 1, "comics"),
+    ("Manga", "#9b7bff", 1, "manga"),
+    ("Omnibus / collected editions", "#6aa8ff", 1, "comics"),
+    ("Pokémon cards", "#ffcb3c", 0, "cards"),
+    ("Pokémon sealed products", "#ff9f43", 0, "cards"),
+    ("Magic: The Gathering", "#ff4d8d", 0, "cards"),
+    ("Funko Pop", "#3cf2a6", 0, "figures"),
+    ("DVD / Blu-ray", "#c77dff", 0, "film"),
+    ("Books", "#8fd3c9", 0, "manga"),
+    ("Vinyl", "#f07167", 0, "vinyl"),
+    ("Coins", "#d4a373", 0, "general"),
+    ("Other", "#7c89ad", 0, "general"),
 ]
+
+
+# What kind of thing a category holds. Decides the words used for it (the
+# Series / Set box, Top titles) and which pages its preset turns on.
+#   group: what a run of related items is called; item: one of them.
+#   numbered: items carry issue numbers, so Price creep works for them.
+KINDS = {
+    "comics":  {"name": "Comics",           "examples": "Comics, omnibuses",       "group": "Series",    "item": "issue",   "numbered": True},
+    "manga":   {"name": "Manga and books",  "examples": "Manga, books, novels",    "group": "Series",    "item": "volume",  "numbered": True},
+    "cards":   {"name": "Trading cards",    "examples": "Pokémon, Magic, sealed",  "group": "Set",       "item": "card",    "numbered": False},
+    "figures": {"name": "Figures and toys", "examples": "Funko, statues, Lego",    "group": "Line",      "item": "figure",  "numbered": False},
+    "vinyl":   {"name": "Vinyl and music",  "examples": "Records, CDs, cassettes", "group": "Artist",    "item": "release", "numbered": False},
+    "film":    {"name": "Films and TV",     "examples": "DVD, Blu-ray, 4K",        "group": "Franchise", "item": "release", "numbered": False},
+    "games":   {"name": "Video games",      "examples": "Games, consoles",         "group": "Platform",  "item": "game",    "numbered": False},
+    "general": {"name": "Something else",   "examples": "Coins, anything",         "group": "Group",     "item": "item",    "numbered": False},
+}
+DEFAULT_KIND = "general"
+
+# First match wins; checked against the category's name in lower case.
+_KIND_HINTS = [
+    ("cards",   ("pokémon", "pokemon", "magic", "mtg", "yu-gi-oh", "yugioh", "lorcana", "one piece card",
+                 "trading card", "tcg", "booster", "sealed")),
+    ("manga",   ("manga", "book", "novel", "light novel")),
+    ("comics",  ("comic", "omnibus", "graphic novel", "trade paperback", "tpb", "collected edition")),
+    ("figures", ("funko", "figure", "statue", "toy", "lego", "action figure", "pop!")),
+    ("vinyl",   ("vinyl", "record", "music", "cd", "cassette", "album")),
+    ("film",    ("dvd", "blu-ray", "bluray", "4k", "film", "movie", "steelbook")),
+    ("games",   ("game", "console", "nintendo", "playstation", "xbox", "switch")),
+]
+
+
+def guess_kind(name, has_series=False):
+    """A sensible kind for a category from its name. Unknown names with
+    Numbered issues switched on count as comics, everything else General."""
+    low = (name or "").lower()
+    for kind, words in _KIND_HINTS:
+        if any(w in low for w in words):
+            return kind
+    return "comics" if has_series else DEFAULT_KIND
+
+
+def _backfill_category_kinds(conn):
+    """Categories from before v3.4 have no kind yet: give each one a
+    guess from its name. Changeable in Settings afterwards."""
+    rows = conn.execute("SELECT id, name, has_series FROM categories WHERE kind IS NULL OR kind = ''").fetchall()
+    for r in rows:
+        conn.execute("UPDATE categories SET kind = ? WHERE id = ?", (guess_kind(r["name"], r["has_series"]), r["id"]))
 
 # Colours handed out, in order, to categories the user adds themselves.
 EXTRA_CATEGORY_COLORS = [
@@ -284,10 +334,10 @@ def _seed_categories(conn):
     if count:
         return
     now = utc_now()
-    for i, (name, color, has_series) in enumerate(STARTER_CATEGORIES):
+    for i, (name, color, has_series, kind) in enumerate(STARTER_CATEGORIES):
         conn.execute(
-            "INSERT INTO categories (name, color, has_series, sort_order, created_at) VALUES (?, ?, ?, ?, ?)",
-            (name, color, has_series, i, now),
+            "INSERT INTO categories (name, color, has_series, sort_order, created_at, kind) VALUES (?, ?, ?, ?, ?, ?)",
+            (name, color, has_series, i, now, kind),
         )
 
 
@@ -364,6 +414,7 @@ def init_db():
     _retire_old_dashboard_cards(conn)
     _backfill_sync_columns(conn)
     _seed_categories(conn)
+    _backfill_category_kinds(conn)
     _backfill_categories(conn)
     conn.commit()
     conn.close()

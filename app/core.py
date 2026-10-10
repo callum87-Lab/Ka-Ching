@@ -1495,14 +1495,76 @@ def get_categories(cur, with_counts=False):
     if with_counts:
         cur.execute(
             """
-            SELECT c.id, c.name, c.color, c.has_series, c.sort_order,
+            SELECT c.id, c.name, c.color, c.has_series, c.sort_order, c.kind,
                    (SELECT COUNT(*) FROM items i WHERE i.category_id = c.id AND i.deleted_at IS NULL) AS item_count
             FROM categories c ORDER BY c.sort_order, c.id
             """
         )
     else:
-        cur.execute("SELECT id, name, color, has_series, sort_order FROM categories ORDER BY sort_order, id")
-    return [dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT id, name, color, has_series, sort_order, kind FROM categories ORDER BY sort_order, id")
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        if r.get("kind") not in db.KINDS:
+            r["kind"] = db.DEFAULT_KIND
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Series / Set: what a run of related items is called depends on the kind
+# of category (Series for comics, Set for cards...). Comics and manga get it
+# from the title ("Star Wars: Jedi Knights #3" -> "Star Wars: Jedi Knights")
+# unless typed in; everything else uses what was typed, or nothing.
+# ---------------------------------------------------------------------------
+_ISSUE_RE = re.compile(r"^(.*?)\s*#\d+")
+
+
+def series_from_name(name):
+    """The series part of a numbered title, or None if it has no #N."""
+    m = _ISSUE_RE.match(name or "")
+    return m.group(1).strip() or None if m else None
+
+
+def item_series(item, kind=None):
+    """The Series / Set an item belongs to: what was typed, otherwise (for
+    numbered kinds, or when the kind isn't known) taken from the title."""
+    typed = " ".join((item.get("series") or "").split())
+    if typed:
+        return typed
+    if kind is None or db.KINDS.get(kind, {}).get("numbered"):
+        return series_from_name(item.get("name"))
+    return None
+
+
+def clean_series(raw):
+    """A submitted Series / Set box -> what to store (None when empty)."""
+    text = " ".join(str(raw or "").split())[:120]
+    return text or None
+
+
+def _known_series():
+    """Every Series / Set typed in so far, by kind, for the box's
+    suggestions (most used first)."""
+    conn = db.get_db()
+    rows = conn.execute(
+        """
+        SELECT COALESCE(c.kind, ?) AS kind, i.series, COUNT(*) AS n FROM items i
+        LEFT JOIN categories c ON c.id = i.category_id
+        WHERE i.series IS NOT NULL AND i.series != '' AND i.deleted_at IS NULL
+        GROUP BY 1, 2 ORDER BY n DESC, i.series
+        """,
+        (db.DEFAULT_KIND,),
+    ).fetchall()
+    conn.close()
+    out = {}
+    for r in rows:
+        out.setdefault(r["kind"], [])
+        if len(out[r["kind"]]) < 40:
+            out[r["kind"]].append(r["series"])
+    return out
+
+
+templates.env.globals["KINDS"] = db.KINDS
+templates.env.globals["known_series"] = _known_series
 
 
 def _create_category(cur, name):
@@ -1526,9 +1588,10 @@ def _create_category(cur, name):
     else:
         cur.execute("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories")
         sort_order = cur.fetchone()[0]
+    kind = db.guess_kind(clean)
     cur.execute(
-        "INSERT INTO categories (name, color, has_series, sort_order, created_at) VALUES (?, ?, 0, ?, ?)",
-        (clean, color, sort_order, db.utc_now()),
+        "INSERT INTO categories (name, color, has_series, sort_order, created_at, kind) VALUES (?, ?, ?, ?, ?, ?)",
+        (clean, color, 1 if db.KINDS[kind]["numbered"] else 0, sort_order, db.utc_now(), kind),
     )
     logger.info("CATEGORY ADDED: %r", clean)
     return cur.lastrowid
