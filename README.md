@@ -22,6 +22,14 @@ best at — but anything with a name, a price, a release date and a shop works
 the same way, and since v3 you can sort it all into **categories** (Comics,
 Manga, Pokémon cards, Funko Pop… or your own).
 
+> **New in v3.4 — fits what you collect.** Tell it what you collect
+> (comics, cards, figures, vinyl, films, games or a mix) and the pages and
+> wording follow: a **Series / Set** box when logging orders, Top titles by
+> set or line, and Price creep only where it makes sense. New installs get a
+> short **setup guide**, and bulk select gets a floating bar with Delay.
+> See [CHANGELOG.md](CHANGELOG.md) and
+> [Upgrading from v3.3](#upgrading-from-v33).
+
 > **New in v3.3 — a calmer, premium look.** Every page redesigned: four
 > themes (Sand, Grey, Blue and Noir) with contrast-checked accent colours, a
 > new "K!" logo, a Dashboard that leads with this month at a glance, a
@@ -174,9 +182,16 @@ on a phone; hold a card near the top or bottom of the screen to scroll).
 Half-width cards pair up side by side; one left on its own widens to fill
 the row. **Reset order** puts a page back to normal. Your layout is saved on
 the server, so it's the same on every device. **Settings → Appearance** lists
-every card on every page, with one-tap presets: *Everything*, *I don't
-pre-order* (hides the still-due and on-order cards) and *Just the
-essentials*.
+every card on every page.
+
+**What you track.** Also in Settings → Appearance: tick what you collect
+and whether you pre-order, and the cards and pages that don't fit are
+switched off for you. Price creep only shows for numbered things (comics,
+manga), Top titles is hidden if nothing you collect comes in series or
+sets, and the pre-order cards go if you don't pre-order. Switch any card
+back on yourself, or use **Reset cards to preset**. Price creep and Top
+titles each have a **Show this page** switch; a hidden page also leaves the
+sidebar.
 
 **Themes.** Settings → Appearance has four themes — **Sand** (the default,
 a warm light theme), **Grey**, **Blue** and **Noir** — each with its own
@@ -207,7 +222,7 @@ Settings you can click anywhere on a section's heading to open it.
   colours, with any category limits (see [Categories](#categories)); shown
   once you've spent in two or more categories or set a limit
 - **This week**, grouped by likely shipment ("Nothing due" when it's quiet)
-- An **Alerts** card (anything awaiting charge, duplicates, ghost items,
+- An **Alerts** card (anything awaiting charge, duplicates, items with no order number,
   items with no release date, categories over their limit), which also
   says when the last backup was taken — and if automatic backups are off,
   offers a one-tap **Turn on daily backups**
@@ -236,8 +251,9 @@ holds **Cancel** and **Remove**:
   event — a duplicate line that shouldn't exist, or a parsing artifact —
   and asks for confirmation since there's no undo.
 
-A small checkbox on every row enables **bulk select**: a toolbar appears
-with Mark paid, Cancel and Remove for everything selected at once.
+A small checkbox on every row enables **bulk select**: a bar floats at the
+bottom of the screen with Mark paid, **Delay** (+30/+60/+90 days), Cancel
+and Remove for everything selected at once. Esc or ✕ clears the selection.
 
 Re-pasting your order history later won't undo a manual tick — once you've
 marked something, that overrides whatever the retailer's page says about
@@ -250,8 +266,8 @@ A month grid where release days show that day's total and item count,
 shaded by how much is due, including estimated shipping (on a phone, just
 the day and a dot). Each day in the releases list shows the same figure,
 broken down as items + shipping, so the two always agree. **Tap a
-day** to show only that day's releases in the list underneath; tap it again
-(or "Show whole month") to go back. There's a mini calendar, a spend-by-shop
+day** to show only that day's releases in the list underneath; the **Day /
+Whole month** switch above the list goes back to the whole month. There's a mini calendar, a spend-by-shop
 breakdown for the month, a year-long **activity heatmap**, and the full
 releases list with the same pay circles and menus as Orders.
 
@@ -281,10 +297,16 @@ Two tabs:
   for everything in the paste (and change individual items on the review
   screen).
 - **Manual Entry** — set the release date and shop once, then add every item
-  from that same order as its own row (name, category, price) before
-  submitting. Optional order number, shipping cost (feeds that shop's exact
+  from that same order as its own row (name, category, price, and a
+  **Series / Set** box) before submitting. Optional order number, shipping cost (feeds that shop's exact
   shipping figure) and tracking number. The shop field remembers the shop
   you used last.
+
+The **Series / Set** box is worded to match the category (Set for trading
+cards, Line for figures, Artist for vinyl…) and suggests names you've used
+before. For comics and manga it's worked out from the title (*Saga #12* →
+*Saga*), so you can leave it empty. It's on the import review screen and
+Edit item too.
 
 Click any item's name anywhere to **edit** it later — including **Delay this
 item** (+30/+60/+90 days in one tap, logged like any other edit). Tracking
@@ -295,13 +317,14 @@ tracking page.
 
 Four pages:
 
-- **Overview** — spend overview, per-issue figures (priciest item, average
-  issue), price distribution, shipping and patterns (busiest release day,
+- **Overview** — spend overview, per-item figures (priciest item, average
+  item), price distribution, shipping and patterns (busiest day of the week,
   money saved by cancelling, shipping vs cover price, by shop), a
   **cumulative spend** card for the current month (spent so far, how far
   over/under budget, what's still due, and one bar per release day — tap or
   hover a day for its items), **spend by category** (all time / this year),
-  pre-order vs released, the 10 most recent releases and a 12-month trend.
+  pre-order vs released, ten releases (Recent, Most expensive or Lowest) and
+  a 12-month trend.
 - **Spend by shop** — a share-of-spend donut (all time / last 90 days),
   shop spend over 6 or 12 months as stacked bars with per-shop toggles, a per-shop
   comparison table, and every shop's all-time total. eBay sellers are
@@ -318,12 +341,15 @@ Four pages:
   **Where each series sits** puts every series on one scale, so the ones
   climbing stand out, and the extra-spend chart is a running total from the
   first price rise.
-- **Top titles** — your priciest items, and the series you've spent the most
-  on, with a full series comparison.
+- **Top titles** — your priciest items, and the series or sets you've spent
+  the most on, with a full comparison. Its wording follows what you collect
+  ("Top sets" for cards, "Top lines" for figures), and so does its sidebar
+  name.
 
 Price creep and Top titles have **category chips** at the top: tap a
-category to include or leave it out. Categories with **Numbered issues**
-switched on start switched on.
+category to include or leave it out. Price creep starts with the
+categories that have **Numbered issues** switched on; Top titles with every
+category except *Something else*.
 
 ### Alerts
 
@@ -332,7 +358,9 @@ switched on start switched on.
   **items with no release date** (with a *Set date* button — they can't
   appear on the calendar or in any month until they have one), **categories
   over their limit**, plus open / resolved-this-month / last-resolved counts
-  and an alert history.
+  and an alert history. Items with no order number or release date can be
+  marked **Fine as it is** so they stop showing; they're kept under *Marked
+  as fine* in case you want one back.
 - **Notifications** — set up daily/weekly pushes and the budget alert (see
   [Notifications](#notifications)).
 
@@ -347,22 +375,30 @@ switched on start switched on.
   3 kept, each downloadable), full spend-history CSV, notification settings
   export / import, and a factory reset (type-to-confirm; wipes tracked items
   only).
-- **Appearance** — theme and accent colour, the layout (Standard, Compact
-  or Side panel), and which cards show on each page (see above).
+- **Appearance** — theme and accent colour, **What you track**, the layout
+  (Standard, Compact or Side panel), and which cards show on each page (see
+  above).
 - **Security** — the optional login (see [Signing in](#signing-in-optional)).
-- **About** and **Help** — a getting-started guide and FAQ.
+- **About** and **Help** — a getting-started guide, FAQ, and a link to run
+  the setup guide again.
 
 ## Categories
 
 Every item has a category. A starter list is created automatically
 (Comics, Manga, Omnibus / collected editions, Pokémon cards, Pokémon sealed
 products, Magic: The Gathering, Funko Pop, DVD / Blu-ray, Books, Vinyl,
-Coins, Gold / silver, Other), and you can add your own anywhere a category
-is picked — just type a new name. Each gets its own colour automatically. In
-Settings → Categories you can switch on **Numbered issues** for anything
-sold as #1, #2, #3… (comics, manga volumes) so Price creep and Top titles
-track price rises per series, or remove a category that isn't in use (the
-default category can't be removed).
+Coins, Other), and you can add your own anywhere a category is picked —
+just type a new name. Each gets its own colour automatically.
+
+Every category has a **type**: Comics, Manga and books, Trading cards,
+Figures and toys, Vinyl and music, Films and TV, Video games or Something
+else. The type sets the words used for it — a run of comics is a
+*Series*, of cards a *Set*, of figures a *Line* — in the Series / Set box
+and on Top titles. New categories get a type guessed from their name;
+change it in Settings → Categories. There you can also switch on
+**Numbered issues** for anything sold as #1, #2, #3… (it follows the type)
+so Price creep tracks price rises per series, or remove a category that
+isn't in use (the default category can't be removed).
 
 **Category limits** (Settings → General) give any category an optional
 spending limit per budget cycle — e.g. £60 on comics, £40 on cards. The
@@ -473,10 +509,28 @@ than only provable by checking the database.
 docker compose up -d --build
 ```
 
-Then visit `http://<server-ip>:8091`.
+Then visit `http://<server-ip>:8091`. A new install opens a short **setup
+guide** (what you collect, pre-orders, budget, theme, an optional password);
+every step can be skipped.
 
 Data lives in `./data/kaching.db` (SQLite) — back it up like you would any
 other stack config.
+
+### Upgrading from v3.3
+
+`git pull` and `docker compose up -d --build`, as always — your data and
+settings carry straight over, and you won't see the setup guide (it's
+there in Settings → Help if you want it). A few things happen on their own:
+
+- Each category gets a **type** guessed from its name (Pokémon cards →
+  Trading cards, Funko Pop → Figures and toys…). Check them in Settings →
+  Categories; anything it can't place is *Something else*.
+- The old **Everything / I don't pre-order / Just the essentials** presets
+  are replaced by **What you track**. Your current cards stay exactly as
+  they are until you save it.
+- Existing items have an empty Series / Set box. Comics and manga keep
+  working from the title; for anything else, fill it in when you edit an
+  item if you want it grouped on Top titles.
 
 ### Upgrading from v3.2
 
@@ -727,10 +781,10 @@ what happened to a given item and when, rather than needing to reconstruct it
 from memory afterwards.
 
 There's also a standing check on the **Alerts** page for items tagged
-Forbidden Planet with no order number at all ("ghost items") — always a parser artifact from an
+Forbidden Planet with no order number at all — always a parser artifact from an
 earlier version, never legitimate, since every real Forbidden Planet item
 comes with an order number attached. If any show up there, they're almost certainly duplicates of something already
-tracked properly; check before removing.
+tracked properly; check before removing. If one is genuine, mark it **Fine as it is**.
 
 ## Optional: a weekly/monthly nudge via ntfy
 
