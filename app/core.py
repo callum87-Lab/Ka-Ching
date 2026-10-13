@@ -1882,6 +1882,28 @@ def nav_titles_label():
     return "Top titles"
 
 
+def apply_tracking(cur, kinds, preorder, reset=False, extra_on=(), extra_off=()):
+    """Store what you track and update the hidden cards. Without reset only
+    the cards the picks decide change; with reset every card goes back to
+    the preset. extra_on / extra_off then switch individual cards."""
+    kinds = [k for k in db.KINDS if k in (kinds or [])]
+    notifications.set_setting(cur, "tracking_types", json.dumps(kinds))
+    notifications.set_setting(cur, "tracking_preorder", "yes" if preorder else "no")
+    preset = preset_hidden(kinds, preorder)
+    try:
+        current = set(json.loads(notifications.get_setting(cur, "hidden_cards", "[]")))
+    except (ValueError, TypeError):
+        current = set()
+    if reset:
+        hidden = set(preset)
+    else:
+        hidden = (current - (set(TYPE_CARDS) | set(_preorder_cards()))) | preset
+    hidden |= {c for c in extra_off if c in CARD_IDS}
+    hidden -= set(extra_on)
+    notifications.set_setting(cur, "hidden_cards", json.dumps(sorted(h for h in hidden if h in CARD_IDS)))
+    return hidden
+
+
 def _tracking_summary():
     """For the What you track card: the preset's name and which cards
     differ from it right now."""

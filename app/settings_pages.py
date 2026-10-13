@@ -289,19 +289,7 @@ async def save_tracking(request: Request):
     action = form.get("action", "save")
     conn = db.get_db()
     cur = conn.cursor()
-    notifications.set_setting(cur, "tracking_types", json.dumps(kinds))
-    notifications.set_setting(cur, "tracking_preorder", "yes" if preorder else "no")
-    preset = preset_hidden(kinds, preorder)
-    try:
-        current = set(json.loads(notifications.get_setting(cur, "hidden_cards", "[]")))
-    except (ValueError, TypeError):
-        current = set()
-    if action == "reset":
-        hidden = preset
-    else:
-        decided = set(TYPE_CARDS) | set(_preorder_cards())
-        hidden = (current - decided) | preset
-    notifications.set_setting(cur, "hidden_cards", json.dumps(sorted(h for h in hidden if h in CARD_IDS)))
+    apply_tracking(cur, kinds, preorder, reset=(action == "reset"))
     conn.commit()
     conn.close()
     return RedirectResponse(url=safe_redirect(form.get("next"), "/settings#layout"), status_code=303)

@@ -24,6 +24,8 @@ def fresh_db(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "DB_PATH", path)
     core._login_fails.clear()
     db.init_db()
+    # Most tests want the app itself, not the first-run setup guide.
+    set_setting(path, "setup_done", "yes")
     return path
 
 

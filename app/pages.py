@@ -2161,6 +2161,14 @@ def v2_redirect(rest: str, request: Request):
 
 @app.get("/")
 def dashboard_v2(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None):
+    # A brand-new install opens on the setup guide
+    conn = db.get_db()
+    try:
+        from .welcome import setup_needed
+        if setup_needed(conn.cursor()):
+            return RedirectResponse(url="/welcome", status_code=303)
+    finally:
+        conn.close()
     ctx = _build_dashboard_context(request, month, chart_range, source)
     if isinstance(ctx, RedirectResponse):
         return ctx
