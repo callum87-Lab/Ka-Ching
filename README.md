@@ -11,11 +11,13 @@
 
 **This is not a collection catalogue.** It doesn't track what you own,
 store cover art, or care about which variant is sitting on your shelf —
-there are already excellent apps for that. Ka-Ching! answers exactly two
-questions and nothing else:
+there are already excellent apps for that. Ka-Ching! tracks what your
+collecting **costs**:
 
 - **What's due this week, and what will it cost?**
-- **What's my forecast for this month (and next)?**
+- **What will this month (and next) come to, against your budget?**
+- **Where does the money go** — which shops, which series or sets, and
+  what's getting pricier?
 
 It started life as a comic pre-order tracker, and comics are still what it's
 best at — but anything with a name, a price, a release date and a shop works
@@ -73,7 +75,7 @@ Manga, Pokémon cards, Funko Pop… or your own).
 > prices in whichever one you pick, so this genuinely works for US and
 > European use, not just UK. The one thing that stays UK-specific: the shops
 > with *dedicated* parsers (Forbidden Planet, eBay) are built around their
-> UK pages specifically - anywhere else, use Manual Entry or the generic
+> UK pages specifically - anywhere else, use Add by hand or the generic
 > paste-in parser, which don't care which shop or currency they're reading.
 
 ## Gallery
@@ -291,12 +293,12 @@ exactly what's filtered.
 
 Two tabs:
 
-- **Paste Invoice** — paste an order page and review what was found before
+- **Paste an order** — paste an order page and review what was found before
   anything's saved (see [How importing works](#how-importing-actually-works-now)).
   Quick shop hints sit above the paste box, and you can pick the category
   for everything in the paste (and change individual items on the review
   screen).
-- **Manual Entry** — set the release date and shop once, then add every item
+- **Add by hand** — set the release date and shop once, then add every item
   from that same order as its own row (name, category, price, and a
   **Series / Set** box) before submitting. Optional order number, shipping cost (feeds that shop's exact
   shipping figure) and tracking number. The shop field remembers the shop
@@ -643,7 +645,7 @@ again — your new password takes over.
 
 1. Open your retailer's order history page (log in first).
 2. Select all the text on the page (or as many pages as you want) and copy it.
-3. Paste the whole thing into **Log orders → Paste Invoice** and hit
+3. Paste the whole thing into **Log orders → Paste an order** and hit
    Import.
 4. Repeat monthly, or whenever you place new pre-orders — duplicates are
    silently skipped.
@@ -675,7 +677,7 @@ doesn't get picked up, paste an example and it can be adjusted.
 
 Ka-Ching! can read Forbidden Planet, eBay and Whatnot pages directly, and
 has a generic parser for most small-shop checkouts. For anything else, use
-**Log orders → Manual Entry**.
+**Log orders → Add by hand**.
 
 **eBay purchases from different sellers share one shop filter.** Each seller
 still gets its own colour and label within the item lists, but filters show

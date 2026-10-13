@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ka-Ching! &middot; Log Orders{% endblock %}
+{% block title %}Ka-Ching! &middot; Log orders{% endblock %}
 
 {% block extra_style %}
   .logorders-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
@@ -58,8 +58,8 @@
 
 <div class="grid">
   <div class="logorders-tabs">
-    <button type="button" class="logorders-tab active" data-target="tab-paste">Paste Invoice</button>
-    <button type="button" class="logorders-tab" data-target="tab-manual">Manual Entry</button>
+    <button type="button" class="logorders-tab active" data-target="tab-paste">Paste an order</button>
+    <button type="button" class="logorders-tab" data-target="tab-manual">Add by hand</button>
   </div>
 </div>
 
@@ -79,7 +79,7 @@
   <div class="grid">
     <div class="card form-card">
       <div class="card-title" style="margin-bottom: 10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg></span>Import order history</div>
-      <p class="warn-hint" style="max-width:none;">Copy your order history page (Forbidden Planet, eBay, or similar) and paste the whole thing below. Addresses, card details and pagination are ignored automatically. Items you've already ticked "paid" or "cancelled" yourself are left alone; everything else gets refreshed to match what the retailer's currently showing, so it's safe to paste the same page again next month. You can also paste one of Forbidden Planet's "revised release date" emails straight in. It'll update just that item's date without needing a full re-import.</p>
+      <p class="warn-hint" style="max-width:none;">Copy your order history page (Forbidden Planet, eBay or similar) and paste the whole thing below. Addresses and card details are ignored. Pasting the same page again later is safe: it updates what the shop has changed, and anything you've marked paid or cancelled stays as you left it. Forbidden Planet's "revised release date" emails can be pasted in too.</p>
 
       <form method="post" action="/import">
         <div class="parser-hint-row">
@@ -96,8 +96,8 @@
                  value="{{ default_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60" style="min-width:230px; width:auto;">
         </div>
         <textarea name="order_text" class="paste-textarea" placeholder="Paste order history here..." required></textarea>
-        <p class="warn-hint" style="max-width:none; margin:10px 0 0;">Mixed order? Pick the most common category here, then change individual items on the import preview before saving.</p>
-        <div style="display:flex; gap:10px;">
+        <p class="warn-hint" style="max-width:none; margin:10px 0 0;">Mixed order? Pick the most common category here, then change individual items on the review screen.</p>
+        <div style="display:flex; gap:10px; margin-top:14px;">
           <button type="submit" class="submit-btn" style="margin-top:0;">Import</button>
           <button type="button" id="clear-paste-btn" class="clear-btn">Clear</button>
         </div>

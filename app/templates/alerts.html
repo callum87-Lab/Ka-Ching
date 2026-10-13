@@ -54,6 +54,7 @@
   .toggle-switch.on::after { left: 16px; }
   .notif-test-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
   .notif-log-row { display: grid; grid-template-columns: 130px 1fr 70px; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .notif-log-err { display: block; color: var(--text-dim); font-size: 12.5px; margin-top: 2px; overflow-wrap: anywhere; }
   .notif-log-row:first-of-type { border-top: none; }
   .notif-log-status { font-size: 12.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; text-align: center; }
   .notif-log-status.ok { color: var(--neon-green); background: color-mix(in srgb, var(--neon-green) 10%, transparent); }
@@ -69,7 +70,7 @@
   .history-card { grid-column: span 12; }
   .history-log-row { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; font-size: 13.5px; }
   .history-log-row .hl-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; position: relative; top: 1px; }
-  .history-log-row .hl-date { color: var(--text-dim); width: 58px; flex: 0 0 auto; white-space: nowrap; }
+  .history-log-row .hl-date { color: var(--text-dim); width: 84px; flex: 0 0 auto; white-space: nowrap; }
   .history-log-row .hl-text { color: var(--text); }
   .warn-card.blue { border-color: color-mix(in srgb, var(--neon-blue) 35%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--neon-blue) 6%, transparent), var(--surface) 45%); }
   .warn-card.blue .card-title { color: var(--neon-blue); }
@@ -143,25 +144,40 @@
   </div>
 </div>
 
+{% if awaiting_charge %}
 <div class="grid">
-  <div class="card history-card">
-    <div class="card-title" style="margin-bottom:16px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Alert history</div>
-    {% if alert_history %}
-    <div id="history-log-body">
-      {% for e in alert_history %}
-      <div class="history-log-row"><span class="hl-dot" style="background:{{ 'var(--neon-violet)' if e.kind == 'ghost_item' else 'var(--neon-pink)' }}; box-shadow:0 0 6px {{ 'color-mix(in srgb, var(--neon-violet) 50%, transparent)' if e.kind == 'ghost_item' else 'color-mix(in srgb, var(--neon-pink) 50%, transparent)' }};"></span><span class="hl-date mono">{{ e.at[5:10] }}</span><span class="hl-text">{{ e.text }}</span></div>
-      {% endfor %}
+  <div class="card warn-card pink">
+    <div class="card-head">
+      <div class="card-title"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-pink) 14%, transparent); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg></span>Awaiting charge ({{ awaiting_charge|length }})</div>
     </div>
-    <div class="search-pagination" id="history-pagination" style="display:none; margin-top:14px;">
-      <button type="button" class="warn-action-btn" id="history-prev-btn">&larr; Prev</button>
-      <span class="muted" style="font-size:12px;" id="history-page-label">Page 1 of 1</span>
-      <button type="button" class="warn-action-btn" id="history-next-btn">Next &rarr;</button>
+    <p class="warn-hint">Released, but not marked paid yet. Shops often charge a few days after release; check any that have been here more than a couple of weeks.</p>
+
+    {% for item in awaiting_charge %}
+    <div class="warn-item-row" style="grid-template-columns: 24px 1fr 90px 16px 26px;">
+      <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
+        <input type="hidden" name="next" value="/alerts">
+        <input type="hidden" name="action" value="paid">
+        <button type="submit" class="paid-check" title="Mark as paid"></button>
+      </form>
+      <span class="row-name">{{ item.name }}<span class="late-tag">{{ item.days_late }}d late</span></span>
+      <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
+      <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
+      <div class="row-menu-wrap">
+        <button type="button" class="row-menu-btn" data-drawer-template="drawer-aw-{{ item.id }}">&#8942;</button>
+      </div>
+      <template id="drawer-aw-{{ item.id }}" class="drawer-template">
+        <a href="/items/{{ item.id }}/edit">Edit</a>
+        <form method="post" action="/items/{{ item.id }}/mark">
+          <input type="hidden" name="next" value="/alerts">
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit">Cancel</button>
+        </form>
+      </template>
     </div>
-    {% else %}
-    <div class="empty-note">Nothing resolved yet.</div>
-    {% endif %}
+    {% endfor %}
   </div>
 </div>
+{% endif %}
 
 {% if duplicate_groups %}
 <div class="grid">
@@ -275,41 +291,6 @@
 </div>
 {% endif %}
 
-{% if awaiting_charge %}
-<div class="grid">
-  <div class="card warn-card pink">
-    <div class="card-head">
-      <div class="card-title"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-pink) 14%, transparent); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg></span>Awaiting charge ({{ awaiting_charge|length }})</div>
-    </div>
-    <p class="warn-hint">These released a while ago but are still sitting unpaid and unmarked. Usually just a normal short delay before the retailer charges. Worth a check if any of these are sitting here a while.</p>
-
-    {% for item in awaiting_charge %}
-    <div class="warn-item-row" style="grid-template-columns: 24px 1fr 90px 16px 26px;">
-      <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
-        <input type="hidden" name="next" value="/alerts">
-        <input type="hidden" name="action" value="paid">
-        <button type="submit" class="paid-check" title="Mark as paid"></button>
-      </form>
-      <span class="row-name">{{ item.name }}<span class="late-tag">{{ item.days_late }}d late</span></span>
-      <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
-      <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
-      <div class="row-menu-wrap">
-        <button type="button" class="row-menu-btn" data-drawer-template="drawer-aw-{{ item.id }}">&#8942;</button>
-      </div>
-      <template id="drawer-aw-{{ item.id }}" class="drawer-template">
-        <a href="/items/{{ item.id }}/edit">Edit</a>
-        <form method="post" action="/items/{{ item.id }}/mark">
-          <input type="hidden" name="next" value="/alerts">
-          <input type="hidden" name="action" value="cancel">
-          <button type="submit">Cancel</button>
-        </form>
-      </template>
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
 {% if dismissed_alerts.count %}
 <div class="grid">
   <div class="card dismissed-card" style="grid-column: span 12;">
@@ -338,6 +319,26 @@
 {% if not alert_count %}
 <div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">Nothing needs your attention right now.</div></div>
 {% endif %}
+
+<div class="grid">
+  <div class="card history-card">
+    <div class="card-title" style="margin-bottom:16px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Alert history</div>
+    {% if alert_history %}
+    <div id="history-log-body">
+      {% for e in alert_history %}
+      <div class="history-log-row"><span class="hl-dot" style="background:{{ 'var(--neon-violet)' if e.kind == 'ghost_item' else 'var(--neon-pink)' }};"></span><span class="hl-date">{{ e.at|nice_when }}</span><span class="hl-text">{{ e.text }}</span></div>
+      {% endfor %}
+    </div>
+    <div class="search-pagination" id="history-pagination" style="display:none; margin-top:14px;">
+      <button type="button" class="warn-action-btn" id="history-prev-btn">&larr; Prev</button>
+      <span class="muted" style="font-size:12px;" id="history-page-label">Page 1 of 1</span>
+      <button type="button" class="warn-action-btn" id="history-next-btn">Next &rarr;</button>
+    </div>
+    {% else %}
+    <div class="empty-note">Nothing resolved yet.</div>
+    {% endif %}
+  </div>
+</div>
 
 </div><!-- /tab-alerts -->
 
@@ -460,8 +461,8 @@
         <div id="notiflog-body">
         {% for n in notification_log %}
         <div class="notif-log-row">
-          <span class="notif-log-date mono">{{ n.sent_at[:16] }}</span>
-          <span class="notif-log-title">{{ n.title }}</span>
+          <span class="notif-log-date">{{ n.sent_at|nice_when(true) }}</span>
+          <span class="notif-log-title">{{ n.title }}{% if not n.success and n.error %}<small class="notif-log-err">{{ n.error }}</small>{% endif %}</span>
           <span class="notif-log-status {{ 'ok' if n.success else 'bad' }}" {% if n.error %}title="{{ n.error }}"{% endif %}>{{ "Sent" if n.success else "Failed" }}</span>
         </div>
         {% endfor %}

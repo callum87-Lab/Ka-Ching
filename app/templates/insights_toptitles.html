@@ -69,10 +69,10 @@
 {% if top_titles or series_totals %}
 <div class="grid">
   <div class="card plain-stat" data-card="titles.stats">
-    <div class="plain-stat-label">Priciest single item</div>
-    {% if priciest_item %}
-    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</div>
-    <div class="plain-stat-sub">{{ priciest_item.name }}</div>
+    <div class="plain-stat-label">{{ gw.many }} tracked</div>
+    {% if all_series_totals %}
+    <div class="plain-stat-value mono">{{ all_series_totals|length }}</div>
+    <div class="plain-stat-sub">{{ all_series_totals|sum(attribute='count') }} {{ gw.item_many }} between them</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
   <div class="card plain-stat" data-card="titles.stats">
@@ -86,7 +86,7 @@
     <div class="plain-stat-label">Most collected {{ gw.one|lower }}</div>
     {% if most_collected_series %}
     <div class="plain-stat-value mono">{{ most_collected_series.count }}</div>
-    <div class="plain-stat-sub">{{ most_collected_series.series }} &middot; {{ gw.item_many }} tracked</div>
+    <div class="plain-stat-sub">{{ gw.item_many|capitalize }} of {{ most_collected_series.series }}</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
   <div class="card plain-stat" data-card="titles.stats">
@@ -129,7 +129,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <div class="card-note">Ranked by cover price, not what you actually paid. Variants and eBay pickups can run above or below cover.</div>
+    <div class="card-note">Ranked by item price, before shipping.</div>
   </div>
 </div>
 {% endif %}
@@ -148,7 +148,7 @@
         <span class="mono" style="text-align:right; color:var(--text-dim);">{{ s.count }} {{ gw.item if s.count == 1 else gw.item_many }}</span>
       </div>
       {% endfor %}
-    <div class="card-note">{% if gw.numbered_only %}Series from the "#N" in each title (or the Series box, if filled in), summed by total spend.{% else %}Grouped by the {{ gw.one }} box; comics and manga use the series in the title when it&rsquo;s left empty.{% endif %} The top 10.</div>
+    <div class="card-note">{% if gw.numbered_only %}Series from the "#N" in each title (or the Series box, if filled in), summed by total spend.{% else %}Grouped by the {{ gw.one }} box{% if gw.any_numbered %}; comics and manga use the series in the title when it&rsquo;s left empty{% endif %}; anything with an empty box isn&rsquo;t counted.{% endif %} The top 10.</div>
     {% else %}
     <div class="card-note">Nothing tracked yet.</div>
     {% endif %}

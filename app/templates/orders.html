@@ -62,7 +62,7 @@
 
 <div class="page-head">
   <h1>Orders</h1>
-  <p>{{ currency() }}{{ "{:,.2f}".format(viewed_remaining_total) }} left of {{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }} this month</p>
+  <p>{% if not viewed_grand_total %}Nothing logged for this month{% elif viewed_remaining_total == viewed_grand_total %}{{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }} due this month{% elif viewed_remaining_total == 0 %}{{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }} this month, all paid{% else %}{{ currency() }}{{ "{:,.2f}".format(viewed_remaining_total) }} left of {{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }} this month{% endif %}</p>
 </div>
 
 {% macro item_row(item) %}
@@ -107,7 +107,7 @@
   <div class="card list-card">
     <div class="list-card-head">
       <div class="list-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>This week</div>
-      <span class="list-total"><b>{{ currency() }}{{ "{:,.2f}".format(week_remaining) }}</b> left of {{ currency() }}{{ "{:,.2f}".format(week_total) }}</span>
+      <span class="list-total">{% if week_remaining == week_total %}<b>{{ currency() }}{{ "{:,.2f}".format(week_total) }}</b> due{% else %}<b>{{ currency() }}{{ "{:,.2f}".format(week_remaining) }}</b> left of {{ currency() }}{{ "{:,.2f}".format(week_total) }}{% endif %}</span>
     </div>
     {% if week_groups %}
       {% for group in week_groups %}
@@ -146,7 +146,7 @@
           {% endif %}
         </div>
       </div>
-      <span class="list-total"><b>{{ currency() }}{{ "{:,.2f}".format(viewed_remaining_total) }}</b> left of {{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }}</span>
+      <span class="list-total">{% if viewed_remaining_total == viewed_grand_total %}<b>{{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }}</b> due{% else %}<b>{{ currency() }}{{ "{:,.2f}".format(viewed_remaining_total) }}</b> left of {{ currency() }}{{ "{:,.2f}".format(viewed_grand_total) }}{% endif %}</span>
     </div>
 
     {% if viewed_groups %}

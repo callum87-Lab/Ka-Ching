@@ -114,7 +114,7 @@ def test_top_titles_groups_cards_by_set(client, fresh_db):
     _set_series(fresh_db, "Silver Tempest ETB", "Silver Tempest")
     page = client.get(f"/insights/top-titles?cats={cards}").text
     assert "Top sets by total spend" in page and "All sets, compared" in page
-    assert "Fusion Strike" in page and "£69.98" in page and "2 cards" in page
+    assert "Fusion Strike" in page and "£69.98" in page and "2 items" in page
     assert "Mystery tin</td>" not in page.split("All sets, compared")[1]
 
 

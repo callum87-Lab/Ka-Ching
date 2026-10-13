@@ -55,7 +55,11 @@ round of fixes from a full audit makes the everyday jobs quicker.
 - **Typing a new category** in a category box: the "Add ..." row comes first
   and is highlighted, and **+ New category...** stays at the top of the list.
 - **Insights -> Overview:** the 10 releases card loses its title and just
-  has **Recent**, **Most expensive** and **Lowest** tabs. Figures say
+  has **Recent**, **Most expensive** and **Lowest** tabs, and the "Edit
+  priciest item" link is gone.
+- **Where each series sits** (Price creep) shows the same hover box as the
+  charts: first and latest price, change and category.
+- **Log orders** tabs are now **Paste an order** and **Add by hand**. Figures say
   "item" rather than "issue", and "Busiest day of the week" is clearer
   about what it means.
 - **The sidebar budget box** sits at the very bottom, below Collapse.
@@ -63,8 +67,32 @@ round of fixes from a full audit makes the everyday jobs quicker.
   date pickers and scroll bars match light or dark themes properly.
 
 ### Fixes
+- **Shipping was counted too many times for orders with several release
+  dates.** An order's real postage (from a pasted order page) was added to
+  every parcel in it, so a pre-order spread over several weeks could show
+  its whole postage again on each one. It's now shared across the order's
+  parcels: matched one-to-one when there's a figure per parcel, otherwise
+  split evenly. Still due, budgets, shipping figures and charts that use
+  real postage will come out lower and correct.
+- The Dashboard's **year so far** and **all time** figures now include
+  shipping, like every other total.
+- Price creep only offers categories with **Numbered issues** switched on,
+  so things like Funko Pops with a "#" in the name no longer show up as a
+  series; manga is counted in volumes.
+- Series typed in capitals (common in eBay listings) group with the same
+  series written normally.
+- Top titles names every type in a mixed collection ("Series / Set /
+  Artist"), and the price buckets on Overview use your currency.
+- The Alerts page shows open alerts first, with the history underneath,
+  and dates read "15 Sep" rather than "09-15" everywhere.
+- Failed notifications show why they failed.
+- The 12-month trend line no longer dips below zero between quiet months.
 - Search filters, the Delay buttons, the calendar legend, shop rows and
-  alert rows could run off the edge of narrow screens.
+  alert rows could run off the edge of narrow screens; the This week list
+  could cut off its last link on a phone.
+- Wording tidied throughout: "due" instead of "left of" when nothing's
+  paid yet, clearer labels on Spend by shop and Price creep, shorter help
+  text, and fewer repeated figures.
 - Leftover mentions of the removed `/classic/` interface.
 
 ## v3.3.0 - a calmer, premium look

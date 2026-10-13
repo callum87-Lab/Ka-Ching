@@ -369,7 +369,7 @@ def edit_item_form_v2(request: Request, item_id: int):
     edit_history = [dict(r) for r in cur.fetchall()]
     for h in edit_history:
         try:
-            h["date_label"] = datetime.fromisoformat(h["changed_at"]).strftime("%d %b")
+            h["date_label"] = datetime.fromisoformat(h["changed_at"]).strftime("%-d %b")
         except (ValueError, TypeError):
             h["date_label"] = h["changed_at"][:10] if h["changed_at"] else ""
     conn.close()

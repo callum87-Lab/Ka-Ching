@@ -14,6 +14,7 @@
   .shop-row:first-of-type { border-top: none; }
   .shop-row .src-dot { width: 9px; height: 9px; border-radius: 50%; }
   .shop-row .shop-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .shop-row .shop-count { white-space: nowrap; }
   .shop-subrow span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .shop-row .seller-count { font-weight: 400; color: var(--text-dim); font-size: 12.5px; margin-left: 4px; }
   .shop-bar-track { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; }
@@ -85,16 +86,16 @@
     <div class="plain-stat-label">Fastest growing</div>
     {% if fastest_growing_shop %}
     <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(fastest_growing_shop.last_90d_total) }}</div>
-    <div class="plain-stat-sub"><span class="src-dot" style="width:8px;height:8px;border-radius:50%;background:{{ fastest_growing_shop.color }};display:inline-block;margin-right:4px;"></span>{{ fastest_growing_shop.source }} &middot; +{{ fastest_growing_shop.trend_pct }}% vs last 90d</div>
+    <div class="plain-stat-sub"><span class="src-dot" style="width:8px;height:8px;border-radius:50%;background:{{ fastest_growing_shop.color }};display:inline-block;margin-right:4px;"></span>{{ fastest_growing_shop.source }} &middot; up {{ fastest_growing_shop.trend_pct }}% on the 90 days before</div>
     {% else %}
     <div class="plain-stat-value">&mdash;</div>
     <div class="plain-stat-sub">Not enough history yet</div>
     {% endif %}
   </div>
   <div class="card plain-stat" data-card="shop.stats">
-    <div class="plain-stat-label">Avg per shop</div>
-    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(avg_per_shop) }}</div>
-    <div class="plain-stat-sub">{{ shop_total_issues }} item{{ "s" if shop_total_issues != 1 else "" }} total</div>
+    <div class="plain-stat-label">Shipping, all time</div>
+    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(total_all_shipping) }}</div>
+    <div class="plain-stat-sub">{{ shipping_ratio_pct }}% on top of what the items cost</div>
   </div>
 </div>
 
@@ -156,7 +157,7 @@
   <div class="card compare-card" data-card="shop.compare" style="grid-column: span 12;">
     <div class="card-title" style="margin-bottom:10px;">Shop comparison</div>
     <table class="compare-table">
-      <thead><tr><th>Shop</th><th class="num">Total</th><th class="num">Items</th><th class="num">Avg/item</th><th class="num">Avg shipping</th><th class="num">Last 90d</th></tr></thead>
+      <thead><tr><th>Shop</th><th class="num">Total</th><th class="num">Items</th><th class="num">Avg/item</th><th class="num">Shipping / item</th><th class="num">Last 90d</th></tr></thead>
       <tbody>
         {% for s in shop_stats %}
         <tr>
@@ -231,7 +232,7 @@
       offset += dash;
 
       var legendRow = legend.querySelector('.donut-legend-row[data-source="' + CSS.escape(s.source) + '"]');
-      if (legendRow) legendRow.querySelector('.pct').textContent = s.pct + '%';
+      if (legendRow) legendRow.querySelector('.pct').textContent = (s.pct >= 10 ? Math.round(s.pct) : Math.round(s.pct * 10) / 10) + '%';
     });
     totalText.textContent = '{{ currency() }}' + Math.round(d.total).toLocaleString('en-GB');
     periodText.textContent = range === 'all' ? 'total tracked' : 'last 90 days';
@@ -316,12 +317,15 @@
     var shown = series.filter(function (s) { return visibleShops[s.name]; });
     var W2 = 760, H2 = 250, pl = 8, pr = 8, pt = 26, pb = 28;
     svg.setAttribute('viewBox', '0 0 ' + W2 + ' ' + H2);
+    var fontScale = Math.min(1, W2 / (svg.getBoundingClientRect().width || W2));
     var n = months.length, slot = (W2 - pl - pr) / n, bw = Math.min(34, slot * 0.56);
     var totals = months.map(function (_, i) { return shown.reduce(function (a, s) { return a + s.data[i]; }, 0); });
     var maxVal = Math.max.apply(null, totals.concat([1])) * 1.12;
     function el(tag, attrs) {
       var e = document.createElementNS(svgns, tag);
       Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      // Keep text the same size as the page's on wide screens, where the chart is scaled up
+      if (attrs['font-size'] && fontScale < 1) e.setAttribute('font-size', attrs['font-size'] * fontScale);
       svg.appendChild(e); return e;
     }
     for (var g = 1; g <= 3; g++) {

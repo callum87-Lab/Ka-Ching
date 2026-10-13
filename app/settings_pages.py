@@ -26,7 +26,7 @@ def _restore_copies():
         full = os.path.join(folder, fname)
         try:
             size_bytes = os.path.getsize(full)
-            taken_at = datetime.strptime(stamp, "%Y%m%d%H%M%S").strftime("%d %b %Y, %H:%M")
+            taken_at = datetime.strptime(stamp, "%Y%m%d%H%M%S").strftime("%-d %b %Y, %H:%M")
         except (OSError, ValueError):
             continue
         size_label = f"{size_bytes / 1024 / 1024:.2f} MB" if size_bytes >= 1024 * 1024 else f"{size_bytes / 1024:.1f} KB"
@@ -88,7 +88,7 @@ def _build_settings_context(
             # Filename is kaching-auto-YYYYMMDD-HHMMSS.db
             stamp = fname.replace("kaching-auto-", "").replace(".db", "")
             try:
-                taken_at = datetime.strptime(stamp, "%Y%m%d-%H%M%S").strftime("%d %b %Y, %H:%M")
+                taken_at = datetime.strptime(stamp, "%Y%m%d-%H%M%S").strftime("%-d %b %Y, %H:%M")
             except ValueError:
                 taken_at = fname
             past_backups.append({"filename": fname, "size_label": size_label, "taken_at": taken_at})

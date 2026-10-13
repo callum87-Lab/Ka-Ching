@@ -224,7 +224,7 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:0;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Budget</div>
-      <p class="warn-hint" style="margin-top:10px;">Set a monthly target and the dashboard shows how close this month's forecast total is to it. Leave blank to hide the progress bar entirely.</p>
+      <p class="warn-hint" style="margin-top:10px;">Set a budget and the Dashboard shows how this cycle's spending, paid and still due, compares with it. Leave it empty to hide the budget bar.</p>
       <form method="post" action="/settings">
         <input type="hidden" name="next" value="/settings">
         <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
@@ -245,7 +245,7 @@
         <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
 
         <div class="settings-form-grid">
-          <label class="field-label"><span>Monthly budget ({{ currency() }})</span><input class="field-input" type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00"></label>
+          <label class="field-label"><span>Budget ({{ currency() }})</span><input class="field-input" type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00"></label>
           <label class="field-label"><span>Budget cycle</span>
             <select class="field-input" name="budget_cycle">
               <option value="monthly" {{ 'selected' if values.budget_cycle == 'monthly' else '' }}>Monthly</option>
@@ -319,11 +319,11 @@
               <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
               <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
               <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
-              <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
+              <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log orders</option>
             </select>
           </label>
         </div>
-        <p class="warn-hint">Changes the symbol shown everywhere in the app, and lets the paste-in importer and manual add form recognise prices in that currency too. The two dedicated shop parsers (Forbidden Planet, eBay) are still built around their UK pages specifically, whatever this is set to.</p>
+        <p class="warn-hint">Currency changes the symbol everywhere, and the importer reads prices in it. The Forbidden Planet and eBay readers are built for their UK sites whatever this is set to.</p>
         <label class="notif-toggle-row">
           <span class="toggle-switch {{ 'on' if values.auto_backup == 'yes' else '' }}" data-toggle-name="auto_backup"></span>
           <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }} style="display:none;">
@@ -341,13 +341,13 @@
         <button type="button" class="collapse-btn" data-target="catlimits-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="catlimits-body">
-        <p class="warn-hint">Optional spending limit per category, for each budget cycle. Listed here: categories switched on below, anything with items, and anything with a limit already set. Leave blank for no limit. The Dashboard's Budget by category card shows each one, and going over shows in Alerts (and sends a push if budget alerts are on).</p>
+        <p class="warn-hint">An optional limit per category for each budget cycle; leave it empty for no limit. Categories with items or a limit are listed. Going over shows on the Dashboard and in Alerts, with a push if budget alerts are on.</p>
         <form method="post" action="/settings/category-limits">
           <input type="hidden" name="next" value="/settings">
           <div class="catlimit-list">
             {% set _unused = [] %}
             {% for c in categories_with_counts %}
-            {% set _in_use = c.item_count > 0 or c.id in category_limits or c.has_series %}
+            {% set _in_use = c.item_count > 0 or c.id in category_limits %}
             {% if not _in_use %}{% set _ = _unused.append(c.id) %}{% endif %}
             <label class="catlimit-row{{ '' if _in_use else ' catlimit-unused' }}"><span class="catlimit-name"><span class="cat-dot" style="background:{{ c.color }};"></span>{{ c.name }}</span>
               <span class="catlimit-input"><span class="muted">{{ currency() }}</span><input class="field-input" type="number" step="0.01" min="0" name="limit_{{ c.id }}" value="{{ '%.2f'|format(category_limits[c.id]) if c.id in category_limits else '' }}" placeholder="No limit"></span>
@@ -646,7 +646,7 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Data backup</div>
-      <p class="warn-hint">Downloads the whole tracked database as a single file. Every item, every manual tick, everything. Separate from GitHub on purpose, since GitHub never sees your real order data.</p>
+      <p class="warn-hint">Downloads everything Ka-Ching! holds as a single file: every item, every tick and every setting. Use it to restore, or to move to another server.</p>
       <p class="warn-hint"><span class="mono">{{ item_count }}</span> item{{ "s" if item_count != 1 else "" }} tracked &middot; database file is <span class="mono">{{ db_size_label }}</span></p>
       <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
         <a href="/settings/backup" class="btn-primary">Download backup</a>
@@ -711,7 +711,7 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>About</div>
-      <p class="warn-hint">Ka-Ching! answers exactly two questions. What's due this week and what it'll cost, and what this month (and next) is forecast to come to. Nothing more: no collection cataloguing, no accounts, no cloud, nothing ever leaves this server.</p>
+      <p class="warn-hint">Ka-Ching! keeps track of what your collecting costs: what's due and when, what each month comes to, and where the money goes. It isn't a catalogue of what you own. No accounts, no cloud: everything stays on this server.</p>
       <p class="about-meta"><span class="mono">v{{ app_version }}</span> &middot; <a href="https://github.com/callum87-Lab/Ka-Ching" target="_blank" rel="noopener">View on GitHub</a></p>
     </div>
   </div>
@@ -721,9 +721,9 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span>Getting started</div>
-      <div class="getting-started-step"><span class="gs-num">1</span><div><b>Log your first order.</b> Paste an order-history page from Forbidden Planet or eBay into Log Orders, or add items by hand. Either way, nothing's saved until you confirm the review screen.</div></div>
-      <div class="getting-started-step"><span class="gs-num">2</span><div><b>Set a monthly budget.</b> General &rarr; Budget, over on Settings. Once it's set, the budget bar at the top of the Dashboard tracks it and warns you if you go over.</div></div>
-      <div class="getting-started-step"><span class="gs-num">3</span><div><b>Turn on notifications.</b> Alerts &rarr; Notifications, pick a provider (ntfy, Gotify, Telegram, or a webhook), send a test to confirm it works, then it'll check once a day for anything releasing tomorrow.</div></div>
+      <div class="getting-started-step"><span class="gs-num">1</span><div><b>Log your first order.</b> Paste an order-history page from Forbidden Planet or eBay into Log orders, or add items by hand. A pasted page is only saved once you confirm the review screen.</div></div>
+      <div class="getting-started-step"><span class="gs-num">2</span><div><b>Set a budget.</b> Settings &rarr; General &rarr; Budget. The Dashboard then shows how each month compares, and turns red if you go over.</div></div>
+      <div class="getting-started-step"><span class="gs-num">3</span><div><b>Turn on notifications.</b> Alerts &rarr; Notifications: pick a provider (ntfy, Gotify, Telegram or a webhook) and send a test. You'll then get one message a day when something releases tomorrow.</div></div>
       {% if sync_enabled() %}<div class="getting-started-step"><span class="gs-num">4</span><div><b>Connect the Android app (optional).</b> Settings &rarr; Sync, generate a key, paste it into the app. From then on both stay in step automatically.</div></div>{% endif %}
       <p class="warn-hint" style="margin:14px 0 0;">Want the quick setup again? <a href="/welcome">Run the setup guide</a> - what you collect, pre-orders, pages, budget, theme and password. Nothing is lost; every step can be skipped.</p>
     </div>
@@ -746,8 +746,8 @@
         <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It released a while ago but hasn't been marked paid yet. Usually just a normal short delay before the retailer actually charges the card. Worth a check if it's been sitting a while, but not necessarily a problem.</p></div>
       </div>
       <div class="day-group" id="faq-4">
-        <div class="day-group-head"><div class="day-group-label">What's a "ghost item"?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">An entry that came from an old parser issue and can't be matched to a real order number. Almost always a duplicate of something already tracked properly elsewhere. Worth checking before removing.</p></div>
+        <div class="day-group-head"><div class="day-group-label">Why are some items flagged "no order number"?</div><span class="day-group-arrow">&#9662;</span></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">Every real Forbidden Planet order has an order number, so one without is usually left over from an older import and a duplicate of something tracked properly. Check before removing it, or mark it Fine as it is if it's genuine.</p></div>
       </div>
       <div class="day-group" id="faq-5">
         <div class="day-group-head"><div class="day-group-label">Does anything ever leave this server?</div><span class="day-group-arrow">&#9662;</span></div>

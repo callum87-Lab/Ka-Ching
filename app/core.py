@@ -209,6 +209,24 @@ def _json_for_script(value):
 templates.env.filters["json_script"] = _json_for_script
 
 
+def _nice_when(value, with_time=False):
+    """An ISO date or timestamp as "15 Sep" ("15 Sep 2025" in another
+    year), with ", 08:00" if asked for."""
+    if not value:
+        return ""
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return str(value)
+    out = dt.strftime("%-d %b") if dt.year == date.today().year else dt.strftime("%-d %b %Y")
+    if with_time and len(str(value)) > 10:
+        out += dt.strftime(", %H:%M")
+    return out
+
+
+templates.env.filters["nice_when"] = _nice_when
+
+
 def render(name, context, **kwargs):
     """Render a page. (Starlette 1.x takes the request as the first
     argument; every context here already carries it.)"""
@@ -793,6 +811,54 @@ def _postage_by_order(cur):
 
 
 @_per_request
+def _postage_by_parcel(cur):
+    """Exact postage for each parcel of an order: {order: {date: amount}}.
+    An order's postage covers all of its parcels (one per release date), so
+    it's shared across them rather than counted again for each one. When
+    there's one postage figure per parcel they're matched up in date order;
+    otherwise the order's total is split evenly. An order whose parcels all
+    share one date (a split delivery) still gets its full total."""
+    figures = {}
+    for r in cur.execute("SELECT order_number, amount FROM shipment_postage ORDER BY order_number, shipment_index").fetchall():
+        figures.setdefault(r["order_number"], []).append(r["amount"] or 0.0)
+    if not figures:
+        return {}
+    dates = {}
+    for r in cur.execute(
+        """SELECT DISTINCT order_number, COALESCE(release_date, placed_date) AS d FROM items
+           WHERE status != 'cancelled' AND order_number IS NOT NULL AND COALESCE(release_date, placed_date) IS NOT NULL"""
+    ).fetchall():
+        if r["order_number"] in figures:
+            dates.setdefault(r["order_number"], set()).add(r["d"])
+    out = {}
+    for order, figs in figures.items():
+        ds = sorted(dates.get(order, ()))
+        if not ds:
+            continue
+        if len(figs) == len(ds):
+            out[order] = {d: round(a, 2) for d, a in zip(ds, figs)}
+        else:
+            each = round(sum(figs) / len(ds), 2)
+            out[order] = {d: each for d in ds}
+    return out
+
+
+def exact_parcel_postage(cur, order_numbers, parcel_date):
+    """The real postage for one parcel (its orders, its date), or None if
+    any of its orders has no postage on record."""
+    if not order_numbers or not parcel_date:
+        return None
+    per_parcel = _postage_by_parcel(cur)
+    total = 0.0
+    for o in order_numbers:
+        amount = per_parcel.get(o, {}).get(parcel_date)
+        if amount is None:
+            return None
+        total += amount
+    return round(total, 2)
+
+
+@_per_request
 def get_shipping_estimate(cur, source=None):
     """Work out shipping per parcel from the person's own order history where
     possible, rather than relying on a guessed constant. Scoped per-shop
@@ -918,7 +984,7 @@ def group_by_date(items):
 
         result.append({
             "date": key,
-            "date_label": date.fromisoformat(key).strftime("%a %d %b") if key else "No date yet",
+            "date_label": date.fromisoformat(key).strftime("%a %-d %b") if key else "No date yet",
             "source_groups": source_groups,
             "subtotal": round(sum(i["price"] for i in group_items), 2),
             "all_paid": all(i["charge_status"] == "charged" for i in group_items),
@@ -945,13 +1011,6 @@ def compute_shipping_for_groups(cur, groups):
 
     Returns (total, spent, remaining, shipment_count, primary_rate,
     primary_source, primary_tier, primary_samples, primary_checked)."""
-    # SUMs every shipment_index for a given order - a split delivery (the
-    # same order captured across more than one real postage figure) must
-    # count all of them, not just whichever row a plain dict comprehension
-    # happened to keep last. This was a real, confirmed bug: an order with
-    # two real shipments was silently having one of them dropped here.
-    exact_by_order = _postage_by_order(cur)
-
     rate_cache = {}
 
     def estimate_for(src):
@@ -964,12 +1023,9 @@ def compute_shipping_for_groups(cur, groups):
     for group in groups:
         for sg in group["source_groups"]:
             order_numbers = {e["order_number"] for e in sg["entries"] if e["order_number"]}
-            known = [exact_by_order[o] for o in order_numbers if o in exact_by_order]
-
-            if order_numbers and len(known) == len(order_numbers):
-                # Every order behind this shipment has its real postage on record
-                rate = round(sum(known), 2)
-            else:
+            # Every order behind this parcel has its real postage on record
+            rate = exact_parcel_postage(cur, order_numbers, group["date"])
+            if rate is None:
                 rate, _, _, _ = estimate_for(sg["source"])
 
             total += rate
@@ -1247,7 +1303,7 @@ def find_duplicate_groups(cur):
         groups.append({
             "name": row["name"],
             "release_date": row["release_date"],
-            "release_date_label": date.fromisoformat(row["release_date"]).strftime("%d %b %Y"),
+            "release_date_label": date.fromisoformat(row["release_date"]).strftime("%-d %b %Y"),
             "entries": entries,
         })
     return groups
@@ -1389,7 +1445,7 @@ def _topbar_most_recent_sync():
     synced_at = datetime.fromisoformat(row["last_synced_at"])
     return {
         "client_label": row["client_label"] or "A device",
-        "label": synced_at.strftime("%d %b, %H:%M"),
+        "label": synced_at.strftime("%-d %b, %H:%M"),
     }
 
 
@@ -1518,10 +1574,19 @@ def get_categories(cur, with_counts=False):
 _ISSUE_RE = re.compile(r"^(.*?)\s*#\d+")
 
 
+def tidy_series(name):
+    """A series name as it should be shown: an ALL-CAPS one (common in eBay
+    listings) in normal title case, so it groups with the same series typed
+    normally."""
+    if name and name == name.upper() and any(c.isalpha() for c in name):
+        name = re.sub(r"[A-Za-z]+('[A-Za-z]+)?", lambda m: m.group(0).capitalize(), name.lower())
+    return name
+
+
 def series_from_name(name):
     """The series part of a numbered title, or None if it has no #N."""
     m = _ISSUE_RE.match(name or "")
-    return m.group(1).strip() or None if m else None
+    return tidy_series(m.group(1).strip()) or None if m else None
 
 
 def item_series(item, kind=None):
@@ -1636,7 +1701,7 @@ CARD_LAYOUT = [
         {"id": "dash.figures", "name": "Key figures", "desc": "This year, all time, still on order, and what needs attention", "essential": True},
         {"id": "dash.catbudget", "name": "Budget by category", "desc": "This cycle's spend split by category, with any limits"},
         {"id": "dash.week", "name": "This week", "desc": "What's due in the next 7 days, by shipment", "preorder": True},
-        {"id": "dash.alerts", "name": "Alerts", "desc": "Awaiting charge, duplicates, ghost items, and backups", "essential": True},
+        {"id": "dash.alerts", "name": "Alerts", "desc": "Awaiting charge, duplicates, items with no order number, and backups", "essential": True},
         {"id": "dash.trend", "name": "Spending", "desc": "Spend per week or month, with your budget", "essential": True},
     ]},
     {"page": "Calendar", "path": "/calendar", "cards": [

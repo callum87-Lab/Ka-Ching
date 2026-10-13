@@ -140,7 +140,6 @@
       <div style="display:flex; align-items:center; gap:8px; font-size:12.5px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--neon-violet);display:inline-block;"></span>Released<span class="mono" style="margin-left:auto; color:var(--neon-violet); font-weight:700;">{{ released_pct }}%</span></div>
       <div style="padding-left:20px; font-size:12.5px; color:var(--text-dim);">{{ released_count }} of {{ total_issues }} items, already out</div>
     </div>
-    <div class="card-note" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">{{ preorder_pct }}% of what you're tracking is still to come: {{ preorder_count }} item{{ "s" if preorder_count != 1 else "" }} on order, not yet released.</div>
   </div>
 
   <div class="card overview-card" data-card="ov.releases">
@@ -175,12 +174,12 @@
     <div class="stat-trio">
       <div>
         <div class="mini-stat-label">Priciest month</div>
-        {% if top_month %}<div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(top_month.total) }}</div><div class="mini-stat-sub">{{ top_month.label }} &middot; {{ top_month.count }} issues</div>{% else %}<div class="mini-stat-value">&mdash;</div>{% endif %}
+        {% if top_month %}<div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(top_month.total) }}</div><div class="mini-stat-sub">{{ top_month.label }} &middot; {{ top_month.count }} {{ "item" if top_month.count == 1 else "items" }}</div>{% else %}<div class="mini-stat-value">&mdash;</div>{% endif %}
       </div>
       <div>
         <div class="mini-stat-label">Avg per month</div>
         <div class="mini-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(avg_per_month) }}</div>
-        {% if month_trend %}<span class="trend-pill {{ 'trend-up' if month_trend.above_average else 'trend-down' }}">{{ '▲' if month_trend.above_average else '▼' }} {{ month_trend.pct }}% ({{ month_trend.label }})</span>{% endif %}
+        {% if month_trend %}<div class="mini-stat-sub">{{ month_trend.label }} was {{ month_trend.pct }}% {{ 'above' if month_trend.above_average else 'below' }} average</div>{% endif %}
       </div>
       <div>
         <div class="mini-stat-label">Next month</div>
@@ -191,7 +190,7 @@
     {% if monthly_budget %}
     <div class="full-bar-row">
       <div class="full-bar-label"><span>This month vs budget</span><span>{{ currency() }}{{ "{:,.2f}".format(current_month_spend) }} of {{ currency() }}{{ "{:,.2f}".format(monthly_budget) }} &middot; {{ budget_vs_month_pct }}%</span></div>
-      <div class="full-bar-track"><div class="full-bar-fill" style="width:{{ budget_vs_month_bar_pct }}%;background:var(--neon-blue);"></div></div>
+      <div class="full-bar-track"><div class="full-bar-fill" style="width:{{ budget_vs_month_bar_pct }}%;background:{{ 'var(--neon-pink)' if budget_vs_month_pct > 100 else 'var(--neon-blue)' }};"></div></div>
     </div>
     {% endif %}
     {% if upcoming_releases %}
@@ -222,7 +221,6 @@
       <div class="full-bar-label"><span>Items vs shipping, all time</span><span>{{ currency() }}{{ "{:,.2f}".format(total_all_comics) }} items &middot; {{ currency() }}{{ "{:,.2f}".format(total_all_shipping) }} shipping</span></div>
       <div class="split-bar-track"><div style="width:{{ comics_share_pct }}%;background:var(--neon-blue);"></div><div style="width:{{ shipping_share_pct }}%;background:var(--neon-pink);"></div></div>
     </div>
-    {% if priciest_item %}<a class="card-note" style="color:var(--neon-blue); text-decoration:none;" href="/items/{{ priciest_item.id }}/edit">Edit priciest item</a>{% endif %}
   </div>
 
   <div class="card dist-card" data-card="ov.dist">
@@ -240,9 +238,9 @@
   <div class="card weekday-card" data-card="ov.ship">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6-9 6-9-6z"/><path d="M3 9v6l9 6 9-6V9"/></svg></span>Shipping and patterns</div>
     <div class="weekday-trio">
-      <div><div class="mini-stat-label">Busiest day of the week</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday[:3] }} ({{ busiest_weekday_count }}){% else %}&mdash;{% endif %}</div></div>
+      <div><div class="mini-stat-label">Busiest day of the week</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday }}{% else %}&mdash;{% endif %}</div>{% if busiest_weekday %}<div class="mini-stat-sub">{{ busiest_weekday_count }} release{{ "s" if busiest_weekday_count != 1 else "" }}</div>{% endif %}</div>
       <div><div class="mini-stat-label">Saved by cancelling</div><div class="mini-stat-value mono" style="font-size:16px;">{{ currency() }}{{ "{:,.2f}".format(cancelled_saved) }}</div></div>
-      <div><div class="mini-stat-label">Shipping vs cover</div><div class="mini-stat-value mono" style="font-size:16px;">{{ shipping_ratio_pct }}%</div></div>
+      <div><div class="mini-stat-label">Shipping vs item cost</div><div class="mini-stat-value mono" style="font-size:16px;">{{ shipping_ratio_pct }}%</div></div>
     </div>
     <div class="weekday-chart" id="weekday-chart">
       {% for w in weekday_chart_by_shop %}
@@ -395,7 +393,6 @@
       bits.push(left < 0 ? '<span class="cm-over">' + fmt(-left) + ' over</span> your ' + fmt(M.budget) + ' budget'
                          : '<span class="cm-under">' + fmt(left) + ' left</span> of your ' + fmt(M.budget) + ' budget');
     }
-    if (due > 0.005) bits.push(fmt(due) + ' still due by ' + M.days_in_month + ' ' + MO);
     if (bits.length) h += '<div class="cm-sub">' + bits.join(' &middot; ') + '</div>';
 
     // Budget bar: spent | still due | budget mark

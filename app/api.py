@@ -99,12 +99,6 @@ def debug_shipping_groups(request: Request, source: str = DEFAULT_SOURCE, key: s
     items = [dict(r) for r in cur.fetchall()]
     dated_items = [i for i in items if i["release_date"]]
 
-    # SUMs every shipment_index for a given order - a split delivery (the
-    # same order captured across more than one real postage figure) must
-    # count all of them, not just whichever row a plain dict comprehension
-    # happened to keep last. This was a real, confirmed bug: an order with
-    # two real shipments was silently having one of them dropped here.
-    exact_by_order = _postage_by_order(cur)
 
     by_date = {}
     for it in dated_items:
@@ -120,9 +114,8 @@ def debug_shipping_groups(request: Request, source: str = DEFAULT_SOURCE, key: s
     for release_date in sorted(by_date.keys()):
         group_items = by_date[release_date]
         order_numbers = {i["order_number"] for i in group_items if i["order_number"]}
-        known = [exact_by_order[o] for o in order_numbers if o in exact_by_order]
-        if order_numbers and len(known) == len(order_numbers):
-            rate = round(sum(known), 2)
+        rate = exact_parcel_postage(cur, order_numbers, release_date)
+        if rate is not None:
             src_label = "real"
         else:
             rate, _, _, _ = estimate_for(source)

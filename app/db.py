@@ -281,7 +281,7 @@ STARTER_CATEGORIES = [
 KINDS = {
     "comics":  {"name": "Comics",           "examples": "Comics, omnibuses",       "group": "Series",    "item": "issue",   "numbered": True},
     "manga":   {"name": "Manga and books",  "examples": "Manga, books, novels",    "group": "Series",    "item": "volume",  "numbered": True},
-    "cards":   {"name": "Trading cards",    "examples": "Pokémon, Magic, sealed",  "group": "Set",       "item": "card",    "numbered": False},
+    "cards":   {"name": "Trading cards",    "examples": "Pokémon, Magic, sealed",  "group": "Set",       "item": "item",    "numbered": False},
     "figures": {"name": "Figures and toys", "examples": "Funko, statues, Lego",    "group": "Line",      "item": "figure",  "numbered": False},
     "vinyl":   {"name": "Vinyl and music",  "examples": "Records, CDs, cassettes", "group": "Artist",    "item": "release", "numbered": False},
     "film":    {"name": "Films and TV",     "examples": "DVD, Blu-ray, 4K",        "group": "Franchise", "item": "release", "numbered": False},
