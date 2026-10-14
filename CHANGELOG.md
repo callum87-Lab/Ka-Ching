@@ -76,6 +76,14 @@ round of fixes from a full audit makes the everyday jobs quicker.
   real postage will come out lower and correct.
 - The Dashboard's **year so far** and **all time** figures now include
   shipping, like every other total.
+- **Insights left out items with no release date.** Older dispatched
+  orders often only have an order date, and Overview's monthly figures
+  (priciest month, average per month, the 12-month trend) and shipping
+  skipped them. They're now dated by their order date, as everywhere else,
+  so Overview, Spend by shop and the Dashboard all give the same total.
+- Overview's **Cumulative spend** card says "released so far" rather than
+  "spent", and compares the whole month with your budget, so it no longer
+  disagrees with the Dashboard about whether you're over.
 - Price creep only offers categories with **Numbered issues** switched on,
   so things like Funko Pops with a "#" in the name no longer show up as a
   series; manga is counted in volumes.

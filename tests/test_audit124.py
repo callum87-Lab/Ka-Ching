@@ -101,3 +101,13 @@ def test_price_buckets_use_the_chosen_currency(client, fresh_db):
     add_item(fresh_db, "Saga #1", 3.99, -10)
     page = client.get("/insights").text
     assert "$0–10" in page and "£0" not in page
+
+
+def test_overview_counts_items_dated_only_by_order_date(client, fresh_db):
+    from datetime import date as _d, timedelta as _t
+    add_item(fresh_db, "Old order #1", 20.00, None, charge_status="charged", status="dispatched",
+             placed=_d.today() - _t(days=40), order_number="777")
+    _postage(fresh_db, "777", [3.00])
+    page = client.get("/insights").text
+    assert "£23.00 total, all time" in page
+    assert "£23.00 with what" in client.get("/").text

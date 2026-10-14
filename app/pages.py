@@ -454,11 +454,9 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
         )
         period_items = [dict(r) for r in cur.fetchall()]
         comics_total = round(sum(i["price"] for i in period_items), 2)
-        # group_by_date groups by release_date, so only items that actually
-        # have one can go through it - an item with no release date yet
-        # (counted here via its placed date instead) has no shipment date
-        # to group shipping by, but its price still counts toward the total.
-        dated_items = [i for i in period_items if i["release_date"]]
+        # Parcels are grouped by release date, or order date when there
+        # isn't one - the same as every other total.
+        dated_items = [i for i in period_items if i["release_date"] or i["placed_date"]]
         groups = group_by_date(dated_items)
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
         # How much of the period is already paid: charged items, plus their
@@ -643,11 +641,17 @@ def _build_insights_context(request: Request, category_ids=None):
             i for i in all_items
             if (i.get("category_id") if i.get("category_id") in _known_cats else _default_cat) in category_ids
         ]
-    dated_items = [i for i in all_items if i["release_date"]]
+    # Every figure here dates an item the way the rest of the app does: by
+    # its release date, or its order date when it hasn't got one (older
+    # dispatched orders often don't).
+    for i in all_items:
+        i["_d"] = i["release_date"] or i["placed_date"]
+    dated_items = [i for i in all_items if i["_d"]]
+    released_items = [i for i in dated_items if i["release_date"]]
 
     by_month = {}
     for it in dated_items:
-        month_key = it["release_date"][:7]
+        month_key = it["_d"][:7]
         by_month.setdefault(month_key, []).append(it)
 
     month_stats = []
@@ -872,7 +876,7 @@ def _build_insights_context(request: Request, category_ids=None):
     for it in all_items:
         cid = it.get("category_id")
         cat_all[cid] = cat_all.get(cid, 0.0) + it["price"]
-        if (it["release_date"] or "").startswith(this_year_prefix):
+        if (it["release_date"] or it["placed_date"] or "").startswith(this_year_prefix):
             cat_year[cid] = cat_year.get(cid, 0.0) + it["price"]
 
     def _category_spend(totals):
@@ -1028,7 +1032,7 @@ def _build_insights_context(request: Request, category_ids=None):
     # Busiest release day of the week - which weekday has the most issues
     # released on it, across everything dated.
     weekday_counts = {}
-    for it in dated_items:
+    for it in released_items:
         wd = date.fromisoformat(it["release_date"]).strftime("%A")
         weekday_counts[wd] = weekday_counts.get(wd, 0) + 1
     busiest_weekday = max(weekday_counts, key=weekday_counts.get) if weekday_counts else None
@@ -1052,11 +1056,11 @@ def _build_insights_context(request: Request, category_ids=None):
     # Same weekday breakdown, but split per shop so each day's bar can show
     # a stacked segment per shop, with a toggle to show/hide each one.
     weekday_shop_counts = {day: {} for day in weekday_order}
-    for it in dated_items:
+    for it in released_items:
         wd = date.fromisoformat(it["release_date"]).strftime("%A")
         shop = source_tab_group(it["source"])
         weekday_shop_counts[wd][shop] = weekday_shop_counts[wd].get(shop, 0) + 1
-    weekday_shops = sorted({source_tab_group(it["source"]) for it in dated_items})
+    weekday_shops = sorted({source_tab_group(it["source"]) for it in released_items})
     weekday_shop_colors = {s: shop_color(s) for s in weekday_shops}
     weekday_chart_by_shop = []
     for day in weekday_order:
@@ -1088,7 +1092,7 @@ def _build_insights_context(request: Request, category_ids=None):
     raw_shop_stats = []
     for source, items in by_shop.items():
         comics_total = round(sum(i["price"] for i in items), 2)
-        dated_shop_items = [i for i in items if i["release_date"]]
+        dated_shop_items = [i for i in items if i["release_date"] or i["placed_date"]]
         groups = group_by_date(dated_shop_items)
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
         raw_shop_stats.append({
@@ -1138,7 +1142,7 @@ def _build_insights_context(request: Request, category_ids=None):
     shop_90d_total = {}
     shop_prev90d_total = {}
     for it in dated_items:
-        rd = date.fromisoformat(it["release_date"])
+        rd = date.fromisoformat(it["_d"])
         group_name = source_tab_group(it["source"])
         if window_start <= rd <= today_ins:
             shop_90d_total[group_name] = shop_90d_total.get(group_name, 0) + it["price"]
@@ -1157,7 +1161,7 @@ def _build_insights_context(request: Request, category_ids=None):
         else:
             s["trend_pct"] = None
             s["trend_up"] = None
-        avg_shipping_shop_items = [i for i in dated_items if source_tab_group(i["source"]) == s["source"] and i["release_date"]]
+        avg_shipping_shop_items = [i for i in dated_items if source_tab_group(i["source"]) == s["source"]]
         if avg_shipping_shop_items:
             shop_groups = group_by_date(avg_shipping_shop_items)
             shop_shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, shop_groups)
@@ -1234,7 +1238,7 @@ def _build_insights_context(request: Request, category_ids=None):
 
     # This month's release days, for the Cumulative spend card below.
     today = date.today()
-    month_items = [i for i in dated_items if i["release_date"][:7] == today.strftime("%Y-%m")]
+    month_items = [i for i in dated_items if i["_d"][:7] == today.strftime("%Y-%m")]
     month_groups = group_by_date(month_items)
     cumulative_month_label = today.strftime("%B")
 

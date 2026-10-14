@@ -386,12 +386,14 @@
       return;
     }
     // Headline
-    h += '<div class="cm-headline"><span class="cm-big mono">' + fmt(spent) + '</span><span class="cm-sub">spent so far</span></div>';
+    // "Released" = out by today; whether it's been charged yet is the
+    // Dashboard's job. The budget compares the whole month, like the Dashboard.
+    h += '<div class="cm-headline"><span class="cm-big mono">' + fmt(spent) + '</span><span class="cm-sub">released so far</span></div>';
     var bits = [];
     if (M.budget) {
-      var left = M.budget - spent;
-      bits.push(left < 0 ? '<span class="cm-over">' + fmt(-left) + ' over</span> your ' + fmt(M.budget) + ' budget'
-                         : '<span class="cm-under">' + fmt(left) + ' left</span> of your ' + fmt(M.budget) + ' budget');
+      var left = M.budget - spent - due;
+      bits.push(fmt(spent + due) + ' this month in all, ' + (left < 0 ? '<span class="cm-over">' + fmt(-left) + ' over</span> your ' + fmt(M.budget) + ' budget'
+                         : '<span class="cm-under">' + fmt(left) + ' under</span> your ' + fmt(M.budget) + ' budget'));
     }
     if (bits.length) h += '<div class="cm-sub">' + bits.join(' &middot; ') + '</div>';
 
@@ -420,7 +422,7 @@
     if (M.cats && M.cats.length >= 2) {
       h += '<div class="cm-bar-cats">' + M.cats.map(function (c) { return '<span><i style="background:' + c.color + '"></i>' + esc(c.name) + ' ' + fmt(c.spent + c.due) + '</span>'; }).join('') + '</div>';
     }
-    h += '<div class="cm-bar-lbls"><span>' + fmt(spent) + ' spent' + (due > 0.005 ? ' &middot; ' + fmt(due) + ' due' : '') + '</span>' +
+    h += '<div class="cm-bar-lbls"><span>' + fmt(spent) + ' released' + (due > 0.005 ? ' &middot; ' + fmt(due) + ' to come' : '') + '</span>' +
          (M.budget ? '<span style="color:var(--neon-pink)">Budget ' + fmt(M.budget) + '</span>' : '') + '</div>';
 
     // Release-day bars
@@ -464,7 +466,7 @@
     s += '<line class="cm-hover" x1="0" x2="0" y1="' + pad.t + '" y2="' + (H - pad.b) + '" stroke="rgba(231,236,250,.35)" style="display:none"/></svg>';
     h += '<div class="cm-chart"><div class="cm-tip"></div>' + s + '</div>';
 
-    var leg = '<span><i style="background:' + (sTotal ? 'linear-gradient(var(--neon-blue),var(--neon-violet))' : (sItems ? 'var(--neon-green)' : 'var(--neon-pink)')) + '"></i>Spent that day</span>';
+    var leg = '<span><i style="background:' + (sTotal ? 'linear-gradient(var(--neon-blue),var(--neon-violet))' : (sItems ? 'var(--neon-green)' : 'var(--neon-pink)')) + '"></i>Released that day</span>';
     if (!sTotal && sItems && sShip) leg = '<span><i style="background:var(--neon-green)"></i>Items</span><span><i style="background:var(--neon-pink)"></i>Shipping</span>';
     if (due > 0.005) leg += '<span><i style="border:1px solid var(--neon-blue);background:color-mix(in srgb, var(--neon-blue) 20%, transparent)"></i>Scheduled</span>';
     if (M.budget) leg += '<span><i style="background:var(--neon-pink);width:3px;border-radius:2px"></i>Budget mark</span>';
