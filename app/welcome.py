@@ -21,7 +21,8 @@ def setup_needed(cur):
 def _page_cards():
     """The toggles shown on the 'Your pages' step: the cards the presets decide."""
     names = {c["id"]: c["name"] for pg in CARD_LAYOUT for c in pg["cards"]}
-    pretty = {"page.creep": "Price creep", "page.titles": "Top titles"}
+    pretty = {"page.creep": "Price creep", "page.titles": "Top titles",
+              "titles.series": "Top series and sets by spend", "titles.compare": "Every series and set, compared"}
     out = []
     for cid in list(TYPE_CARDS) + _preorder_cards():
         page = next(pg["page"] for pg in CARD_LAYOUT if any(c["id"] == cid for c in pg["cards"]))

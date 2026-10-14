@@ -80,7 +80,7 @@
   .day-group:not(.expanded) .day-group-arrow { transform: rotate(-90deg); }
   .day-group-body { margin-top: 10px; }
   .day-group:not(.expanded) .day-group-body { display: none; }
-  .wide-head { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; margin: 14px 0 4px; }
+  .wide-head { font-size: 13.5px; color: var(--text); font-weight: 600; margin: 16px 0 4px; }
   .wide-choices .layout-preset { cursor: pointer; font-family: inherit; }
   /* every option box in a row the same height, whatever its text */
   .track-types { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 6px 0 14px; }
@@ -107,7 +107,8 @@
   .layout-preset { text-align: left; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
   .layout-preset.sel { border-color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 8%, transparent); }
   .layout-preset b { display: block; font-size: 14px; }
-  .layout-preset span { font-size: 12px; color: var(--text-muted); }
+  .warn-hint code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; background: var(--hover); color: var(--text); padding: 1px 5px; border-radius: 5px; }
+  .layout-preset span { font-size: 12.5px; color: var(--text-muted); font-weight: 400; line-height: 1.4; }
   .layout-md { display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
   .layout-pages { background: color-mix(in srgb, var(--text) 2%, transparent); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
   .layout-page { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border: none; border-bottom: 1px solid var(--border); background: none; color: var(--text-muted); font-size: 13.5px; font-weight: 600; text-align: left; }
@@ -115,7 +116,7 @@
   .layout-page.on { background: color-mix(in srgb, var(--neon-blue) 8%, transparent); color: var(--neon-blue); box-shadow: inset 3px 0 0 var(--neon-blue); }
   .layout-page small { font-size: 11.5px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
   .layout-cards { padding: 4px 18px 10px; min-width: 0; }
-  .layout-panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; padding: 12px 0 6px; }
+  .layout-panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; color: var(--text); font-weight: 600; padding: 12px 0 6px; }
   .layout-panel-head a { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--neon-blue); text-decoration: none; }
   .layout-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid var(--border); }
   .layout-text { flex: 1 1 auto; min-width: 0; }
@@ -582,7 +583,7 @@
         <button type="submit" class="submit-btn">Turn login on</button>
       </form>
       {% endif %}
-      <p class="warn-hint" style="margin-top:18px;">Forgotten it? Add <span class="mono">KACHING_PASSWORD=something</span> under <span class="mono">environment:</span> in docker-compose.yml and rebuild. That password always works. Sign in, set a new one here, then remove the line and rebuild again.{% if login_enabled() %} Calendar subscriptions use a private link while login is on. Re-add the <b style="color:var(--text);">Subscribe (live)</b> link from the Calendar page in your calendar app.{% endif %}</p>
+      <p class="warn-hint" style="margin-top:18px;">Forgotten it? Add <code>KACHING_PASSWORD=something</code> under <code>environment:</code> in <code>docker-compose.yml</code> and rebuild. That password always works. Sign in, set a new one here, then remove the line and rebuild again.{% if login_enabled() %} Calendar subscriptions use a private link while login is on. Re-add the <b style="color:var(--text);">Subscribe (live)</b> link from the Calendar page in your calendar app.{% endif %}</p>
     </div>
   </div>
 </div><!-- /settings-tab-security -->
@@ -670,7 +671,7 @@
 
       {% if restore_copies %}
       <div class="settings-card-head" style="margin-top:16px;">
-        <span class="warn-hint" style="margin:0;">Before-restore copies (newest {{ restore_copies|length }})</span>
+        <span class="warn-hint" style="margin:0;">Before-restore copies ({{ restore_copies|length }})</span>
         <button type="button" class="collapse-btn" data-target="restore-copies-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="restore-copies-body">
@@ -743,7 +744,7 @@
       </div>
       <div class="day-group" id="faq-3">
         <div class="day-group-head"><div class="day-group-label">Why is an item marked "awaiting charge"?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It released a while ago but hasn't been marked paid yet. Usually just a normal short delay before the retailer actually charges the card. Worth a check if it's been sitting a while, but not necessarily a problem.</p></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It came out but hasn't been marked paid yet. Shops often charge a few days after release, so it's usually nothing; it's worth a look if it's been there more than a couple of weeks.</p></div>
       </div>
       <div class="day-group" id="faq-4">
         <div class="day-group-head"><div class="day-group-label">Why are some items flagged "no order number"?</div><span class="day-group-arrow">&#9662;</span></div>

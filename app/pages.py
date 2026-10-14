@@ -1689,6 +1689,9 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
     }
 
 
+_VARIANT_RE = re.compile(r"\b(variant|virgin|foil|sketch|incentive|ratio|1:\d+|exclusive|metal|blank|cover [b-z])\b", re.I)
+
+
 def _cover_price_creep(ctx):
     """Price creep, based on COVER price: the cheapest copy bought of
     each issue number stands in for that issue's standard cover, and the
@@ -1711,14 +1714,22 @@ def _cover_price_creep(ctx):
             by_issue.setdefault(int(m.group(1)), []).append(e)
         if len(by_issue) < 2:
             continue  # one issue (just variants of it) has no trend
+        # An issue bought only as a variant would otherwise count its
+        # variant as the cover and fake a huge rise or fall, so when the
+        # series has enough issues with a standard copy, those are used.
+        standard = {num: [c for c in cps if not _VARIANT_RE.search(c["name"])] for num, cps in by_issue.items()}
+        if sum(1 for v in standard.values() if v) >= 2:
+            trend_issues = [num for num in sorted(by_issue) if standard[num]]
+        else:
+            trend_issues = sorted(by_issue)
         issues = []
         premiums = []
-        for num in sorted(by_issue):
+        for num in trend_issues:
             copies = sorted(by_issue[num], key=lambda e: e["price"])
-            cover = copies[0]["price"]
+            cover = min(c["price"] for c in (standard[num] or copies))
             issues.append({"issue": num, "cover": cover, "copies": copies})
             # A second copy at the cover price is a duplicate, not a variant
-            premiums.extend(c["price"] - cover for c in copies[1:] if c["price"] - cover > 0.005)
+            premiums.extend(c["price"] - cover for c in copies if c["price"] - cover > 0.005)
         first, latest = issues[0]["cover"], issues[-1]["cover"]
         _counts = {}
         for e in st["entries"]:
@@ -2207,7 +2218,7 @@ def orders_v2(request: Request, month: str | None = None, chart_range: str | Non
     cur.execute(
         """
         SELECT * FROM items
-        WHERE status != 'cancelled' AND charge_status != 'charged'
+        WHERE status != 'cancelled' AND charge_status != 'charged' AND price > 0
         """
     )
     unpaid_items = [dict(r) for r in cur.fetchall()]

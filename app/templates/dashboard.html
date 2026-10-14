@@ -373,6 +373,14 @@
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}
+    {% set _nt = notification_trouble() %}
+    {% if _nt %}
+    <a class="alert-line" href="/alerts#notifications">
+      <span class="dot" style="background:var(--neon-pink);"></span>
+      <span class="txt">Notifications failing since <b>{{ _nt.since|nice_when }}</b></span>
+      <span class="arrow">&rsaquo;</span>
+    </a>
+    {% endif %}
     {% if duplicate_groups %}
     <a class="alert-line" href="/alerts">
       <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px color-mix(in srgb, var(--neon-violet) 50%, transparent);"></span>

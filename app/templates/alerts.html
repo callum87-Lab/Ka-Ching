@@ -117,6 +117,17 @@
 
 
 <div id="tab-alerts">
+{% set _nt = notification_trouble() %}
+{% if _nt %}
+<div class="grid">
+  <div class="card warn-card pink" style="grid-column: span 12;">
+    <div class="card-title">Notifications aren't getting through</div>
+    <p class="warn-hint">The last {{ _nt.count }} have failed, since {{ _nt.since|nice_when(true) }}. {{ _nt.error }}</p>
+    <a class="warn-action-btn" href="#notifications" onclick="var t=document.querySelector('[data-alerts-tab=notifications]'); if(t){t.click(); window.scrollTo(0,0); return false;}">Check notification settings</a>
+  </div>
+</div>
+{% endif %}
+
 
 <div class="grid">
   <div class="card plain-stat">
@@ -462,7 +473,7 @@
         {% for n in notification_log %}
         <div class="notif-log-row">
           <span class="notif-log-date">{{ n.sent_at|nice_when(true) }}</span>
-          <span class="notif-log-title">{{ n.title }}{% if not n.success and n.error %}<small class="notif-log-err">{{ n.error }}</small>{% endif %}</span>
+          <span class="notif-log-title">{{ n.title }}{% if not n.success and n.error %}<small class="notif-log-err">{{ n.error|friendly_send_error }}</small>{% endif %}</span>
           <span class="notif-log-status {{ 'ok' if n.success else 'bad' }}" {% if n.error %}title="{{ n.error }}"{% endif %}>{{ "Sent" if n.success else "Failed" }}</span>
         </div>
         {% endfor %}
@@ -508,7 +519,7 @@
 
   var remembered = null;
   try { remembered = localStorage.getItem(storageKey); } catch (e) {}
-  if (remembered === 'notifications') {
+  if (location.hash === '#notifications' || remembered === 'notifications') {
     activate('notifications');
   }
 })();

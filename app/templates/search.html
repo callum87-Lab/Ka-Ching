@@ -137,12 +137,9 @@
         <label class="field-label"><span>Min price</span><input class="field-input" type="number" step="0.01" min="0" name="min_price" value="{{ min_price }}" placeholder="0.00"></label>
         <label class="field-label"><span>Max price</span><input class="field-input" type="number" step="0.01" min="0" name="max_price" value="{{ max_price }}" placeholder="0.00"></label>
       </div>
-      <div style="max-width:220px; margin-bottom:14px;">
-        <button type="submit" class="search-submit-btn">Search</button>
-      </div>
-
-      <div class="preset-row">
-        <button type="button" class="preset-pill clear" id="search-clear-btn">Clear</button>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button type="submit" class="search-submit-btn" style="width:auto; padding:10px 28px;">Search</button>
+        <button type="button" class="preset-pill" id="search-clear-btn">Clear</button>
       </div>
     </div>
   </div>

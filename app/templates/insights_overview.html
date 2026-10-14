@@ -238,9 +238,9 @@
   <div class="card weekday-card" data-card="ov.ship">
     <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6-9 6-9-6z"/><path d="M3 9v6l9 6 9-6V9"/></svg></span>Shipping and patterns</div>
     <div class="weekday-trio">
-      <div><div class="mini-stat-label">Busiest day of the week</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday }}{% else %}&mdash;{% endif %}</div>{% if busiest_weekday %}<div class="mini-stat-sub">{{ busiest_weekday_count }} release{{ "s" if busiest_weekday_count != 1 else "" }}</div>{% endif %}</div>
+      <div><div class="mini-stat-label">Busiest day</div><div class="mini-stat-value mono" style="font-size:16px;">{% if busiest_weekday %}{{ busiest_weekday }}{% else %}&mdash;{% endif %}</div>{% if busiest_weekday %}<div class="mini-stat-sub">{{ busiest_weekday_count }} release{{ "s" if busiest_weekday_count != 1 else "" }}</div>{% endif %}</div>
       <div><div class="mini-stat-label">Saved by cancelling</div><div class="mini-stat-value mono" style="font-size:16px;">{{ currency() }}{{ "{:,.2f}".format(cancelled_saved) }}</div></div>
-      <div><div class="mini-stat-label">Shipping vs item cost</div><div class="mini-stat-value mono" style="font-size:16px;">{{ shipping_ratio_pct }}%</div></div>
+      <div><div class="mini-stat-label">Shipping on top</div><div class="mini-stat-value mono" style="font-size:16px;">{{ shipping_ratio_pct }}%</div></div>
     </div>
     <div class="weekday-chart" id="weekday-chart">
       {% for w in weekday_chart_by_shop %}

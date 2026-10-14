@@ -1375,7 +1375,7 @@ def find_awaiting_charge(cur, today: date):
     cur.execute(
         """
         SELECT * FROM items
-        WHERE status != 'cancelled' AND charge_status != 'charged'
+        WHERE status != 'cancelled' AND charge_status != 'charged' AND price > 0
           AND release_date IS NOT NULL AND date(release_date) < date(?)
         ORDER BY release_date ASC
         """,
@@ -1401,6 +1401,51 @@ def alert_counts(cur, today: date):
     }
     counts["total"] = sum(counts.values())
     return counts
+
+
+def friendly_send_error(error):
+    """A provider's raw error as something a person can act on."""
+    e = str(error or "")
+    low = e.lower()
+    if "timed out" in low:
+        return "Couldn't reach the server: it didn't answer in time. Check the address and that it's running."
+    if any(w in low for w in ("no route to host", "connection refused", "name or service not known", "nodename nor servname", "network is unreachable")):
+        return "Couldn't reach the server. Check the address and that it's running."
+    m = re.search(r"HTTP Error (\d{3})", e)
+    if m:
+        code = m.group(1)
+        if code in ("401", "403"):
+            return f"The server turned it down ({code}): check the token, topic or password."
+        return f"The server answered with an error ({code})."
+    return e
+
+
+templates.env.filters["friendly_send_error"] = friendly_send_error
+
+
+@_per_request
+def notification_trouble():
+    """When the last few notifications all failed: since when, and why.
+    None if notifications are off or the latest one got through."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    try:
+        if notifications.get_setting(cur, "notify_provider", "none") in ("", "none"):
+            return None
+        rows = cur.execute("SELECT sent_at, success, error FROM notification_log ORDER BY id DESC LIMIT 50").fetchall()
+    finally:
+        conn.close()
+    streak = []
+    for r in rows:
+        if r["success"]:
+            break
+        streak.append(r)
+    if len(streak) < 2:
+        return None
+    return {"since": streak[-1]["sent_at"], "count": len(streak), "error": friendly_send_error(streak[0]["error"])}
+
+
+templates.env.globals["notification_trouble"] = notification_trouble
 
 
 def _topbar_alert_count():
@@ -2050,11 +2095,11 @@ def source_filter_sql(source: str):
 
 
 SEARCH_SORT_OPTIONS = {
-    "date_desc": ("release_date DESC, name", "Release date (newest)"),
-    "date_asc": ("release_date ASC, name", "Release date (oldest)"),
-    "price_desc": ("price DESC, name", "Price (highest)"),
-    "price_asc": ("price ASC, name", "Price (lowest)"),
-    "name_asc": ("name ASC", "Name (A-Z)"),
+    "date_desc": ("release_date DESC, name", "Newest first"),
+    "date_asc": ("release_date ASC, name", "Oldest first"),
+    "price_desc": ("price DESC, name", "Highest price"),
+    "price_asc": ("price ASC, name", "Lowest price"),
+    "name_asc": ("name ASC", "Name A\u2013Z"),
     "added_desc": ("imported_at DESC", "Recently added"),
 }
 

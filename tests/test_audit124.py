@@ -111,3 +111,30 @@ def test_overview_counts_items_dated_only_by_order_date(client, fresh_db):
     page = client.get("/insights").text
     assert "£23.00 total, all time" in page
     assert "£23.00 with what" in client.get("/").text
+
+
+def test_variant_only_issue_doesnt_fake_a_price_change(client, fresh_db):
+    add_item(fresh_db, "Legacy Of Vader #8 (Kael Ngu Variant)", 12.65, -90)
+    add_item(fresh_db, "Legacy Of Vader #11", 2.65, -60)
+    add_item(fresh_db, "Legacy Of Vader #12", 2.65, -30)
+    page = client.get("/insights/price-creep").text
+    assert "-79%" not in page and "£12.65 &rarr;" not in page
+
+
+def test_free_items_are_not_unpaid(client, fresh_db):
+    add_item(fresh_db, "Freebie #1", 0.0, -20, status="released")
+    page = client.get("/orders?tab=unpaid").text
+    assert "Freebie" not in page
+
+
+def test_failing_notifications_are_flagged(client, fresh_db):
+    from .conftest import set_setting
+    set_setting(fresh_db, "notify_provider", "ntfy")
+    conn = sqlite3.connect(fresh_db)
+    for i in range(3):
+        conn.execute("INSERT INTO notification_log (sent_at, title, message, provider, success, error) VALUES (?,?,?,?,?,?)",
+                     (f"2026-10-0{i+1}T08:00", "Ka-Ching!", "x", "ntfy", 0, "<urlopen error timed out>"))
+    conn.commit(); conn.close()
+    assert "Notifications aren&#39;t getting through" in client.get("/alerts").text or "Notifications aren't getting through" in client.get("/alerts").text
+    assert "Notifications failing since" in client.get("/").text
+    assert core.friendly_send_error("<urlopen error timed out>").startswith("Couldn't reach the server")

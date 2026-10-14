@@ -93,11 +93,19 @@ round of fixes from a full audit makes the everyday jobs quicker.
   Artist"), and the price buckets on Overview use your currency.
 - The Alerts page shows open alerts first, with the history underneath,
   and dates read "15 Sep" rather than "09-15" everywhere.
-- Failed notifications show why they failed.
+- **Notifications that keep failing are now flagged** on the Dashboard and
+  at the top of Alerts, with the reason in plain words ("couldn't reach the
+  server"). Before, they failed silently.
+- **Price creep ignores issues you only bought as a variant** when there
+  are enough standard covers to go on, so one pricey variant of an early
+  issue no longer shows as a huge rise or a -79% "drop".
+- Free (£0) items no longer show as unpaid or awaiting charge.
+- Chart labels stay a readable size whatever the card's width.
 - The 12-month trend line no longer dips below zero between quiet months.
 - Search filters, the Delay buttons, the calendar legend, shop rows and
   alert rows could run off the edge of narrow screens; the This week list
-  could cut off its last link on a phone.
+  could cut off its last link on a phone; shop names on Spend by shop were
+  cut to a few letters, and eBay sellers now show just the seller's name.
 - Wording tidied throughout: "due" instead of "left of" when nothing's
   paid yet, clearer labels on Spend by shop and Price creep, shorter help
   text, and fewer repeated figures.

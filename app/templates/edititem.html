@@ -20,8 +20,8 @@
   .submit-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
   .warn-hint { font-size: 13.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5; max-width: none; }
 
-  .delay-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-  .delay-btn { padding: 8px 18px; border-radius: 999px; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .delay-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .delay-btn { padding: 8px 14px; white-space: nowrap; border-radius: 999px; background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; }
   .history-row { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13.5px; flex-wrap: wrap; }
   .history-row:first-of-type { border-top: none; }
   .history-date { color: var(--text-dim); width: 78px; flex: 0 0 auto; font-family: var(--font-mono); }
@@ -47,7 +47,7 @@
       <label class="field-label"><span>Name</span><input class="field-input" type="text" name="name" data-item-name required value="{{ item.name if item else '' }}" placeholder="e.g. Batman #1 or Pokémon booster box"></label>
 
       <div class="settings-form-grid">
-        <label class="field-label"><span>Price</span><input class="field-input" type="number" name="price" step="0.01" min="0" max="100000" required value="{{ item.price if item else '' }}"></label>
+        <label class="field-label"><span>Price</span><input class="field-input" type="number" name="price" step="0.01" min="0" max="100000" required value="{{ '%.2f'|format(item.price) if item else '' }}"></label>
         <label class="field-label"><span>Release date</span><input class="field-input" type="date" name="release_date" required value="{{ item.release_date if item else '' }}"></label>
       </div>
 

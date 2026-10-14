@@ -1985,6 +1985,10 @@ document.addEventListener('click', function () {
     if (info.numbered && nameEl) {
       var m = /^(.*?)\s*#\d+/.exec(nameEl.value || '');
       if (m && m[1].trim()) fromTitle = m[1].trim();
+      // ALL-CAPS listing titles read as normal title case, as on Top titles
+      if (fromTitle && fromTitle === fromTitle.toUpperCase() && /[A-Z]/.test(fromTitle)) {
+        fromTitle = fromTitle.toLowerCase().replace(/[a-z]+('[a-z]+)?/g, function (w) { return w.charAt(0).toUpperCase() + w.slice(1); });
+      }
     }
     var known = KNOWN[kind] || [];
     box.placeholder = fromTitle ? fromTitle + ' (from the title)'
@@ -2145,6 +2149,46 @@ document.addEventListener('click', function () {
 })();
 
 {% block extra_script %}{% endblock %}
+</script>
+<script>
+/* Chart text at a steady size. Charts are drawn in a fixed coordinate
+   space and stretched to fit their card, which also stretches their text:
+   tiny in a narrow card, oversized in a wide one. This keeps every chart
+   label at the size it was written for (within limits), on load, when
+   the window or card changes size, and when a chart redraws. */
+(function () {
+  if (!window.ResizeObserver) return;
+  function fit(svg) {
+    var vb = svg.viewBox && svg.viewBox.baseVal;
+    var w = svg.getBoundingClientRect().width;
+    if (!vb || !vb.width || !w) return;
+    var k = Math.max(0.75, Math.min(1.25, vb.width / w));
+    svg.querySelectorAll('text[font-size]').forEach(function (t) {
+      if (!t.dataset.fs) t.dataset.fs = t.getAttribute('font-size');
+      var fs = parseFloat(t.dataset.fs);
+      if (fs) t.setAttribute('font-size', (fs * k).toFixed(2));
+    });
+  }
+  var ro = new ResizeObserver(function (entries) { entries.forEach(function (e) { fit(e.target); }); });
+  var mo = new MutationObserver(function (muts) {
+    muts.forEach(function (m) {
+      var svg = m.target.closest ? m.target.closest('svg') : null;
+      if (svg && svg.hasAttribute('viewBox')) fit(svg);
+    });
+  });
+  function watch() {
+    document.querySelectorAll('.main svg[viewBox]').forEach(function (svg) {
+      var vb = svg.viewBox.baseVal;
+      if (!vb || vb.width < 200 || svg.dataset.fitWatched) return;
+      svg.dataset.fitWatched = '1';
+      ro.observe(svg);
+      mo.observe(svg, { childList: true });
+      fit(svg);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
+  window.addEventListener('load', watch);
+})();
 </script>
 </body>
 </html>

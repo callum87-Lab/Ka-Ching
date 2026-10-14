@@ -282,7 +282,6 @@
   var W = 760, H = 200, padL = 40, padR = 74, padT = 18, padB = 26;
   var innerW = W - padL - padR, innerH = H - padT - padB;
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-  var fontScale = Math.min(1, W / (svg.getBoundingClientRect().width || W));
   var top = Math.max.apply(null, data.map(function (d) { return d.value; }));
   var maxVal = top > 0 ? niceMax(top * 1.2) : 1;
   function niceMax(v) { var m = Math.pow(10, Math.floor(Math.log10(v))); var f = v / m; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * m; }
@@ -292,8 +291,6 @@
   function el(tag, attrs, text) {
     var e = document.createElementNS(svgns, tag);
     Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
-    // Keep text the same size as the page's on wide screens, where the chart is scaled up
-    if (attrs['font-size'] && fontScale < 1) e.setAttribute('font-size', attrs['font-size'] * fontScale);
     if (text != null) e.textContent = text;
     svg.appendChild(e); return e;
   }

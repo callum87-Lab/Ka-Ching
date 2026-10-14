@@ -116,7 +116,7 @@
         <input type="hidden" name="next" value="/orders">
         <div class="settings-form-grid-3">
           <label class="field-label"><span>Release date</span><input class="field-input" type="date" name="release_date" required></label>
-          <label class="field-label"><span>Source / retailer</span><input class="field-input" type="text" name="source" list="known-sources" required value="{{ last_used_source }}"></label>
+          <label class="field-label"><span>Shop</span><input class="field-input" type="text" name="source" list="known-sources" required value="{{ last_used_source }}"></label>
           <label class="field-label"><span>Order / invoice # <span style="color:var(--text-dim); font-weight:400;">(optional)</span></span><input class="field-input" type="text" name="order_number" placeholder="e.g. 05-13811-02460"></label>
         </div>
         <datalist id="known-sources">
@@ -155,7 +155,7 @@
           <button type="button" id="clear-manual-btn" class="clear-btn">Clear</button>
         </div>
       </form>
-      <p class="warn-hint" style="max-width:none; margin-top:14px;">Set the release date and shop once, then add every item from that same order before submitting. One shipment, one form. The order number and shipping cost are both optional, but adding them lets that shop's shipping figure be exact rather than an estimate.</p>
+      <p class="warn-hint" style="max-width:none; margin-top:14px;">One form per parcel: set the date and shop once, then add each item in it. The order number and shipping are optional, but with them the shipping figure is exact rather than estimated.</p>
     </div>
   </div>
 </div><!-- /tab-manual -->
