@@ -527,6 +527,9 @@ there in Settings → Help if you want it). A few things happen on their own:
 - Each category gets a **type** guessed from its name (Pokémon cards →
   Trading cards, Funko Pop → Figures and toys…). Check them in Settings →
   Categories; anything it can't place is *Something else*.
+- Comics and Manga type categories you haven't used yet get **Numbered
+  issues** switched on, as they are on a new install. Categories that
+  already have items are left as you set them.
 - The old **Everything / I don't pre-order / Just the essentials** presets
   are replaced by **What you track**. Your current cards stay exactly as
   they are until you save it.

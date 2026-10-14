@@ -28,6 +28,8 @@ round of fixes from a full audit makes the everyday jobs quicker.
   words used: a **Set** for trading cards, a **Line** for figures, an
   **Artist** for vinyl, and so on. Existing categories get a type from
   their name (you can change it), and new ones you type in get a guess.
+  On upgrading, unused Comics and Manga type categories get Numbered issues
+  switched on, so Price creep picks them up the first time you use them.
 - **A Series / Set box** on Log orders (both tabs), the import review
   screen and Edit item, worded to match the category. For comics and manga
   it's worked out from the title as before, so you can leave it empty. It

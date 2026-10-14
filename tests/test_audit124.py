@@ -138,3 +138,18 @@ def test_failing_notifications_are_flagged(client, fresh_db):
     assert "Notifications aren&#39;t getting through" in client.get("/alerts").text or "Notifications aren't getting through" in client.get("/alerts").text
     assert "Notifications failing since" in client.get("/").text
     assert core.friendly_send_error("<urlopen error timed out>").startswith("Couldn't reach the server")
+
+
+def test_upgrade_switches_numbered_on_for_unused_manga_only(tmp_path, monkeypatch):
+    path = str(tmp_path / "old.db")
+    monkeypatch.setattr(db, "DB_PATH", path)
+    db.init_db()
+    conn = sqlite3.connect(path)
+    conn.execute("UPDATE categories SET has_series = 0 WHERE name IN ('Manga', 'Books')")
+    conn.execute("DELETE FROM settings WHERE key = 'numbered_defaults_v34'")
+    books = conn.execute("SELECT id FROM categories WHERE name = 'Books'").fetchone()[0]
+    conn.commit(); conn.close()
+    add_item(path, "Dune", 9.99, -10, category=books)
+    db.init_db()
+    rows = dict(sqlite3.connect(path).execute("SELECT name, has_series FROM categories").fetchall())
+    assert rows["Manga"] == 1 and rows["Books"] == 0 and rows["Funko Pop"] == 0

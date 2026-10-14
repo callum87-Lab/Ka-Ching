@@ -320,6 +320,22 @@ def _backfill_category_kinds(conn):
     for r in rows:
         conn.execute("UPDATE categories SET kind = ? WHERE id = ?", (guess_kind(r["name"], r["has_series"]), r["id"]))
 
+def _backfill_numbered_defaults(conn):
+    """Once, on upgrading to v3.4: unused categories of a numbered type
+    (comics, manga) get Numbered issues switched on, as new installs have
+    them, so Price creep picks them up when they're first used. Categories
+    already holding items are left exactly as they are."""
+    if conn.execute("SELECT 1 FROM settings WHERE key = 'numbered_defaults_v34'").fetchone():
+        return
+    numbered = [k for k, v in KINDS.items() if v["numbered"]]
+    conn.execute(
+        f"""UPDATE categories SET has_series = 1
+            WHERE has_series = 0 AND kind IN ({",".join("?" * len(numbered))})
+              AND id NOT IN (SELECT DISTINCT category_id FROM items WHERE category_id IS NOT NULL)""",
+        numbered)
+    conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('numbered_defaults_v34', 'yes')")
+
+
 # Colours handed out, in order, to categories the user adds themselves.
 EXTRA_CATEGORY_COLORS = [
     "#5ec8ff", "#b388ff", "#ff8fab", "#80ed99", "#ffd166", "#90e0ef",
@@ -415,6 +431,7 @@ def init_db():
     _backfill_sync_columns(conn)
     _seed_categories(conn)
     _backfill_category_kinds(conn)
+    _backfill_numbered_defaults(conn)
     _backfill_categories(conn)
     conn.commit()
     conn.close()
