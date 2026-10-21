@@ -1,0 +1,313 @@
+{% from "_logo_mark.html" import kc_mark %}
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ ui_theme().theme }}" style="--neon-blue: {{ ui_theme().accent }};">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Set up &middot; Ka-Ching!</title>
+<link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg?v={{ app_version }}">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png?v={{ app_version }}">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="{{ ui_theme().chrome }}">
+<link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png?v={{ app_version }}">
+<style>
+{% include "_theme_tokens.html" %}
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 6vh 16px 40px;
+    background-color: var(--bg-1); background-image: var(--page-bg); background-attachment: fixed;
+    color: var(--text); font-family: var(--font-body); }
+  .wz { width: min(640px, 100%); background: var(--card-bg); border: 1px solid var(--border); border-radius: 22px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.16); overflow: hidden; }
+  :root[data-theme="grey"] .wz, :root[data-theme="blue"] .wz, :root[data-theme="noir"] .wz { background: var(--surface); }
+  .wz-head { display: flex; align-items: center; gap: 12px; padding: 22px 26px 0; }
+  .wz-head .bm { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; letter-spacing: -0.035em; }
+  .wz-skipall { margin-left: auto; background: none; border: none; color: var(--text-muted); font: inherit; font-size: 13px; cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+  .wz-skipall:hover { color: var(--text); background: var(--hover); }
+  .wz-steps { display: flex; gap: 6px; padding: 18px 26px 0; flex-wrap: wrap; }
+  .wz-steps span { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; color: var(--text-dim); background: var(--surface-raised); border: 1px solid var(--border); }
+  .wz-steps span.on { color: var(--on-accent); background: var(--neon-blue); border-color: var(--neon-blue); }
+  .wz-steps span.done { color: var(--text); }
+  .wz-steps span.skipped { text-decoration: line-through; }
+  section { padding: 20px 26px 4px; }
+  .js section { display: none; }
+  .js section.on { display: block; }
+  h1:focus { outline: none; }
+  input[type=radio] { accent-color: var(--neon-blue); width: 16px; height: 16px; flex: none; }
+  h1 { font-size: 24px; font-weight: 650; letter-spacing: -0.03em; margin: 0 0 6px; }
+  .sub { color: var(--text-muted); font-size: 14px; line-height: 1.5; margin: 0 0 18px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .tile { position: relative; display: block; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-raised); cursor: pointer; }
+  .tile input { position: absolute; opacity: 0; pointer-events: none; }
+  .tile b { display: block; font-size: 14.5px; }
+  .tile small { display: block; color: var(--text-muted); font-size: 12.5px; margin-top: 3px; }
+  .tile:has(input:checked) { border-color: var(--neon-blue); box-shadow: 0 0 0 2px color-mix(in srgb, var(--neon-blue) 35%, transparent); }
+  .tile:has(input:checked)::after { content: '\2713'; position: absolute; top: 10px; right: 12px; color: var(--neon-blue); font-weight: 700; }
+  .tile:has(input:focus-visible) { outline: 2px solid var(--neon-blue); outline-offset: 2px; }
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-raised); }
+  .row .t { flex: 1; min-width: 0; }
+  .row .t b { display: block; font-size: 14px; }
+  .row .t small { color: var(--text-muted); font-size: 12.5px; }
+  .sw { width: 42px; height: 24px; flex: none; border-radius: 999px; border: none; background: var(--border); position: relative; cursor: pointer; }
+  .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .sw[aria-pressed="true"] { background: var(--neon-blue); }
+  .sw[aria-pressed="true"]::after { left: 21px; }
+  .field { display: block; margin-bottom: 14px; }
+  .field > span { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+  .field input, .field select { width: 100%; background: var(--surface-raised); border: 1px solid var(--input-border, var(--border)); border-radius: 12px; padding: 11px 13px; color: var(--text); font: inherit; font-size: 15px; outline: none; }
+  .field input:focus, .field select:focus { border-color: var(--neon-blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--neon-blue) 15%, transparent); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .swatch { display: inline-block; width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(127,127,127,.35); vertical-align: middle; margin-right: 8px; }
+  .err { color: var(--neon-pink); background: color-mix(in srgb, var(--neon-pink) 8%, transparent); border: 1px solid color-mix(in srgb, var(--neon-pink) 35%, transparent); border-radius: 12px; padding: 9px 12px; font-size: 13.5px; margin: 0 0 14px; }
+  .note { font-size: 13.5px; line-height: 1.55; color: var(--text-muted); background: var(--surface-raised); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .note code { font-size: 12.5px; background: var(--hover); padding: 1px 5px; border-radius: 5px; color: var(--text); }
+  .wz-foot { display: flex; align-items: center; gap: 10px; padding: 18px 26px 22px; border-top: 1px solid var(--border); margin-top: 18px; flex-wrap: wrap; }
+  .btn { height: 40px; padding: 0 18px; border-radius: 999px; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text); }
+  .btn.primary { background: var(--neon-blue); border-color: var(--neon-blue); color: var(--on-accent); }
+  .btn.link { border: none; color: var(--text-muted); font-weight: 600; padding: 0 8px; }
+  .btn:hover { filter: brightness(1.06); }
+  .btn.link:hover { color: var(--text); }
+  .wz-foot .grow { flex: 1; }
+  .no-js-foot { display: none; }
+  html:not(.js) .js-only { display: none; }
+  html:not(.js) .no-js-foot { display: flex; }
+  .done-list { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+  .done-list li { display: flex; gap: 10px; }
+  .done-list li span { color: var(--text-muted); min-width: 110px; }
+  @media (max-width: 560px) {
+    body { padding: 12px 10px 30px; }
+    .wz-head, .wz-steps, section, .wz-foot { padding-left: 18px; padding-right: 18px; }
+    .grid2 { grid-template-columns: 1fr; }
+    .tiles { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tile { padding: 10px 12px; }
+    .wz-foot .btn.primary { flex: 1; }
+  }
+</style>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<form class="wz" method="post" action="/welcome" id="wz" data-start="{{ start_step }}">
+  <div class="wz-head">
+    <div class="bm">{{ kc_mark("login", 34, 26) }}<span>Ka-Ching!</span></div>
+    <button type="submit" name="skip_all" value="1" class="wz-skipall" formnovalidate>Skip setup</button>
+  </div>
+  <div class="wz-steps js-only" aria-hidden="true">
+    <span data-chip="collect">Collect</span><span data-chip="preorder">Pre-orders</span><span data-chip="pages">Your pages</span><span data-chip="budget">Budget</span><span data-chip="look">Look</span><span data-chip="password">Password</span>
+  </div>
+
+  <section data-step="collect">
+    <h1>Welcome! What do you collect?</h1>
+    <p class="sub">Pick everything that applies. Ka-Ching! uses this to word things for you (series, sets, lines…) and to choose which pages make sense. You can change it any time in Settings.</p>
+    <div class="tiles">
+      {% for kid, k in KINDS.items() %}
+      <label class="tile"><input type="checkbox" name="kinds" value="{{ kid }}" data-numbered="{{ 'yes' if k.numbered else '' }}"{% if kid in values.kinds %} checked{% endif %}><b>{{ k.name }}</b><small>{{ k.examples }}</small></label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section data-step="preorder">
+    <h1>Do you pre-order?</h1>
+    <p class="sub">If you order things before they come out, Ka-Ching! shows what's still to come and when it'll be charged.</p>
+    <div class="rows">
+      <label class="row"><input type="radio" name="preorder" value="yes"{% if values.preorder %} checked{% endif %}><span class="t"><b>Yes, I pre-order</b><small>Show release dates, what's coming this week and pre-order totals</small></span></label>
+      <label class="row"><input type="radio" name="preorder" value="no"{% if not values.preorder %} checked{% endif %}><span class="t"><b>No, I buy things that are already out</b><small>Hide the pre-order cards</small></span></label>
+    </div>
+  </section>
+
+  <section data-step="pages">
+    <h1>Your pages</h1>
+    <p class="sub">Based on your answers, these are switched on or off for you. Change any you like; everything else can be set in Settings &rarr; Layout.</p>
+    <div class="rows">
+      {% for c in page_cards %}
+      <div class="row">
+        <span class="t"><b>{{ c.name }}</b><small>{{ c.page }}{% if c.preorder %} &middot; pre-order{% endif %}</small></span>
+        <input type="hidden" name="card_{{ c.id }}" value="on" data-card-input="{{ c.id }}">
+        <button type="button" class="sw" aria-pressed="true" data-card="{{ c.id }}" data-preorder="{{ 'yes' if c.preorder else '' }}" aria-label="Show {{ c.name }}"></button>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section data-step="budget">
+    <h1>Money</h1>
+    <p class="sub">A budget is optional. Leave it empty if you just want to see where the money goes.</p>
+    <div class="grid2">
+      <label class="field"><span>Currency</span>
+        <select name="currency">
+          {% for cid, label in currencies.items() %}<option value="{{ cid }}"{% if values.currency == cid %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="field"><span>Budget cycle</span>
+        <select name="cycle">
+          {% for cid, label in cycles.items() %}<option value="{{ cid }}"{% if values.cycle == cid %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <label class="field"><span>Budget per cycle (optional)</span><input type="text" inputmode="decimal" name="budget" value="{{ values.budget }}" placeholder="e.g. 80" autocomplete="off"></label>
+  </section>
+
+  <section data-step="look">
+    <h1>How it looks</h1>
+    <p class="sub">Pick a theme. It changes here as you choose, and you can pick a different accent colour later in Settings.</p>
+    <div class="tiles">
+      {% for tid, t in UI_THEMES.items() %}
+      {% set acc = (t.accents | selectattr(0, 'equalto', t.default) | first)[2] %}
+      <label class="tile"><input type="radio" name="theme" value="{{ tid }}" data-accent="{{ acc }}"{% if values.theme == tid %} checked{% endif %}><b><span class="swatch" style="background: linear-gradient(135deg, {{ t.chrome }} 55%, {{ acc }} 55%);"></span>{{ t.name }}</b></label>
+      {% endfor %}
+    </div>
+    <p class="sub" style="margin:20px 0 10px;">Layout</p>
+    <div class="rows">
+      <label class="row"><input type="radio" name="layout" value="standard"{% if values.layout not in ('compact', 'panel') %} checked{% endif %}><span class="t"><b>Standard</b><small>Comfortable spacing, centred on the screen</small></span></label>
+      <label class="row"><input type="radio" name="layout" value="compact"{% if values.layout == 'compact' %} checked{% endif %}><span class="t"><b>Compact</b><small>Tighter spacing, so more fits without scrolling</small></span></label>
+      <label class="row"><input type="radio" name="layout" value="panel"{% if values.layout == 'panel' %} checked{% endif %}><span class="t"><b>Side panel</b><small>An "At a glance" column on wide landscape monitors</small></span></label>
+    </div>
+  </section>
+
+  <section data-step="password">
+    <h1>A password?</h1>
+    {% if login_env %}
+    <p class="sub">A password is already set on the server with <code>KACHING_PASSWORD</code>, so there's nothing to do here.</p>
+    {% elif login_on %}
+    <p class="sub">A password is already set. You can change it in Settings &rarr; Security.</p>
+    {% else %}
+    <p class="sub">Optional. Worth it if Ka-Ching! can be reached by other people on your network. At least 12 characters; a few words strung together works well.</p>
+    {% if error == 'mismatch' %}<div class="err" role="alert">Those two passwords don't match.</div>
+    {% elif error == 'too-short' %}<div class="err" role="alert">That password is too short. Use at least 12 characters.</div>
+    {% elif error == 'too-common' %}<div class="err" role="alert">That password is too easy to guess. Try a few unrelated words together.</div>{% endif %}
+    <label class="field"><span>Password</span><input type="password" name="password" autocomplete="new-password"></label>
+    <label class="field"><span>Type it again</span><input type="password" name="confirm" autocomplete="new-password"></label>
+    <p class="sub" style="font-size:12.5px;margin:0;">There's no email reset. If you forget it, the sign-in page explains how to get back in from the server.</p>
+    {% endif %}
+  </section>
+
+  <section data-step="done">
+    <h1>All set</h1>
+    <p class="sub">Everything here can be changed later in Settings, and you can run this guide again from Settings &rarr; Help.</p>
+    <ul class="done-list js-only" id="done-list"></ul>
+  </section>
+
+  <div class="wz-foot js-only">
+    <button type="button" class="btn link" id="wz-back">Back</button>
+    <span class="grow"></span>
+    <button type="button" class="btn link" id="wz-skip">Skip this step</button>
+    <button type="button" class="btn primary" id="wz-next">Continue</button>
+    <button type="submit" name="then" value="home" class="btn" id="wz-home" hidden>Look around first</button>
+    <button type="submit" name="then" value="log" class="btn primary" id="wz-log" hidden>Log my first order</button>
+  </div>
+  <div class="wz-foot no-js-foot">
+    <span class="grow"></span>
+    <button type="submit" name="then" value="home" class="btn">Look around first</button>
+    <button type="submit" name="then" value="log" class="btn primary">Log my first order</button>
+  </div>
+</form>
+<script>
+(function () {
+  var form = document.getElementById('wz');
+  var steps = Array.prototype.slice.call(form.querySelectorAll('section[data-step]'));
+  var names = steps.map(function (s) { return s.dataset.step; });
+  var cur = Math.max(0, names.indexOf(form.dataset.start));
+  var back = document.getElementById('wz-back'), skip = document.getElementById('wz-skip'), next = document.getElementById('wz-next');
+  var home = document.getElementById('wz-home'), log = document.getElementById('wz-log');
+  var visited = {}, touched = {};
+
+  function skipInput(name) { return form.querySelector('input[name="skip"][value="' + name + '"]'); }
+  function setSkipped(name, on) {
+    var el = skipInput(name);
+    if (on && !el) { el = document.createElement('input'); el.type = 'hidden'; el.name = 'skip'; el.value = name; form.appendChild(el); }
+    if (!on && el) el.remove();
+  }
+  // Coming back from the password step with an error: the earlier steps were saved already.
+  var saved = {};
+  if (form.dataset.start === 'password') names.slice(0, names.indexOf('password')).forEach(function (n) { setSkipped(n, true); saved[n] = visited[n] = 1; });
+
+  // Presets for the "Your pages" step - the same rules as preset_hidden() in core.py.
+  function kinds() { return Array.prototype.slice.call(form.querySelectorAll('input[name="kinds"]:checked')); }
+  function presetHidden() {
+    var ks = kinds(), hidden = {};
+    if (ks.length) {
+      if (!ks.some(function (i) { return i.dataset.numbered; })) hidden['page.creep'] = 1;
+      var ids = ks.map(function (i) { return i.value; });
+      if (ids.every(function (k) { return k === 'general'; })) { hidden['page.titles'] = hidden['titles.series'] = hidden['titles.compare'] = 1; }
+      else if (!ids.some(function (k) { return k === 'comics' || k === 'manga' || k === 'cards'; })) hidden['titles.compare'] = 1;
+    }
+    var pre = form.querySelector('input[name="preorder"]:checked');
+    if (pre && pre.value === 'no') form.querySelectorAll('[data-card]').forEach(function (b) {
+      if (b.dataset.preorder) hidden[b.dataset.card] = 1;
+    });
+    return hidden;
+  }
+  function setCard(btn, on) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    form.querySelector('[data-card-input="' + btn.dataset.card + '"]').value = on ? 'on' : 'off';
+  }
+  function applyPreset() {
+    var hidden = presetHidden();
+    form.querySelectorAll('[data-card]').forEach(function (b) { if (!touched[b.dataset.card]) setCard(b, !hidden[b.dataset.card]); });
+  }
+  form.querySelectorAll('[data-card]').forEach(function (b) {
+    b.addEventListener('click', function () { touched[b.dataset.card] = 1; setCard(b, b.getAttribute('aria-pressed') !== 'true'); });
+  });
+  applyPreset();
+
+  // Theme preview
+  form.querySelectorAll('input[name="theme"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      document.documentElement.setAttribute('data-theme', r.value);
+      document.documentElement.style.setProperty('--neon-blue', r.dataset.accent);
+    });
+  });
+
+  function summary() {
+    var out = [], ul = document.getElementById('done-list');
+    function add(label, text) { out.push('<li><span>' + label + '</span>' + text + '</li>'); }
+    function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function skipped(n) { return !!skipInput(n); }
+    if (!skipped('collect')) add('You collect', esc(kinds().map(function (i) { return i.parentNode.querySelector('b').textContent; }).join(', ') || 'Not picked'));
+    if (!skipped('preorder')) { var p = form.querySelector('input[name="preorder"]:checked'); add('Pre-orders', p && p.value === 'no' ? 'No' : 'Yes'); }
+    if (!skipped('budget')) {
+      var b = form.querySelector('input[name="budget"]').value.trim().replace(/^[£$€]/, ''), c = form.querySelector('select[name="cycle"]');
+      var cur = form.querySelector('select[name="currency"]'); cur = cur.options[cur.selectedIndex].text.charAt(0);
+      add('Budget', b ? esc(cur + b) + ' &middot; ' + esc(c.options[c.selectedIndex].text.toLowerCase()) : 'None');
+    }
+    if (!skipped('look')) { var t = form.querySelector('input[name="theme"]:checked'); if (t) add('Theme', esc(t.parentNode.textContent.trim())); }
+    var pw = form.querySelector('input[name="password"]');
+    if (pw && !skipped('password')) add('Password', pw.value ? 'Will be turned on' : 'None');
+    ul.innerHTML = out.join('');
+  }
+
+  var first = true;
+  function show(i) {
+    cur = Math.max(0, Math.min(steps.length - 1, i));
+    steps.forEach(function (s, j) { s.classList.toggle('on', j === cur); });
+    var name = names[cur];
+    visited[name] = 1;
+    form.querySelectorAll('[data-chip]').forEach(function (c) {
+      var n = c.dataset.chip;
+      c.classList.toggle('on', n === name);
+      c.classList.toggle('done', !!visited[n] && n !== name);
+      c.classList.toggle('skipped', !!skipInput(n) && !saved[n]);
+    });
+    var last = name === 'done';
+    back.style.visibility = cur === 0 ? 'hidden' : '';
+    skip.hidden = next.hidden = last;
+    home.hidden = log.hidden = !last;
+    if (name === 'pages') applyPreset();
+    if (last) summary();
+    var focus = steps[cur].querySelector('.err') ? steps[cur].querySelector('input[name="password"]') : null;
+    var h = steps[cur].querySelector('h1');
+    if (focus) focus.focus(); else if (!first) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+    first = false;
+    window.scrollTo(0, 0);
+  }
+  next.addEventListener('click', function () { setSkipped(names[cur], false); show(cur + 1); });
+  skip.addEventListener('click', function () { setSkipped(names[cur], true); show(cur + 1); });
+  back.addEventListener('click', function () { show(cur - 1); });
+  // Enter moves on a step rather than submitting the whole guide.
+  form.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT' && names[cur] !== 'done') { e.preventDefault(); next.click(); }
+  });
+  show(cur);
+})();
+</script>
+</body>
+</html>

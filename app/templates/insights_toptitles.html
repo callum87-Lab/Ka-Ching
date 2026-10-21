@@ -35,6 +35,7 @@
 
   .compare-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .warn-action-btn { font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-raised); color: var(--text-muted); cursor: pointer; text-decoration: none; }
+  .compare-table td:nth-last-child(-n+2), .compare-table th { white-space: nowrap; }
   .compare-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 700; padding: 0 8px 10px; }
   .compare-table th.num, .compare-table td.num { text-align: right; }
   .compare-table td { padding: 9px 8px; border-top: 1px solid var(--border); }
@@ -61,7 +62,7 @@
 
 <div class="page-head">
   <h1>Insights</h1>
-  <p>Your priciest items, and the series you've spent the most keeping up with</p>
+  <p>Your priciest items, and the {{ gw.many_lower }} you've spent the most on</p>
 </div>
 
 {% include "_category_chips.html" %}
@@ -69,24 +70,24 @@
 {% if top_titles or series_totals %}
 <div class="grid">
   <div class="card plain-stat" data-card="titles.stats">
-    <div class="plain-stat-label">Priciest single issue</div>
-    {% if priciest_item %}
-    <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</div>
-    <div class="plain-stat-sub">{{ priciest_item.name }}</div>
+    <div class="plain-stat-label">{{ gw.many }} tracked</div>
+    {% if all_series_totals %}
+    <div class="plain-stat-value mono">{{ all_series_totals|length }}</div>
+    <div class="plain-stat-sub">{{ all_series_totals|sum(attribute='count') }} {{ gw.item_many }} between them</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
   <div class="card plain-stat" data-card="titles.stats">
-    <div class="plain-stat-label">Top series by spend</div>
+    <div class="plain-stat-label">Top {{ gw.one|lower }} by spend</div>
     {% if top_series_by_spend %}
     <div class="plain-stat-value mono">{{ currency() }}{{ "{:,.2f}".format(top_series_by_spend.total) }}</div>
-    <div class="plain-stat-sub">{{ top_series_by_spend.series }} &middot; {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}</div>
+    <div class="plain-stat-sub">{{ top_series_by_spend.series }} &middot; {{ top_series_by_spend.count }} {{ gw.item if top_series_by_spend.count == 1 else gw.item_many }}</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
   <div class="card plain-stat" data-card="titles.stats">
-    <div class="plain-stat-label">Most collected series</div>
+    <div class="plain-stat-label">Most collected {{ gw.one|lower }}</div>
     {% if most_collected_series %}
     <div class="plain-stat-value mono">{{ most_collected_series.count }}</div>
-    <div class="plain-stat-sub">{{ most_collected_series.series }} &middot; issues tracked</div>
+    <div class="plain-stat-sub">{{ gw.item_many|capitalize }} of {{ most_collected_series.series }}</div>
     {% else %}<div class="plain-stat-value">&mdash;</div>{% endif %}
   </div>
   <div class="card plain-stat" data-card="titles.stats">
@@ -99,45 +100,44 @@
 </div>
 
 {% if priciest_item %}
-{% set priciest_series_m = priciest_item.name.split(' #')[0] %}
 <div class="grid">
   <div class="card titles-hero" data-card="titles.hero">
     <div>
-      <div class="titles-hero-eyebrow">Priciest issue tracked</div>
+      <div class="titles-hero-eyebrow">Priciest item tracked</div>
       <div class="titles-hero-title">{{ priciest_item.name }}</div>
       <div class="titles-hero-sub">{{ priciest_item.source }} &middot; {{ priciest_item.release_date_label }}</div>
     </div>
     <div class="titles-hero-price"><span class="mono">{{ currency() }}{{ "{:,.2f}".format(priciest_item.price) }}</span></div>
-    {% if top_series_by_spend and priciest_series_m == top_series_by_spend.series %}
+    {% if top_series_by_spend and priciest_item.series and priciest_item.series == top_series_by_spend.series %}
     <div class="titles-hero-divider"></div>
-    <div class="titles-hero-note">Also the series with your highest total spend: <b>{{ currency() }}{{ "{:,.2f}".format(top_series_by_spend.total) }}</b> across {{ top_series_by_spend.count }} issue{{ "s" if top_series_by_spend.count != 1 else "" }}.</div>
+    <div class="titles-hero-note">Also the {{ gw.one|lower }} with your highest total spend: <b>{{ currency() }}{{ "{:,.2f}".format(top_series_by_spend.total) }}</b> across {{ top_series_by_spend.count }} {{ gw.item if top_series_by_spend.count == 1 else gw.item_many }}.</div>
     {% endif %}
   </div>
 
   <div class="card titles-table-card" data-card="titles.priciest">
-    <div class="card-title" style="margin-bottom:14px;">Priciest issues, all time</div>
+    <div class="card-title" style="margin-bottom:14px;">Priciest items, all time</div>
     <table class="titles-table">
-      <thead><tr><th class="rank-col">#</th><th>Title</th><th>Series</th><th class="num">Price</th><th>Shop</th></tr></thead>
+      <thead><tr><th class="rank-col">#</th><th>Title</th><th>{{ gw.one }}</th><th class="num">Price</th><th>Shop</th></tr></thead>
       <tbody>
         {% for t in top_titles %}
         <tr>
           <td class="rank-cell">{{ loop.index }}</td>
           <td><b>{{ t.name }}</b></td>
-          <td>{{ t.series }}</td>
+          <td>{% if t.series %}{{ t.series }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
           <td class="num mono">{{ currency() }}{{ "{:,.2f}".format(t.price) }}</td>
           <td>{{ t.source }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    <div class="card-note">Ranked by cover price, not what you actually paid. Variants and eBay pickups can run above or below cover.</div>
+    <div class="card-note">Ranked by item price, before shipping.</div>
   </div>
 </div>
 {% endif %}
 
 <div class="grid">
   <div class="card" data-card="titles.series" style="grid-column: span 12;">
-    <div class="card-title" style="margin-bottom:14px;">Top series by total spend</div>
+    <div class="card-title" style="margin-bottom:14px;">Top {{ gw.many_lower }} by total spend</div>
     {% if series_totals %}
     {% set max_total = series_totals[0].total %}
     {% set bar_colors = ['var(--neon-green)', 'var(--neon-blue)', 'var(--neon-blue)', 'var(--neon-violet)', 'var(--neon-violet)', 'var(--neon-pink)'] %}
@@ -146,10 +146,10 @@
         <span>{{ s.series }}</span>
         <div class="series-bar-track"><div class="series-bar-fill" style="width:{{ (s.total / max_total * 100)|round(1) if max_total else 0 }}%; background:{{ bar_colors[loop.index0] if loop.index0 < bar_colors|length else 'var(--neon-pink)' }};"></div></div>
         <span class="mono" style="text-align:right; font-weight:700;">{{ currency() }}{{ "{:,.2f}".format(s.total) }}</span>
-        <span class="mono" style="text-align:right; color:var(--text-dim);">{{ s.count }} issue{{ "s" if s.count != 1 else "" }}</span>
+        <span class="mono" style="text-align:right; color:var(--text-dim);">{{ s.count }} {{ gw.item if s.count == 1 else gw.item_many }}</span>
       </div>
       {% endfor %}
-    <div class="card-note">Series with a "#N" in the name, grouped and summed by total spend. The top 10.</div>
+    <div class="card-note">{% if gw.numbered_only %}Series from the "#N" in each title (or the Series box, if filled in), summed by total spend.{% else %}Grouped by the {{ gw.one }} box{% if gw.any_numbered %}; comics and manga use the series in the title when it&rsquo;s left empty{% endif %}; anything with an empty box isn&rsquo;t counted.{% endif %} The top 10.</div>
     {% else %}
     <div class="card-note">Nothing tracked yet.</div>
     {% endif %}
@@ -158,10 +158,10 @@
 
 <div class="grid">
   <div class="card" data-card="titles.compare" style="grid-column: span 12;">
-    <div class="card-title" style="margin-bottom:14px;">All series, compared</div>
+    <div class="card-title" style="margin-bottom:14px;">All {{ gw.many_lower }}, compared</div>
     {% if all_series_totals %}
     <table class="compare-table">
-      <thead><tr><th>Series</th><th class="num">Issues</th><th class="num">Total spent</th><th class="num">Avg / issue</th><th>First tracked</th><th>Latest</th></tr></thead>
+      <thead><tr><th>{{ gw.one }}</th><th class="num">{{ gw.item_many|capitalize }}</th><th class="num">Total spent</th><th class="num">Avg / {{ gw.item }}</th><th>First tracked</th><th>Latest</th></tr></thead>
       <tbody id="compare-table-body">
         {% for s in all_series_totals|sort(attribute='total', reverse=true) %}
         <tr>

@@ -23,7 +23,10 @@
 
   .strip-lead { font-size: 13.5px; color: var(--text-muted); margin: 0 0 4px; }
   .strip-lead b { color: var(--text); font-weight: 600; }
-  .creep-strip { width: 100%; height: auto; display: block; }
+  .creep-strip { width: 100%; height: auto; display: block; overflow: visible; }
+  .strip-wrap { position: relative; }
+  .strip-dot { cursor: pointer; transition: r .12s; outline: none; }
+  .strip-dot:hover, .strip-dot:focus-visible, .strip-dot.on { r: 7.5; }
   .dist-card { grid-column: span 7; }
   .dist-chart { display: flex; align-items: flex-end; gap: 10px; height: 130px; margin-top: 10px; }
   .dist-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
@@ -78,20 +81,22 @@
   <div class="card plain-stat" data-card="creep.stats">
     <div class="plain-stat-label">Series tracked</div>
     <div class="plain-stat-value mono">{{ creep_series_tracked }}</div>
-    <div class="plain-stat-sub">with 2+ issues logged</div>
+    <div class="plain-stat-sub">with 2+ {{ creep_items }} logged</div>
   </div>
   <div class="card plain-stat" data-card="creep.stats">
     <div class="plain-stat-label">Typical increase</div>
-    <div class="plain-stat-value mono">{{ '+' if creep_avg_increase >= 0 else '' }}{{ creep_avg_increase }}%</div>
+    <div class="plain-stat-value mono">{{ '+' if creep_avg_increase > 0 else '' }}{{ creep_avg_increase|round|int if creep_avg_increase == creep_avg_increase|round else creep_avg_increase }}%</div>
     <div class="plain-stat-sub">median of {{ creep_series_tracked }} series</div>
   </div>
+  {% set _var = all_series_stats|selectattr('variant_count')|list %}
   <div class="card plain-stat" data-card="creep.stats">
-    <div class="plain-stat-label">Biggest jumper</div>
-    {% if creep_biggest_jumper %}
-    <div class="plain-stat-value mono" style="color:var(--neon-pink);">+{{ creep_biggest_jumper.change_pct }}%</div>
-    <div class="plain-stat-sub">{{ creep_biggest_jumper.series }}</div>
+    <div class="plain-stat-label">Variants cost extra</div>
+    {% if _var %}
+    <div class="plain-stat-value mono">+{{ currency() }}{{ "{:,.2f}".format((_var|sum(attribute='variant_premium')) / (_var|length)) }}</div>
+    <div class="plain-stat-sub">average over the standard cover</div>
     {% else %}
     <div class="plain-stat-value">&mdash;</div>
+    <div class="plain-stat-sub">no variants bought</div>
     {% endif %}
   </div>
   <div class="card plain-stat" data-card="creep.stats">
@@ -101,13 +106,13 @@
   </div>
 </div>
 
-{% if creep_biggest_jumper %}
 <div class="grid">
+  {% if creep_biggest_jumper and creep_biggest_jumper.change_pct > 0 %}
   <div class="card creep-hero" data-card="creep.hero">
     <div>
       <div class="creep-hero-eyebrow">Biggest jumper</div>
       <div class="creep-hero-title">{{ creep_biggest_jumper.series }}</div>
-      <div class="creep-hero-sub">{{ creep_biggest_jumper.issue_count }} issue{{ "s" if creep_biggest_jumper.issue_count != 1 else "" }} tracked</div>
+      <div class="creep-hero-sub">{{ creep_biggest_jumper.issue_count }} {{ creep_item if creep_biggest_jumper.issue_count == 1 else creep_items }} tracked</div>
     </div>
     <div class="creep-hero-prices">
       <span class="mono creep-hero-old">{{ currency() }}{{ "{:,.2f}".format(creep_biggest_jumper.first_price) }}</span>
@@ -115,8 +120,9 @@
       <span class="mono creep-hero-new">{{ currency() }}{{ "{:,.2f}".format(creep_biggest_jumper.latest_price) }}</span>
     </div>
     <div class="creep-hero-divider"></div>
-    <div class="creep-hero-note">Up <b>+{{ creep_biggest_jumper.change_pct }}%</b> since your first tracked issue. The sharpest climb of anything you follow.</div>
+    <div class="creep-hero-note">Up <b>{{ creep_biggest_jumper.change_pct }}%</b> since your first tracked {{ creep_item }}, the biggest rise of any series here.</div>
   </div>
+  {% endif %}
 
   <div class="card dist-card" data-card="creep.dist">
     <div class="card-title" style="margin-bottom:6px;">Where each series sits</div>
@@ -126,11 +132,20 @@
     {% set _hot = _rows|selectattr('change_pct', 'ge', 25)|list|length %}
     {% set _down = _rows|selectattr('change_pct', 'lt', 0)|list|length %}
     <div class="strip-lead"><b>{{ _flat }} of {{ _rows|length }} series</b> haven't changed price.{% if _up %} {{ _up }} {{ 'has' if _up == 1 else 'have' }} gone up{% if _hot %}, {{ _hot }} by 25% or more{% endif %}.{% endif %}{% if _down %} {{ _down }} got cheaper.{% endif %}</div>
-    {{ creep_strip(_rows)|safe }}
+    <div class="strip-wrap" id="strip-wrap">
+      {{ creep_strip(_rows)|safe }}
+      <div class="trend-tooltip" id="strip-tooltip" style="display:none;">
+        <div class="trend-tooltip-label"></div>
+        <div class="trend-tooltip-row strip-tip-cat"><span>Category</span><span></span></div>
+        <div class="trend-tooltip-row"><span>First</span><span class="mono strip-tip-first"></span></div>
+        <div class="trend-tooltip-row"><span>Latest</span><span class="mono strip-tip-latest"></span></div>
+        <div class="trend-tooltip-row trend-tooltip-total"><span>Change</span><span class="mono strip-tip-pct"></span></div>
+        <div class="trend-tooltip-count strip-tip-count"></div>
+      </div>
+    </div>
 
   </div>
 </div>
-{% endif %}
 
 <div class="grid">
   <div class="card" data-card="creep.table" style="grid-column: span 12;">
@@ -138,11 +153,11 @@
       <div class="card-title">All tracked series, ranked by increase</div>
       <div class="range-tabs" id="creep-sort-tabs" style="display:flex; gap:6px;">
         <button type="button" class="tab-pill active" data-sort="increase">By increase</button>
-        <button type="button" class="tab-pill" data-sort="issues">By issues tracked</button>
+        <button type="button" class="tab-pill" data-sort="issues">By {{ creep_items }} tracked</button>
       </div>
     </div>
     <table class="creep-table">
-      <thead><tr><th>Series</th><th class="num">Issues</th><th>Cover, first &rarr; latest</th><th class="num">Change</th><th>Variants cost extra</th></tr></thead>
+      <thead><tr><th>Series</th><th class="num">{{ creep_items|capitalize }}</th><th>Cover, first &rarr; latest</th><th class="num">Change</th><th>Variants cost extra</th></tr></thead>
       <tbody id="creep-table-body">
         {% for s in all_series_stats|sort(attribute='change_pct', reverse=true) %}
         <tr data-change="{{ s.change_pct }}" data-issues="{{ s.issue_count }}">
@@ -163,7 +178,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <div class="card-note">Cover price is the cheapest copy you bought of each issue, so variants don't skew the trend. &ldquo;Variants cost extra&rdquo; is the average mark-up of the variant covers you bought over that issue's standard cover.</div>
+    <div class="card-note">Cover price is the cheapest copy you bought of each {{ creep_item }}, so variants don't skew the trend. &ldquo;Variants cost extra&rdquo; is the average mark-up of the variant covers you bought over that {{ creep_item }}'s standard cover.</div>
     <div class="search-pagination" id="creep-pagination" style="display:none; margin-top:14px;">
       <button type="button" class="warn-action-btn" id="creep-prev-btn">&larr; Prev</button>
       <span class="muted" style="font-size:12px;" id="creep-page-label">Page 1 of 1</span>
@@ -180,15 +195,17 @@
       <svg id="creep-svg" viewBox="0 0 760 170" style="width:100%; height:auto;"></svg>
       <div class="creep-tooltip" id="creep-tooltip"></div>
     </div>
-    <div class="card-note">{% if creep_total_extra %}{{ currency() }}{{ "{:,.2f}".format(creep_total_extra) }} extra in all{% if creep_since %} since {{ creep_since }}{% endif %}, from issues that cost more than the first one you tracked in their series.{% else %}No extra spend from price creep yet.{% endif %}</div>
+    <div class="card-note">{% if creep_total_extra %}{{ currency() }}{{ "{:,.2f}".format(creep_total_extra) }} extra in all{% if creep_since %} since {{ creep_since }}{% endif %}, from {{ creep_items }} that cost more than the first one you tracked in their series.{% else %}No extra spend from price creep yet.{% endif %}</div>
   </div>
 </div>
 
 {% else %}
-{% if category_chips and category_chips|rejectattr('on')|list %}
+{% if creep_no_numbered %}
+<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">Price creep follows things sold as numbered issues, like comics and manga volumes. None of your categories with items have <b>Numbered issues</b> switched on &ndash; you can change that in <a href="/settings#categories-card">Settings &rarr; Categories</a>.</div></div>
+{% elif category_chips and category_chips|rejectattr('on')|list %}
 <div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">No series in the selected categories. Switch a category on above to see its prices.</div></div>
 {% else %}
-<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">No series with 2+ tracked issues yet.</div></div>
+<div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">No series with 2+ tracked {{ creep_items }} yet.</div></div>
 {% endif %}
 {% endif %}
 
@@ -329,5 +346,46 @@
     tooltip.style.left = ((e.clientX + 14 + tw > window.innerWidth - 8) ? x - 14 - tw : x + 14) + 'px';
     tooltip.style.top = (y - 10) + 'px';
   }
+})();
+
+(function () {
+  // Where each series sits: the same hover box as the charts.
+  var wrap = document.getElementById('strip-wrap');
+  if (!wrap) return;
+  var tip = document.getElementById('strip-tooltip'), cur = '{{ currency() }}', on = null;
+  function money(v) { return cur + parseFloat(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function place(dot, e) {
+    var box = wrap.getBoundingClientRect(), r = dot.getBoundingClientRect();
+    var x = e && e.clientX ? e.clientX : r.left + r.width / 2, y = e && e.clientY ? e.clientY : r.top + r.height / 2;
+    var tw = tip.offsetWidth || 180;
+    tip.style.left = ((x + 14 + tw > window.innerWidth - 8) ? x - box.left - 14 - tw : x - box.left + 14) + 'px';
+    tip.style.top = (y - box.top - 10) + 'px';
+  }
+  function show(dot, e) {
+    var d = dot.dataset, p = parseInt(d.pct, 10);
+    if (on) on.classList.remove('on');
+    on = dot; dot.classList.add('on');
+    tip.querySelector('.trend-tooltip-label').textContent = d.name;
+    tip.querySelector('.strip-tip-cat').style.display = d.cat ? '' : 'none';
+    tip.querySelector('.strip-tip-cat span:last-child').textContent = d.cat;
+    tip.querySelector('.strip-tip-first').textContent = money(d.first);
+    tip.querySelector('.strip-tip-latest').textContent = money(d.latest);
+    var pct = tip.querySelector('.strip-tip-pct');
+    pct.textContent = p ? (p > 0 ? '+' : '') + p + '%' : 'No change';
+    pct.style.color = p >= 25 ? 'var(--neon-pink)' : p > 0 ? 'var(--neon-amber)' : p < 0 ? 'var(--neon-green)' : '';
+    tip.querySelector('.strip-tip-count').textContent = d.count + (d.count === '1' ? ' {{ creep_item }}' : ' {{ creep_items }}') + ' tracked';
+    tip.style.display = 'block';
+    place(dot, e);
+  }
+  function hide() { tip.style.display = 'none'; if (on) on.classList.remove('on'); on = null; }
+  wrap.querySelectorAll('.strip-dot').forEach(function (dot) {
+    dot.addEventListener('mouseenter', function (e) { show(dot, e); });
+    dot.addEventListener('mousemove', function (e) { place(dot, e); });
+    dot.addEventListener('mouseleave', hide);
+    dot.addEventListener('focus', function () { show(dot); });
+    dot.addEventListener('blur', hide);
+    dot.addEventListener('click', function (e) { e.stopPropagation(); if (on === dot) hide(); else show(dot, e); });
+  });
+  document.addEventListener('click', function () { if (on) hide(); });
 })();
 {% endblock %}

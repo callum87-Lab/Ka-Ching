@@ -220,16 +220,17 @@ def store_parsed_items(items, order_totals):
             """
             INSERT OR IGNORE INTO items
                 (name, order_number, placed_date, status, release_date, charge_status, price, note, imported_at,
-                 category_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 category_id, series)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 it["name"], order_number, placed_date, it["status"],
                 release_date, it["charge_status"], it["price"], it["note"], now,
-                # Category only applies to brand-new items - the refresh
-                # UPDATE below deliberately never touches it, so a category
-                # changed by hand survives re-importing the same order.
+                # Category and Series / Set only apply to brand-new items -
+                # the refresh UPDATE below deliberately never touches them,
+                # so anything changed by hand survives re-importing.
                 it.get("category_id") or db.default_category_id(conn),
+                it.get("series"),
             ),
         )
         if cur.rowcount:

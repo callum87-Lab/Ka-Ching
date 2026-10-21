@@ -1,23 +1,38 @@
-import re
 """Page routes: Dashboard, Orders, Calendar, Search, Insights, Alerts, and redirects for old addresses."""
-from .core import *  # noqa: F401,F403 - the shared app, templates and helpers
 import html
+import re
+
+from .core import *  # noqa: F401,F403 - the shared app, templates and helpers
 
 
 def _smooth_svg_path(points):
-    """Cubic-bezier path through a series of points using Catmull-Rom-derived
-    control points, for a smooth curve rather than sharp straight segments."""
+    """A smooth curve through the points that never overshoots them
+    (monotone cubic), so a line between two zero months stays on zero
+    instead of dipping below the axis, and peaks aren't exaggerated."""
+    n = len(points)
     d = f"M{points[0][0]},{points[0][1]}"
-    for i in range(len(points) - 1):
-        p0 = points[i - 1] if i > 0 else points[i]
-        p1 = points[i]
-        p2 = points[i + 1]
-        p3 = points[i + 2] if i + 2 < len(points) else p2
-        c1x = round(p1[0] + (p2[0] - p0[0]) / 6, 1)
-        c1y = round(p1[1] + (p2[1] - p0[1]) / 6, 1)
-        c2x = round(p2[0] - (p3[0] - p1[0]) / 6, 1)
-        c2y = round(p2[1] - (p3[1] - p1[1]) / 6, 1)
-        d += f" C{c1x},{c1y} {c2x},{c2y} {p2[0]},{p2[1]}"
+    if n < 3:
+        return d + "".join(f" L{x},{y}" for x, y in points[1:])
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    h = [xs[i + 1] - xs[i] or 1e-9 for i in range(n - 1)]
+    sl = [(ys[i + 1] - ys[i]) / h[i] for i in range(n - 1)]
+    m = [sl[0]] + [0.0 if sl[i - 1] * sl[i] <= 0 else (sl[i - 1] + sl[i]) / 2 for i in range(1, n - 1)] + [sl[-1]]
+    for i in range(n - 1):
+        if sl[i] == 0:
+            m[i] = m[i + 1] = 0.0
+            continue
+        a, b = m[i] / sl[i], m[i + 1] / sl[i]
+        t = a * a + b * b
+        if t > 9:
+            k = 3 / t ** 0.5
+            m[i], m[i + 1] = k * a * sl[i], k * b * sl[i]
+    for i in range(n - 1):
+        c1x = round(xs[i] + h[i] / 3, 1)
+        c1y = round(ys[i] + m[i] * h[i] / 3, 1)
+        c2x = round(xs[i + 1] - h[i] / 3, 1)
+        c2y = round(ys[i + 1] - m[i + 1] * h[i] / 3, 1)
+        d += f" C{c1x},{c1y} {c2x},{c2y} {xs[i + 1]},{ys[i + 1]}"
     return d
 
 
@@ -310,6 +325,15 @@ def render_line_svg(chart_data, range_key, budget=None, label_font_size=12, W=90
     return "".join(parts)
 
 
+def _strip_data(r):
+    """The hover box's details for one dot on Where each series sits."""
+    p = r["change_pct"]
+    label = f'{r["series"]}: {"+" if p > 0 else ""}{p}%' if p else f'{r["series"]}: no change'
+    return (f' tabindex="0" role="img" aria-label="{html.escape(label)}" data-name="{html.escape(r["series"])}"'
+            f' data-pct="{p}" data-first="{r["first_price"]:.2f}" data-latest="{r["latest_price"]:.2f}"'
+            f' data-count="{r.get("issue_count", 0)}" data-cat="{html.escape(r.get("category_name") or "")}"')
+
+
 def render_creep_strip(rows):
     """Price creep: every tracked series as one dot on a single % scale.
     Unchanged series cluster neatly at 0%; series that rose sit to the
@@ -334,8 +358,7 @@ def render_creep_strip(rows):
     flat = [r for r in rows if r["change_pct"] == 0]
     for k, r in enumerate(flat):
         cx, cy = x(0) + 4 + (k // 3) * 10.5, 92 - (k % 3) * 10.5
-        out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="4.6" fill="var(--chart-bar)" stroke="var(--card-bg)" stroke-width="1.5">'
-                   f'<title>{html.escape(r["series"])}: no change</title></circle>')
+        out.append(f'<circle class="strip-dot" cx="{cx:.1f}" cy="{cy:.1f}" r="4.6" fill="var(--chart-bar)" stroke="var(--card-bg)" stroke-width="1.5"{_strip_data(r)}/>')
     named = 0
     edge = 0
     for r in sorted((r for r in rows if r["change_pct"] != 0), key=lambda r: r["change_pct"]):
@@ -345,8 +368,7 @@ def render_creep_strip(rows):
         if p <= lo:
             cy = 92 - edge * 11.5
             edge += 1
-        out.append(f'<circle cx="{x(p):.1f}" cy="{cy}" r="5.4" fill="{colour}" stroke="var(--card-bg)" stroke-width="1.5">'
-                   f'<title>{html.escape(r["series"])}: {"+" if p > 0 else ""}{p}%</title></circle>')
+        out.append(f'<circle class="strip-dot" cx="{x(p):.1f}" cy="{cy}" r="5.4" fill="{colour}" stroke="var(--card-bg)" stroke-width="1.5"{_strip_data(r)}/>')
         if p >= 25:
             short = re.sub(r"^(Star Wars: )?(Hyperspace Stories: )?", "", r["series"])
             short = short if len(short) <= 22 else short[:21] + "\u2026"
@@ -377,12 +399,6 @@ def annotate_group_shipping(cur, groups):
     an estimate only when it genuinely isn't. Mirrors the same logic
     compute_shipping_for_groups uses for the totals, so what's shown next
     to each shipment always matches what's counted in the numbers above it."""
-    # SUMs every shipment_index for a given order - a split delivery (the
-    # same order captured across more than one real postage figure) must
-    # count all of them, not just whichever row a plain dict comprehension
-    # happened to keep last. This was a real, confirmed bug: an order with
-    # two real shipments was silently having one of them dropped here.
-    exact_by_order = _postage_by_order(cur)
     rate_cache = {}
 
     def estimate_for(src):
@@ -393,9 +409,9 @@ def annotate_group_shipping(cur, groups):
     for group in groups:
         for sg in group["source_groups"]:
             order_numbers = {e["order_number"] for e in sg["entries"] if e["order_number"]}
-            known = [exact_by_order[o] for o in order_numbers if o in exact_by_order]
-            if order_numbers and len(known) == len(order_numbers):
-                sg["shipping_amount"] = round(sum(known), 2)
+            exact = exact_parcel_postage(cur, order_numbers, group["date"])
+            if exact is not None:
+                sg["shipping_amount"] = exact
                 sg["shipping_is_exact"] = True
             else:
                 sg["shipping_amount"] = estimate_for(sg["source"])[0]
@@ -438,11 +454,9 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
         )
         period_items = [dict(r) for r in cur.fetchall()]
         comics_total = round(sum(i["price"] for i in period_items), 2)
-        # group_by_date groups by release_date, so only items that actually
-        # have one can go through it - an item with no release date yet
-        # (counted here via its placed date instead) has no shipment date
-        # to group shipping by, but its price still counts toward the total.
-        dated_items = [i for i in period_items if i["release_date"]]
+        # Parcels are grouped by release date, or order date when there
+        # isn't one - the same as every other total.
+        dated_items = [i for i in period_items if i["release_date"] or i["placed_date"]]
         groups = group_by_date(dated_items)
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
         # How much of the period is already paid: charged items, plus their
@@ -458,7 +472,7 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
             w_end = w_start + timedelta(days=6)
             comics_total, shipping_total, n, paid_total = totals_between(w_start, w_end)
             chart.append({
-                "label": w_start.strftime("%d %b"),
+                "label": w_start.strftime("%-d %b"),
                 "comics_total": comics_total,
                 "shipping_total": shipping_total,
                 "total": round(comics_total + shipping_total, 2),
@@ -489,29 +503,26 @@ def build_chart_data(cur, today: date, range_key: str = DEFAULT_CHART_RANGE):
     return chart
 
 
+def _spend_with_shipping(cur, items):
+    """Paid and total spend for a set of items, each including its
+    parcels' shipping, the same way every other figure counts it."""
+    dated = [i for i in items if i["release_date"] or i["placed_date"]]
+    ship_total, ship_spent = compute_shipping_for_groups(cur, group_by_date(dated))[:2] if dated else (0.0, 0.0)
+    spent = sum(i["price"] for i in items if i["charge_status"] == "charged") + ship_spent
+    total = sum(i["price"] for i in items) + ship_total
+    return round(spent, 2), round(total, 2)
+
+
 def get_year_to_date(cur, today: date):
-    year_start = date(today.year, 1, 1)
-    year_end = date(today.year, 12, 31)
-    cur.execute(
-        """
-        SELECT charge_status, price FROM items
-        WHERE status != 'cancelled'
-          AND date(COALESCE(release_date, placed_date)) BETWEEN date(?) AND date(?)
-        """,
-        (year_start.isoformat(), year_end.isoformat()),
-    )
-    rows = cur.fetchall()
-    spent = round(sum(r["price"] for r in rows if r["charge_status"] == "charged"), 2)
-    total = round(sum(r["price"] for r in rows), 2)
-    return {"year": today.year, "spent": spent, "total": total, "count": len(rows)}
+    items = fetch_items_between(cur, date(today.year, 1, 1), date(today.year, 12, 31))
+    spent, total = _spend_with_shipping(cur, items)
+    return {"year": today.year, "spent": spent, "total": total, "count": len(items)}
 
 
 def get_all_time_stats(cur):
-    cur.execute("SELECT charge_status, price FROM items WHERE status != 'cancelled'")
-    rows = cur.fetchall()
-    spent = round(sum(r["price"] for r in rows if r["charge_status"] == "charged"), 2)
-    total = round(sum(r["price"] for r in rows), 2)
-    return {"spent": spent, "total": total, "count": len(rows)}
+    items = [dict(r) for r in cur.execute("SELECT * FROM items WHERE status != 'cancelled'").fetchall()]
+    spent, total = _spend_with_shipping(cur, items)
+    return {"spent": spent, "total": total, "count": len(items)}
 
 
 def get_filter_tab_sources(cur):
@@ -566,7 +577,7 @@ def build_search_query(q, source, status, start_date, end_date, min_price=None, 
     return where_clause, params
 
 
-def _insights_category_chips(cats_param):
+def _insights_category_chips(cats_param, default="numbered", numbered_only=False):
     """Category filter chips for the Price creep / Top titles pages.
 
     Only categories that currently have (non-cancelled) items get a chip.
@@ -577,7 +588,7 @@ def _insights_category_chips(cats_param):
     conn = db.get_db()
     default_id = db.default_category_id(conn)
     cats = [dict(r) for r in conn.execute(
-        "SELECT id, name, color, has_series FROM categories ORDER BY sort_order, id"
+        "SELECT id, name, color, has_series, kind FROM categories ORDER BY sort_order, id"
     ).fetchall()]
     known_ids = {c["id"] for c in cats}
     counts = {}
@@ -588,9 +599,13 @@ def _insights_category_chips(cats_param):
         counts[cid] = counts.get(cid, 0) + row[1]
     conn.close()
 
-    chips = [c for c in cats if counts.get(c["id"], 0) > 0]
+    chips = [c for c in cats if counts.get(c["id"], 0) > 0 and (c["has_series"] or not numbered_only)]
     chip_ids = [c["id"] for c in chips]
-    defaults = [c["id"] for c in chips if c["has_series"]] or list(chip_ids)
+    if default == "grouped":
+        # Top titles: everything that has a Series / Set word of its own
+        defaults = [c["id"] for c in chips if (c["kind"] or db.DEFAULT_KIND) != db.DEFAULT_KIND] or list(chip_ids)
+    else:
+        defaults = [c["id"] for c in chips if c["has_series"]] or list(chip_ids)
     for c in chips:
         c["is_default"] = c["id"] in defaults
 
@@ -626,11 +641,17 @@ def _build_insights_context(request: Request, category_ids=None):
             i for i in all_items
             if (i.get("category_id") if i.get("category_id") in _known_cats else _default_cat) in category_ids
         ]
-    dated_items = [i for i in all_items if i["release_date"]]
+    # Every figure here dates an item the way the rest of the app does: by
+    # its release date, or its order date when it hasn't got one (older
+    # dispatched orders often don't).
+    for i in all_items:
+        i["_d"] = i["release_date"] or i["placed_date"]
+    dated_items = [i for i in all_items if i["_d"]]
+    released_items = [i for i in dated_items if i["release_date"]]
 
     by_month = {}
     for it in dated_items:
-        month_key = it["release_date"][:7]
+        month_key = it["_d"][:7]
         by_month.setdefault(month_key, []).append(it)
 
     month_stats = []
@@ -674,7 +695,7 @@ def _build_insights_context(request: Request, category_ids=None):
     priciest_item = max(all_items, key=lambda i: i["price"]) if all_items else None
     if priciest_item:
         priciest_item["release_date_label"] = (
-            date.fromisoformat(priciest_item["release_date"]).strftime("%d %b %Y")
+            date.fromisoformat(priciest_item["release_date"]).strftime("%-d %b %Y")
             if priciest_item["release_date"] else "no date set"
         )
     top_titles = sorted(all_items, key=lambda i: -i["price"])[:5]
@@ -686,11 +707,13 @@ def _build_insights_context(request: Request, category_ids=None):
     # just won't match anything else, which is correct - there's no
     # series to track creep across.
     series_groups = {}
+    series_names = {}  # the same series in different capitals counts once
     for it in all_items:
         m = re.match(r"^(.*?)\s*#\d+", it["name"])
         if not m:
             continue
-        series_key = m.group(1).strip()
+        series_key = tidy_series(m.group(1).strip())
+        series_key = series_names.setdefault(series_key.casefold(), series_key)
         sort_key = it["release_date"] or it["placed_date"] or ""
         series_groups.setdefault(series_key, []).append({"sort_key": sort_key, "price": it["price"], "name": it["name"], "release_date": it["release_date"], "category_id": it.get("category_id")})
 
@@ -838,7 +861,7 @@ def _build_insights_context(request: Request, category_ids=None):
 
     for t in top_titles:
         t["release_date_label"] = (
-            date.fromisoformat(t["release_date"]).strftime("%d %b %Y") if t["release_date"] else "no date set"
+            date.fromisoformat(t["release_date"]).strftime("%-d %b %Y") if t["release_date"] else "no date set"
         )
         m = re.match(r"^(.*?)\s*#\d+", t["name"])
         t["series"] = m.group(1).strip() if m else t["name"]
@@ -853,7 +876,7 @@ def _build_insights_context(request: Request, category_ids=None):
     for it in all_items:
         cid = it.get("category_id")
         cat_all[cid] = cat_all.get(cid, 0.0) + it["price"]
-        if (it["release_date"] or "").startswith(this_year_prefix):
+        if (it["release_date"] or it["placed_date"] or "").startswith(this_year_prefix):
             cat_year[cid] = cat_year.get(cid, 0.0) + it["price"]
 
     def _category_spend(totals):
@@ -900,7 +923,7 @@ def _build_insights_context(request: Request, category_ids=None):
     )
     recent_releases = [dict(r) for r in cur.fetchall()]
     for r in recent_releases:
-        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
+        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%-d %b")
 
     cur.execute(
         """
@@ -912,7 +935,7 @@ def _build_insights_context(request: Request, category_ids=None):
     )
     most_expensive_releases = [dict(r) for r in cur.fetchall()]
     for r in most_expensive_releases:
-        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
+        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%-d %b")
 
     cur.execute(
         """
@@ -924,7 +947,7 @@ def _build_insights_context(request: Request, category_ids=None):
     )
     lowest_releases = [dict(r) for r in cur.fetchall()]
     for r in lowest_releases:
-        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%d %b")
+        r["release_date_label"] = date.fromisoformat(r["release_date"]).strftime("%-d %b")
 
 
     # Trend badge: how the last fully-completed month compares to the
@@ -1009,7 +1032,7 @@ def _build_insights_context(request: Request, category_ids=None):
     # Busiest release day of the week - which weekday has the most issues
     # released on it, across everything dated.
     weekday_counts = {}
-    for it in dated_items:
+    for it in released_items:
         wd = date.fromisoformat(it["release_date"]).strftime("%A")
         weekday_counts[wd] = weekday_counts.get(wd, 0) + 1
     busiest_weekday = max(weekday_counts, key=weekday_counts.get) if weekday_counts else None
@@ -1033,11 +1056,11 @@ def _build_insights_context(request: Request, category_ids=None):
     # Same weekday breakdown, but split per shop so each day's bar can show
     # a stacked segment per shop, with a toggle to show/hide each one.
     weekday_shop_counts = {day: {} for day in weekday_order}
-    for it in dated_items:
+    for it in released_items:
         wd = date.fromisoformat(it["release_date"]).strftime("%A")
         shop = source_tab_group(it["source"])
         weekday_shop_counts[wd][shop] = weekday_shop_counts[wd].get(shop, 0) + 1
-    weekday_shops = sorted({source_tab_group(it["source"]) for it in dated_items})
+    weekday_shops = sorted({source_tab_group(it["source"]) for it in released_items})
     weekday_shop_colors = {s: shop_color(s) for s in weekday_shops}
     weekday_chart_by_shop = []
     for day in weekday_order:
@@ -1069,7 +1092,7 @@ def _build_insights_context(request: Request, category_ids=None):
     raw_shop_stats = []
     for source, items in by_shop.items():
         comics_total = round(sum(i["price"] for i in items), 2)
-        dated_shop_items = [i for i in items if i["release_date"]]
+        dated_shop_items = [i for i in items if i["release_date"] or i["placed_date"]]
         groups = group_by_date(dated_shop_items)
         shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, groups)
         raw_shop_stats.append({
@@ -1119,7 +1142,7 @@ def _build_insights_context(request: Request, category_ids=None):
     shop_90d_total = {}
     shop_prev90d_total = {}
     for it in dated_items:
-        rd = date.fromisoformat(it["release_date"])
+        rd = date.fromisoformat(it["_d"])
         group_name = source_tab_group(it["source"])
         if window_start <= rd <= today_ins:
             shop_90d_total[group_name] = shop_90d_total.get(group_name, 0) + it["price"]
@@ -1138,7 +1161,7 @@ def _build_insights_context(request: Request, category_ids=None):
         else:
             s["trend_pct"] = None
             s["trend_up"] = None
-        avg_shipping_shop_items = [i for i in dated_items if source_tab_group(i["source"]) == s["source"] and i["release_date"]]
+        avg_shipping_shop_items = [i for i in dated_items if source_tab_group(i["source"]) == s["source"]]
         if avg_shipping_shop_items:
             shop_groups = group_by_date(avg_shipping_shop_items)
             shop_shipping_total, _, _, _, _, _, _, _, _ = compute_shipping_for_groups(cur, shop_groups)
@@ -1215,7 +1238,7 @@ def _build_insights_context(request: Request, category_ids=None):
 
     # This month's release days, for the Cumulative spend card below.
     today = date.today()
-    month_items = [i for i in dated_items if i["release_date"][:7] == today.strftime("%Y-%m")]
+    month_items = [i for i in dated_items if i["_d"][:7] == today.strftime("%Y-%m")]
     month_groups = group_by_date(month_items)
     cumulative_month_label = today.strftime("%B")
 
@@ -1269,10 +1292,10 @@ def _build_insights_context(request: Request, category_ids=None):
         if not placed:
             bucket_counts[-1] += 1
     price_distribution = [
-        {"label": f"£{low}-{high}", "count": bucket_counts[idx]}
+        {"label": f"{_currency_ctx.get()}{low}\u2013{high}", "count": bucket_counts[idx]}
         for idx, (low, high) in enumerate(price_buckets)
     ]
-    price_distribution.append({"label": "£50+", "count": bucket_counts[-1]})
+    price_distribution.append({"label": f"{_currency_ctx.get()}50+", "count": bucket_counts[-1]})
     max_bucket_count = max((b["count"] for b in price_distribution), default=0) or 1
 
     conn.close()
@@ -1381,7 +1404,7 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
         synced_at = datetime.fromisoformat(most_recent_sync_row["last_synced_at"])
         most_recent_sync = {
             "client_label": most_recent_sync_row["client_label"] or "A device",
-            "label": synced_at.strftime("%d %b, %H:%M"),
+            "label": synced_at.strftime("%-d %b, %H:%M"),
         }
 
     most_recent_backup = None
@@ -1397,12 +1420,12 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
             size_label = f"{size_bytes / 1024 / 1024:.1f} MB" if size_bytes >= 1024 * 1024 else f"{size_bytes / 1024:.1f} KB"
             mtime = datetime.fromtimestamp(os.path.getmtime(fpath))
             most_recent_backup = {
-                "label": mtime.strftime("%d %b, %H:%M"),
+                "label": mtime.strftime("%-d %b, %H:%M"),
                 "size_label": size_label,
                 "age_hours": (datetime.now() - mtime).total_seconds() / 3600,
                 "when": ("today " + mtime.strftime("%H:%M")) if mtime.date() == date.today()
                         else ("yesterday " + mtime.strftime("%H:%M")) if mtime.date() == date.today() - timedelta(days=1)
-                        else mtime.strftime("%d %b"),
+                        else mtime.strftime("%-d %b"),
             }
 
     date_changes_flash = None
@@ -1412,8 +1435,8 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
         try:
             date_changes_flash = json.loads(flash_row["value"])
             for c in date_changes_flash:
-                c["old_label"] = date.fromisoformat(c["old_date"]).strftime("%d %b")
-                c["new_label"] = date.fromisoformat(c["new_date"]).strftime("%d %b")
+                c["old_label"] = date.fromisoformat(c["old_date"]).strftime("%-d %b")
+                c["new_label"] = date.fromisoformat(c["new_date"]).strftime("%-d %b")
         except (ValueError, TypeError):
             date_changes_flash = None
         cur.execute("DELETE FROM settings WHERE key = '_flash_date_changes'")
@@ -1666,6 +1689,9 @@ def _build_dashboard_context(request: Request, month: str | None = None, chart_r
     }
 
 
+_VARIANT_RE = re.compile(r"\b(variant|virgin|foil|sketch|incentive|ratio|1:\d+|exclusive|metal|blank|cover [b-z])\b", re.I)
+
+
 def _cover_price_creep(ctx):
     """Price creep, based on COVER price: the cheapest copy bought of
     each issue number stands in for that issue's standard cover, and the
@@ -1688,14 +1714,22 @@ def _cover_price_creep(ctx):
             by_issue.setdefault(int(m.group(1)), []).append(e)
         if len(by_issue) < 2:
             continue  # one issue (just variants of it) has no trend
+        # An issue bought only as a variant would otherwise count its
+        # variant as the cover and fake a huge rise or fall, so when the
+        # series has enough issues with a standard copy, those are used.
+        standard = {num: [c for c in cps if not _VARIANT_RE.search(c["name"])] for num, cps in by_issue.items()}
+        if sum(1 for v in standard.values() if v) >= 2:
+            trend_issues = [num for num in sorted(by_issue) if standard[num]]
+        else:
+            trend_issues = sorted(by_issue)
         issues = []
         premiums = []
-        for num in sorted(by_issue):
+        for num in trend_issues:
             copies = sorted(by_issue[num], key=lambda e: e["price"])
-            cover = copies[0]["price"]
+            cover = min(c["price"] for c in (standard[num] or copies))
             issues.append({"issue": num, "cover": cover, "copies": copies})
             # A second copy at the cover price is a duplicate, not a variant
-            premiums.extend(c["price"] - cover for c in copies[1:] if c["price"] - cover > 0.005)
+            premiums.extend(c["price"] - cover for c in copies if c["price"] - cover > 0.005)
         first, latest = issues[0]["cover"], issues[-1]["cover"]
         _counts = {}
         for e in st["entries"]:
@@ -1781,9 +1815,9 @@ def _cover_price_creep(ctx):
     }
 
 
-def _insights_category_ctx(request: Request):
+def _insights_category_ctx(request: Request, default="numbered", numbered_only=False):
     cats_param = request.query_params.get("cats")
-    chips, selected = _insights_category_chips(cats_param)
+    chips, selected = _insights_category_chips(cats_param, default, numbered_only)
     ctx = _build_insights_context(request, category_ids=selected)
     ctx["category_chips"] = chips
     ctx["category_none_on"] = bool(chips) and not selected
@@ -1874,7 +1908,7 @@ def _build_search_context(
         results = all_matches[start_idx:start_idx + SEARCH_PER_PAGE]
         for r in results:
             r["release_date_label"] = (
-                date.fromisoformat(r["release_date"]).strftime("%d %b %Y") if r["release_date"] else "no date set"
+                date.fromisoformat(r["release_date"]).strftime("%-d %b %Y") if r["release_date"] else "no date set"
             )
             r["source_color"] = shop_color(r["source"])
 
@@ -2107,6 +2141,7 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
     else:
         days_since_last_alert = None
 
+    dismissed_alerts = find_dismissed_alerts(cur)
     conn.close()
     return render("alerts.html", {
         "request": request,
@@ -2119,6 +2154,7 @@ def alerts_v2(request: Request, test_result: str | None = None, test_error: str 
         "resolved_this_month": resolved_this_month,
         "category_overages": category_overages,
         "undated_items": undated_items,
+        "dismissed_alerts": dismissed_alerts,
         "currently_open": currently_open,
         "days_since_last_alert": days_since_last_alert,
         "test_result": test_result,
@@ -2155,6 +2191,14 @@ def v2_redirect(rest: str, request: Request):
 
 @app.get("/")
 def dashboard_v2(request: Request, month: str | None = None, chart_range: str | None = None, source: str | None = None):
+    # A brand-new install opens on the setup guide
+    conn = db.get_db()
+    try:
+        from .welcome import setup_needed
+        if setup_needed(conn.cursor()):
+            return RedirectResponse(url="/welcome", status_code=303)
+    finally:
+        conn.close()
     ctx = _build_dashboard_context(request, month, chart_range, source)
     if isinstance(ctx, RedirectResponse):
         return ctx
@@ -2174,7 +2218,7 @@ def orders_v2(request: Request, month: str | None = None, chart_range: str | Non
     cur.execute(
         """
         SELECT * FROM items
-        WHERE status != 'cancelled' AND charge_status != 'charged'
+        WHERE status != 'cancelled' AND charge_status != 'charged' AND price > 0
         """
     )
     unpaid_items = [dict(r) for r in cur.fetchall()]
@@ -2243,12 +2287,49 @@ def dismiss_duplicate(name: str = Form(...), release_date: str = Form(...), next
     return RedirectResponse(url=next or "/", status_code=303)
 
 
+@app.post("/alerts/fine")
+def mark_alert_fine(item_id: int = Form(...), kind: str = Form(...), next: str | None = Form(None)):
+    """'Fine as it is': stop counting this item in an alert it can't (or
+    shouldn't) be fixed for. Put back with /alerts/unfine."""
+    next = safe_redirect(next, "/alerts")
+    if kind in DISMISSIBLE_ALERTS:
+        conn = db.get_db()
+        conn.execute(
+            "INSERT OR REPLACE INTO dismissed_alerts (item_id, kind, dismissed_at) VALUES (?, ?, ?)",
+            (item_id, kind, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+        conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
+@app.post("/alerts/unfine")
+def unmark_alert_fine(item_id: int = Form(...), kind: str = Form(...), next: str | None = Form(None)):
+    next = safe_redirect(next, "/alerts")
+    conn = db.get_db()
+    conn.execute("DELETE FROM dismissed_alerts WHERE item_id = ? AND kind = ?", (item_id, kind))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
+@app.post("/duplicates/undismiss")
+def undismiss_duplicate(name: str = Form(...), release_date: str = Form(...), next: str | None = Form(None)):
+    next = safe_redirect(next, "/alerts")
+    conn = db.get_db()
+    conn.execute("DELETE FROM dismissed_duplicates WHERE name = ? AND release_date = ?", (name, release_date))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
 @app.post("/ghost-items/remove-all")
 def remove_all_ghost_items():
     conn = db.get_db()
     cur = conn.cursor()
     cur.execute(
-        "SELECT id, name, price FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'",
+        "SELECT id, name, price FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'"
+        " AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'ghost')",
         (DEFAULT_SOURCE,),
     )
     to_remove = cur.fetchall()
@@ -2257,7 +2338,8 @@ def remove_all_ghost_items():
         len(to_remove), [(r["id"], r["name"], r["price"]) for r in to_remove],
     )
     cur.execute(
-        "DELETE FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'",
+        "DELETE FROM items WHERE source = ? AND order_number IS NULL AND status != 'cancelled'"
+        " AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'ghost')",
         (DEFAULT_SOURCE,),
     )
     conn.commit()
@@ -2279,14 +2361,103 @@ def insights_shop_v2(request: Request):
 
 @app.get("/insights/price-creep")
 def insights_price_creep_v2(request: Request):
-    ctx = _insights_category_ctx(request)
+    ctx = _insights_category_ctx(request, numbered_only=True)
     ctx.update(_cover_price_creep(ctx))
+    # Manga and books are sold in volumes; anything else numbered in issues.
+    kinds = {c["kind"] for c in ctx["category_chips"] if c.get("on")}
+    word = "volume" if kinds and kinds <= {"manga"} else "issue"
+    ctx["creep_item"], ctx["creep_items"] = word, word + "s"
+    ctx["creep_no_numbered"] = not ctx["category_chips"]
     return render("insights_pricecreep.html", ctx)
+
+
+def _plural(word):
+    return word if word.lower().endswith(("series", "s")) else word + "s"
+
+
+def _group_words(kinds):
+    """How to name groups and items for the categories on show: one kind
+    (or kinds sharing a word) uses its own ("Sets", "cards"); a mix joins
+    the group words ("Series and sets") and calls items "items"."""
+    kinds = [k for k in db.KINDS if k in kinds] or [db.DEFAULT_KIND]
+    groups = []
+    for k in kinds:
+        g = db.KINDS[k]["group"]
+        if g not in groups:
+            groups.append(g)
+    items = {db.KINDS[k]["item"] for k in kinds}
+    if len(groups) > 3:
+        groups = ["Group"]
+    one = " / ".join(groups)
+    plurals = [_plural(g).lower() for g in groups]
+    many = (plurals[0] if len(plurals) == 1 else ", ".join(plurals[:-1]) + " and " + plurals[-1]).capitalize()
+    item_one = items.pop() if len(items) == 1 else "item"
+    return {"one": one, "many": many, "many_lower": many.lower(), "item": item_one, "item_many": _plural(item_one),
+            "numbered_only": all(db.KINDS[k]["numbered"] for k in kinds),
+            "any_numbered": any(db.KINDS[k]["numbered"] for k in kinds)}
+
+
+def _group_totals(items, cat_kind):
+    """Top titles: total spend per Series / Set. Typed boxes win; comics
+    and manga without one fall back to the series in the title; anything
+    else with an empty box isn't grouped."""
+    groups = {}
+    names = {}  # the same name in different capitals counts once
+    for it in items:
+        key = item_series(it, cat_kind.get(it.get("category_id")))
+        if not key:
+            continue
+        key = names.setdefault(key.casefold(), key)
+        groups.setdefault(key, []).append(it)
+    out = []
+    for key, entries in groups.items():
+        total = round(sum(e["price"] for e in entries), 2)
+        dates = [e["release_date"] or e["placed_date"] for e in entries if e["release_date"] or e["placed_date"]]
+        first, latest = (min(dates), max(dates)) if dates else (None, None)
+        out.append({
+            "series": key, "total": total, "count": len(entries),
+            "avg_price": round(total / len(entries), 2),
+            "first_date": first, "latest_date": latest,
+            "first_date_label": date.fromisoformat(first).strftime("%b %Y") if first else "\u2014",
+            "latest_date_label": date.fromisoformat(latest).strftime("%b %Y") if latest else "\u2014",
+        })
+    return out
 
 
 @app.get("/insights/top-titles")
 def insights_top_titles_v2(request: Request):
-    ctx = _insights_category_ctx(request)
+    ctx = _insights_category_ctx(request, default="grouped")
+    selected = {c["id"] for c in ctx.get("category_chips", []) if c["on"]}
+    conn = db.get_db()
+    cats = get_categories(conn.cursor())
+    cat_kind = {c["id"]: c["kind"] for c in cats}
+    default_id = db.default_category_id(conn)
+    items = [dict(r) for r in conn.execute("SELECT * FROM items WHERE status != 'cancelled'").fetchall()]
+    conn.close()
+    for it in items:
+        if it.get("category_id") not in cat_kind:
+            it["category_id"] = default_id
+    if ctx.get("category_chips"):
+        items = [it for it in items if it["category_id"] in selected]
+
+    totals = _group_totals(items, cat_kind)
+    totals.sort(key=lambda s: -s["total"])
+    longest = min((s for s in totals if s["first_date"]), key=lambda s: s["first_date"], default=None)
+    if longest:
+        longest = dict(longest, years_running=round((date.today() - date.fromisoformat(longest["first_date"])).days / 365.25, 1))
+    # The shared Insights context fills "series" from the title; put back
+    # what's actually stored so a typed Series / Set box wins.
+    stored = {it["id"]: it.get("series") for it in items}
+    for t in (ctx.get("top_titles") or []) + ([ctx["priciest_item"]] if ctx.get("priciest_item") else []):
+        t["series"] = item_series(dict(t, series=stored.get(t.get("id"))), cat_kind.get(t.get("category_id"))) or ""
+    ctx.update({
+        "series_totals": totals[:10],
+        "all_series_totals": totals,
+        "top_series_by_spend": totals[0] if totals else None,
+        "most_collected_series": max(totals, key=lambda s: s["count"], default=None),
+        "longest_running_series": longest,
+        "gw": _group_words([cat_kind.get(i) for i in selected] if ctx.get("category_chips") else [c["kind"] for c in cats]),
+    })
     return render("insights_toptitles.html", ctx)
 
 
@@ -2348,11 +2519,12 @@ def export_search_csv(
     cur.execute(f"SELECT * FROM items WHERE {where_clause} ORDER BY {order_sql}", params)
     rows = [dict(r) for r in cur.fetchall()]
     category_names = _sync_category_names(cur)
+    category_kinds = {c["id"]: c["kind"] for c in get_categories(cur)}
     conn.close()
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category"])
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category", "Series / Set"])
     for r in rows:
         writer.writerow([
             _csv_safe(r["name"]),
@@ -2363,6 +2535,7 @@ def export_search_csv(
             "Yes" if r["charge_status"] == "charged" else "No",
             _csv_safe(r["order_number"]) if r["order_number"] else "",
             _csv_safe(category_names.get(r.get("category_id")) or category_names.get(None) or ""),
+            _csv_safe(item_series(r, category_kinds.get(r.get("category_id"))) or ""),
         ])
 
     return Response(

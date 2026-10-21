@@ -95,7 +95,7 @@ app = FastAPI(title="Ka-Ching!", lifespan=_lifespan)
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
 
-APP_VERSION = "3.3.0"
+APP_VERSION = "3.4.0"
 
 
 templates.env.globals["app_version"] = APP_VERSION
@@ -207,6 +207,24 @@ def _json_for_script(value):
 
 
 templates.env.filters["json_script"] = _json_for_script
+
+
+def _nice_when(value, with_time=False):
+    """An ISO date or timestamp as "15 Sep" ("15 Sep 2025" in another
+    year), with ", 08:00" if asked for."""
+    if not value:
+        return ""
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return str(value)
+    out = dt.strftime("%-d %b") if dt.year == date.today().year else dt.strftime("%-d %b %Y")
+    if with_time and len(str(value)) > 10:
+        out += dt.strftime(", %H:%M")
+    return out
+
+
+templates.env.filters["nice_when"] = _nice_when
 
 
 def render(name, context, **kwargs):
@@ -793,6 +811,54 @@ def _postage_by_order(cur):
 
 
 @_per_request
+def _postage_by_parcel(cur):
+    """Exact postage for each parcel of an order: {order: {date: amount}}.
+    An order's postage covers all of its parcels (one per release date), so
+    it's shared across them rather than counted again for each one. When
+    there's one postage figure per parcel they're matched up in date order;
+    otherwise the order's total is split evenly. An order whose parcels all
+    share one date (a split delivery) still gets its full total."""
+    figures = {}
+    for r in cur.execute("SELECT order_number, amount FROM shipment_postage ORDER BY order_number, shipment_index").fetchall():
+        figures.setdefault(r["order_number"], []).append(r["amount"] or 0.0)
+    if not figures:
+        return {}
+    dates = {}
+    for r in cur.execute(
+        """SELECT DISTINCT order_number, COALESCE(release_date, placed_date) AS d FROM items
+           WHERE status != 'cancelled' AND order_number IS NOT NULL AND COALESCE(release_date, placed_date) IS NOT NULL"""
+    ).fetchall():
+        if r["order_number"] in figures:
+            dates.setdefault(r["order_number"], set()).add(r["d"])
+    out = {}
+    for order, figs in figures.items():
+        ds = sorted(dates.get(order, ()))
+        if not ds:
+            continue
+        if len(figs) == len(ds):
+            out[order] = {d: round(a, 2) for d, a in zip(ds, figs)}
+        else:
+            each = round(sum(figs) / len(ds), 2)
+            out[order] = {d: each for d in ds}
+    return out
+
+
+def exact_parcel_postage(cur, order_numbers, parcel_date):
+    """The real postage for one parcel (its orders, its date), or None if
+    any of its orders has no postage on record."""
+    if not order_numbers or not parcel_date:
+        return None
+    per_parcel = _postage_by_parcel(cur)
+    total = 0.0
+    for o in order_numbers:
+        amount = per_parcel.get(o, {}).get(parcel_date)
+        if amount is None:
+            return None
+        total += amount
+    return round(total, 2)
+
+
+@_per_request
 def get_shipping_estimate(cur, source=None):
     """Work out shipping per parcel from the person's own order history where
     possible, rather than relying on a guessed constant. Scoped per-shop
@@ -918,7 +984,7 @@ def group_by_date(items):
 
         result.append({
             "date": key,
-            "date_label": date.fromisoformat(key).strftime("%a %d %b") if key else "No date yet",
+            "date_label": date.fromisoformat(key).strftime("%a %-d %b") if key else "No date yet",
             "source_groups": source_groups,
             "subtotal": round(sum(i["price"] for i in group_items), 2),
             "all_paid": all(i["charge_status"] == "charged" for i in group_items),
@@ -945,13 +1011,6 @@ def compute_shipping_for_groups(cur, groups):
 
     Returns (total, spent, remaining, shipment_count, primary_rate,
     primary_source, primary_tier, primary_samples, primary_checked)."""
-    # SUMs every shipment_index for a given order - a split delivery (the
-    # same order captured across more than one real postage figure) must
-    # count all of them, not just whichever row a plain dict comprehension
-    # happened to keep last. This was a real, confirmed bug: an order with
-    # two real shipments was silently having one of them dropped here.
-    exact_by_order = _postage_by_order(cur)
-
     rate_cache = {}
 
     def estimate_for(src):
@@ -964,12 +1023,9 @@ def compute_shipping_for_groups(cur, groups):
     for group in groups:
         for sg in group["source_groups"]:
             order_numbers = {e["order_number"] for e in sg["entries"] if e["order_number"]}
-            known = [exact_by_order[o] for o in order_numbers if o in exact_by_order]
-
-            if order_numbers and len(known) == len(order_numbers):
-                # Every order behind this shipment has its real postage on record
-                rate = round(sum(known), 2)
-            else:
+            # Every order behind this parcel has its real postage on record
+            rate = exact_parcel_postage(cur, order_numbers, group["date"])
+            if rate is None:
                 rate, _, _, _ = estimate_for(sg["source"])
 
             total += rate
@@ -1247,7 +1303,7 @@ def find_duplicate_groups(cur):
         groups.append({
             "name": row["name"],
             "release_date": row["release_date"],
-            "release_date_label": date.fromisoformat(row["release_date"]).strftime("%d %b %Y"),
+            "release_date_label": date.fromisoformat(row["release_date"]).strftime("%-d %b %Y"),
             "entries": entries,
         })
     return groups
@@ -1264,6 +1320,7 @@ def find_ghost_items(cur):
         """
         SELECT * FROM items
         WHERE source = ? AND order_number IS NULL AND status != 'cancelled'
+          AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'ghost')
         ORDER BY release_date DESC
         """,
         (DEFAULT_SOURCE,),
@@ -1280,10 +1337,30 @@ def find_undated_items(cur):
         """
         SELECT * FROM items
         WHERE status != 'cancelled' AND release_date IS NULL AND placed_date IS NULL
+          AND id NOT IN (SELECT item_id FROM dismissed_alerts WHERE kind = 'undated')
         ORDER BY name
         """
     )
     return [dict(r) for r in cur.fetchall()]
+
+
+DISMISSIBLE_ALERTS = {"ghost": "No order number", "undated": "No release date"}
+
+
+def find_dismissed_alerts(cur):
+    """Everything marked "Fine as it is" (or "Not a duplicate"), newest
+    first, so each one can be put back on the Alerts page."""
+    cur.execute(
+        """
+        SELECT d.item_id, d.kind, d.dismissed_at, i.name, i.price FROM dismissed_alerts d
+        JOIN items i ON i.id = d.item_id
+        ORDER BY d.dismissed_at DESC
+        """
+    )
+    rows = [dict(r, label=DISMISSIBLE_ALERTS.get(r["kind"], r["kind"])) for r in cur.fetchall()]
+    cur.execute("SELECT name, release_date, dismissed_at FROM dismissed_duplicates ORDER BY dismissed_at DESC")
+    dups = [dict(r) for r in cur.fetchall()]
+    return {"items": rows, "duplicates": dups, "count": len(rows) + len(dups)}
 
 
 RESTORE_COPIES_KEPT = 3
@@ -1298,7 +1375,7 @@ def find_awaiting_charge(cur, today: date):
     cur.execute(
         """
         SELECT * FROM items
-        WHERE status != 'cancelled' AND charge_status != 'charged'
+        WHERE status != 'cancelled' AND charge_status != 'charged' AND price > 0
           AND release_date IS NOT NULL AND date(release_date) < date(?)
         ORDER BY release_date ASC
         """,
@@ -1324,6 +1401,51 @@ def alert_counts(cur, today: date):
     }
     counts["total"] = sum(counts.values())
     return counts
+
+
+def friendly_send_error(error):
+    """A provider's raw error as something a person can act on."""
+    e = str(error or "")
+    low = e.lower()
+    if "timed out" in low:
+        return "Couldn't reach the server: it didn't answer in time. Check the address and that it's running."
+    if any(w in low for w in ("no route to host", "connection refused", "name or service not known", "nodename nor servname", "network is unreachable")):
+        return "Couldn't reach the server. Check the address and that it's running."
+    m = re.search(r"HTTP Error (\d{3})", e)
+    if m:
+        code = m.group(1)
+        if code in ("401", "403"):
+            return f"The server turned it down ({code}): check the token, topic or password."
+        return f"The server answered with an error ({code})."
+    return e
+
+
+templates.env.filters["friendly_send_error"] = friendly_send_error
+
+
+@_per_request
+def notification_trouble():
+    """When the last few notifications all failed: since when, and why.
+    None if notifications are off or the latest one got through."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    try:
+        if notifications.get_setting(cur, "notify_provider", "none") in ("", "none"):
+            return None
+        rows = cur.execute("SELECT sent_at, success, error FROM notification_log ORDER BY id DESC LIMIT 50").fetchall()
+    finally:
+        conn.close()
+    streak = []
+    for r in rows:
+        if r["success"]:
+            break
+        streak.append(r)
+    if len(streak) < 2:
+        return None
+    return {"since": streak[-1]["sent_at"], "count": len(streak), "error": friendly_send_error(streak[0]["error"])}
+
+
+templates.env.globals["notification_trouble"] = notification_trouble
 
 
 def _topbar_alert_count():
@@ -1368,7 +1490,7 @@ def _topbar_most_recent_sync():
     synced_at = datetime.fromisoformat(row["last_synced_at"])
     return {
         "client_label": row["client_label"] or "A device",
-        "label": synced_at.strftime("%d %b, %H:%M"),
+        "label": synced_at.strftime("%-d %b, %H:%M"),
     }
 
 
@@ -1474,14 +1596,85 @@ def get_categories(cur, with_counts=False):
     if with_counts:
         cur.execute(
             """
-            SELECT c.id, c.name, c.color, c.has_series, c.sort_order,
+            SELECT c.id, c.name, c.color, c.has_series, c.sort_order, c.kind,
                    (SELECT COUNT(*) FROM items i WHERE i.category_id = c.id AND i.deleted_at IS NULL) AS item_count
             FROM categories c ORDER BY c.sort_order, c.id
             """
         )
     else:
-        cur.execute("SELECT id, name, color, has_series, sort_order FROM categories ORDER BY sort_order, id")
-    return [dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT id, name, color, has_series, sort_order, kind FROM categories ORDER BY sort_order, id")
+    rows = [dict(r) for r in cur.fetchall()]
+    for r in rows:
+        if r.get("kind") not in db.KINDS:
+            r["kind"] = db.DEFAULT_KIND
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Series / Set: what a run of related items is called depends on the kind
+# of category (Series for comics, Set for cards...). Comics and manga get it
+# from the title ("Star Wars: Jedi Knights #3" -> "Star Wars: Jedi Knights")
+# unless typed in; everything else uses what was typed, or nothing.
+# ---------------------------------------------------------------------------
+_ISSUE_RE = re.compile(r"^(.*?)\s*#\d+")
+
+
+def tidy_series(name):
+    """A series name as it should be shown: an ALL-CAPS one (common in eBay
+    listings) in normal title case, so it groups with the same series typed
+    normally."""
+    if name and name == name.upper() and any(c.isalpha() for c in name):
+        name = re.sub(r"[A-Za-z]+('[A-Za-z]+)?", lambda m: m.group(0).capitalize(), name.lower())
+    return name
+
+
+def series_from_name(name):
+    """The series part of a numbered title, or None if it has no #N."""
+    m = _ISSUE_RE.match(name or "")
+    return tidy_series(m.group(1).strip()) or None if m else None
+
+
+def item_series(item, kind=None):
+    """The Series / Set an item belongs to: what was typed, otherwise (for
+    numbered kinds, or when the kind isn't known) taken from the title."""
+    typed = " ".join((item.get("series") or "").split())
+    if typed:
+        return typed
+    if kind is None or db.KINDS.get(kind, {}).get("numbered"):
+        return series_from_name(item.get("name"))
+    return None
+
+
+def clean_series(raw):
+    """A submitted Series / Set box -> what to store (None when empty)."""
+    text = " ".join(str(raw or "").split())[:120]
+    return text or None
+
+
+def _known_series():
+    """Every Series / Set typed in so far, by kind, for the box's
+    suggestions (most used first)."""
+    conn = db.get_db()
+    rows = conn.execute(
+        """
+        SELECT COALESCE(c.kind, ?) AS kind, i.series, COUNT(*) AS n FROM items i
+        LEFT JOIN categories c ON c.id = i.category_id
+        WHERE i.series IS NOT NULL AND i.series != '' AND i.deleted_at IS NULL
+        GROUP BY 1, 2 ORDER BY n DESC, i.series
+        """,
+        (db.DEFAULT_KIND,),
+    ).fetchall()
+    conn.close()
+    out = {}
+    for r in rows:
+        out.setdefault(r["kind"], [])
+        if len(out[r["kind"]]) < 40:
+            out[r["kind"]].append(r["series"])
+    return out
+
+
+templates.env.globals["KINDS"] = db.KINDS
+templates.env.globals["known_series"] = _known_series
 
 
 def _create_category(cur, name):
@@ -1505,9 +1698,10 @@ def _create_category(cur, name):
     else:
         cur.execute("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories")
         sort_order = cur.fetchone()[0]
+    kind = db.guess_kind(clean)
     cur.execute(
-        "INSERT INTO categories (name, color, has_series, sort_order, created_at) VALUES (?, ?, 0, ?, ?)",
-        (clean, color, sort_order, db.utc_now()),
+        "INSERT INTO categories (name, color, has_series, sort_order, created_at, kind) VALUES (?, ?, ?, ?, ?, ?)",
+        (clean, color, 1 if db.KINDS[kind]["numbered"] else 0, sort_order, db.utc_now(), kind),
     )
     logger.info("CATEGORY ADDED: %r", clean)
     return cur.lastrowid
@@ -1552,7 +1746,7 @@ CARD_LAYOUT = [
         {"id": "dash.figures", "name": "Key figures", "desc": "This year, all time, still on order, and what needs attention", "essential": True},
         {"id": "dash.catbudget", "name": "Budget by category", "desc": "This cycle's spend split by category, with any limits"},
         {"id": "dash.week", "name": "This week", "desc": "What's due in the next 7 days, by shipment", "preorder": True},
-        {"id": "dash.alerts", "name": "Alerts", "desc": "Awaiting charge, duplicates, ghost items, and backups", "essential": True},
+        {"id": "dash.alerts", "name": "Alerts", "desc": "Awaiting charge, duplicates, items with no order number, and backups", "essential": True},
         {"id": "dash.trend", "name": "Spending", "desc": "Spend per week or month, with your budget", "essential": True},
     ]},
     {"page": "Calendar", "path": "/calendar", "cards": [
@@ -1563,9 +1757,9 @@ CARD_LAYOUT = [
     ]},
     {"page": "Insights \u00b7 Overview", "path": "/insights", "cards": [
         {"id": "ov.ratio", "name": "Pre-order vs released", "desc": "How much is still on order", "preorder": True},
-        {"id": "ov.releases", "name": "10 releases", "desc": "Recent, priciest and cheapest"},
+        {"id": "ov.releases", "name": "Recent, most expensive, lowest", "desc": "Ten items already released: the most recent, the priciest and the cheapest"},
         {"id": "ov.spend", "name": "Spend overview", "desc": "Monthly spend at a glance", "essential": True},
-        {"id": "ov.issue", "name": "Per issue", "desc": "Priciest item and average issue"},
+        {"id": "ov.issue", "name": "Per item", "desc": "Priciest item and the average item"},
         {"id": "ov.dist", "name": "Price distribution", "desc": "Items by price bracket"},
         {"id": "ov.ship", "name": "Shipping and patterns", "desc": "Busiest day, savings, shipping vs cover"},
         {"id": "ov.cum", "name": "Cumulative spend", "desc": "This month against your budget"},
@@ -1580,6 +1774,7 @@ CARD_LAYOUT = [
         {"id": "shop.overtime", "name": "Spend by shop over time", "desc": "6 / 12 month chart"},
     ]},
     {"page": "Insights \u00b7 Price creep", "path": "/insights/price-creep", "cards": [
+        {"id": "page.creep", "name": "Show this page", "desc": "Price creep in the sidebar (comics and manga: needs issue numbers)", "page_toggle": True},
         {"id": "creep.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
         {"id": "creep.hero", "name": "Biggest jumper", "desc": "The series with the steepest rise"},
         {"id": "creep.dist", "name": "Increase distribution", "desc": "Series by size of increase"},
@@ -1587,9 +1782,10 @@ CARD_LAYOUT = [
         {"id": "creep.chart", "name": "Extra spend from creep", "desc": "Running total chart"},
     ]},
     {"page": "Insights \u00b7 Top titles", "path": "/insights/top-titles", "cards": [
+        {"id": "page.titles", "name": "Show this page", "desc": "Top titles in the sidebar", "page_toggle": True},
         {"id": "titles.stats", "name": "Stat tiles", "desc": "The four figures along the top", "essential": True},
-        {"id": "titles.hero", "name": "Priciest issue tracked", "desc": "Your single priciest item"},
-        {"id": "titles.priciest", "name": "Priciest issues, all time", "desc": "Top items by price", "essential": True},
+        {"id": "titles.hero", "name": "Priciest item tracked", "desc": "Your single priciest item"},
+        {"id": "titles.priciest", "name": "Priciest items, all time", "desc": "Top items by price", "essential": True},
         {"id": "titles.series", "name": "Top series by total spend", "desc": "Series ranked by spend"},
         {"id": "titles.compare", "name": "All series, compared", "desc": "Full comparison table"},
     ]},
@@ -1727,6 +1923,112 @@ templates.env.globals["glance"] = _glance
 
 
 
+# ---------------------------------------------------------------------------
+# What you track (Settings -> Appearance): presets per kind. Only these
+# cards depend on the kinds picked; pre-order cards follow the pre-order
+# answer; everything else is on in every preset.
+# ---------------------------------------------------------------------------
+TYPE_CARDS = ("page.creep", "page.titles", "titles.series", "titles.compare")
+
+
+def _preorder_cards():
+    return [c["id"] for pg in CARD_LAYOUT for c in pg["cards"] if c.get("preorder")]
+
+
+def preset_hidden(kinds, preorder=True):
+    """The cards a preset hides, for the kinds picked and the pre-order
+    answer. Nothing picked hides nothing."""
+    kinds = [k for k in (kinds or []) if k in db.KINDS]
+    hidden = set()
+    if kinds:
+        if not any(db.KINDS[k]["numbered"] for k in kinds):
+            hidden.add("page.creep")
+        if all(k == db.DEFAULT_KIND for k in kinds):
+            hidden.update(("page.titles", "titles.series", "titles.compare"))
+        elif not any(k in ("comics", "manga", "cards") for k in kinds):
+            hidden.add("titles.compare")
+    if not preorder:
+        hidden.update(_preorder_cards())
+    return hidden
+
+
+def _tracking():
+    """{"kinds": [...], "preorder": bool, "saved": bool}. Until it's been
+    saved, the kinds are worked out from the categories in use and
+    pre-order from whether its cards are showing."""
+    conn = db.get_db()
+    cur = conn.cursor()
+    raw = notifications.get_setting(cur, "tracking_types", "")
+    pre = notifications.get_setting(cur, "tracking_preorder", "")
+    kinds, saved = [], False
+    try:
+        kinds = [k for k in json.loads(raw) if k in db.KINDS] if raw else []
+        saved = bool(raw)
+    except (ValueError, TypeError):
+        kinds = []
+    if not saved:
+        rows = cur.execute(
+            """
+            SELECT DISTINCT COALESCE(c.kind, ?) FROM items i JOIN categories c ON c.id = i.category_id
+            WHERE i.status != 'cancelled' AND i.deleted_at IS NULL
+            """, (db.DEFAULT_KIND,)).fetchall()
+        kinds = [k for k in db.KINDS if k in {r[0] for r in rows}]
+    conn.close()
+    if pre in ("yes", "no"):
+        preorder = pre == "yes"
+    else:
+        preorder = not set(_preorder_cards()) <= set(_hidden_cards())
+    return {"kinds": kinds, "preorder": preorder, "saved": saved}
+
+
+def nav_titles_label():
+    """Top titles' sidebar name: "Top sets" etc. when everything tracked
+    shares one group word (other than Series), otherwise "Top titles"."""
+    groups = {db.KINDS[k]["group"] for k in _tracking()["kinds"]}
+    if len(groups) == 1:
+        g = groups.pop()
+        if g != "Series":   # comics and manga keep the familiar name
+            return "Top " + g.lower() + "s"
+    return "Top titles"
+
+
+def apply_tracking(cur, kinds, preorder, reset=False, extra_on=(), extra_off=()):
+    """Store what you track and update the hidden cards. Without reset only
+    the cards the picks decide change; with reset every card goes back to
+    the preset. extra_on / extra_off then switch individual cards."""
+    kinds = [k for k in db.KINDS if k in (kinds or [])]
+    notifications.set_setting(cur, "tracking_types", json.dumps(kinds))
+    notifications.set_setting(cur, "tracking_preorder", "yes" if preorder else "no")
+    preset = preset_hidden(kinds, preorder)
+    try:
+        current = set(json.loads(notifications.get_setting(cur, "hidden_cards", "[]")))
+    except (ValueError, TypeError):
+        current = set()
+    if reset:
+        hidden = set(preset)
+    else:
+        hidden = (current - (set(TYPE_CARDS) | set(_preorder_cards()))) | preset
+    hidden |= {c for c in extra_off if c in CARD_IDS}
+    hidden -= set(extra_on)
+    notifications.set_setting(cur, "hidden_cards", json.dumps(sorted(h for h in hidden if h in CARD_IDS)))
+    return hidden
+
+
+def _tracking_summary():
+    """For the What you track card: the preset's name and which cards
+    differ from it right now."""
+    tr = _tracking()
+    preset = preset_hidden(tr["kinds"], tr["preorder"])
+    changed = sorted(set(_hidden_cards()) ^ preset)
+    return dict(tr, names=" + ".join(db.KINDS[k]["name"] for k in tr["kinds"]), changed=changed)
+
+
+templates.env.globals["tracking_summary"] = _tracking_summary
+templates.env.globals["tracking"] = _tracking
+templates.env.globals["preset_hidden"] = preset_hidden
+templates.env.globals["nav_titles_label"] = nav_titles_label
+
+
 def _hidden_cards():
     conn = db.get_db()
     raw = notifications.get_setting(conn.cursor(), "hidden_cards", "[]")
@@ -1793,11 +2095,11 @@ def source_filter_sql(source: str):
 
 
 SEARCH_SORT_OPTIONS = {
-    "date_desc": ("release_date DESC, name", "Release date (newest)"),
-    "date_asc": ("release_date ASC, name", "Release date (oldest)"),
-    "price_desc": ("price DESC, name", "Price (highest)"),
-    "price_asc": ("price ASC, name", "Price (lowest)"),
-    "name_asc": ("name ASC", "Name (A-Z)"),
+    "date_desc": ("release_date DESC, name", "Newest first"),
+    "date_asc": ("release_date ASC, name", "Oldest first"),
+    "price_desc": ("price DESC, name", "Highest price"),
+    "price_asc": ("price ASC, name", "Lowest price"),
+    "name_asc": ("name ASC", "Name A\u2013Z"),
     "added_desc": ("imported_at DESC", "Recently added"),
 }
 

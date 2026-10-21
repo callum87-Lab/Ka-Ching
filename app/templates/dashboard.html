@@ -50,12 +50,12 @@
 
   .thisweek-card { grid-column: span 7; }
   .thisweek-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-  .thisweek-label { font-size: 14.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .thisweek-label { font-size: 14.5px; font-weight: 700; color: var(--text); }
   .thisweek-total { margin-left: auto; font-size: 15px; font-weight: 700; color: var(--neon-blue); }
   .thisweek-chevron { color: var(--text-dim); font-size: 13px; transition: transform 0.15s ease; }
   .thisweek-chevron.open { transform: rotate(180deg); }
   .thisweek-body { max-height: 0; overflow: hidden; transition: max-height 0.2s ease; }
-  .thisweek-body.open { max-height: 600px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .thisweek-body.open { max-height: 4000px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
   .tw-item-row { display: grid; grid-template-columns: 22px 1fr 80px 24px; align-items: center; gap: 12px; padding: 7px 0; font-size: 13.5px; border-top: 1px dashed var(--border); }
   .tw-item-row:first-of-type { border-top: none; }
   .tw-item-name { color: var(--text); }
@@ -237,7 +237,7 @@
     </div>
     <div class="hero-side">
       {% if biggest_still_to_come %}
-      <div class="hero-side-k">Biggest still to come &middot; {{ biggest_still_to_come.due_label }}{% if biggest_still_to_come.days_until_due is not none and biggest_still_to_come.days_until_due >= 0 %} &middot; in {{ biggest_still_to_come.days_until_due }} day{{ "s" if biggest_still_to_come.days_until_due != 1 else "" }}{% endif %}</div>
+      <div class="hero-side-k">Biggest still to come &middot; {{ biggest_still_to_come.due_label }}{% set _d = biggest_still_to_come.days_until_due %}{% if _d is not none and _d >= 0 %} &middot; {% if _d == 0 %}today{% elif _d == 1 %}tomorrow{% else %}in {{ _d }} days{% endif %}{% endif %}</div>
       <div class="hero-side-t">{{ biggest_still_to_come.name }}</div>
       <div class="hero-side-p mono">{{ currency() }}{{ "{:,.2f}".format(biggest_still_to_come.price) }}</div>
       <div class="hero-side-s">{{ biggest_still_to_come.source }}</div>
@@ -259,7 +259,7 @@
     <div class="fig">
       <div class="fig-k">All time</div>
       <div class="fig-v mono">{{ currency() }}{{ "{:,.2f}".format(all_time_stats.spent) }}</div>
-      <div class="fig-s">{{ all_time_stats.count }} item{{ "s" if all_time_stats.count != 1 else "" }} &middot; {{ currency() }}{{ "{:,.2f}".format(all_time_stats.total) }} tracked</div>
+      <div class="fig-s">{{ all_time_stats.count }} item{{ "s" if all_time_stats.count != 1 else "" }} &middot; {{ currency() }}{{ "{:,.2f}".format(all_time_stats.total) }} with what's still due</div>
     </div>
     <div class="fig fig-3">
       <div class="fig-k">Still on order</div>
@@ -318,7 +318,7 @@
     <div class="thisweek-head" onclick="document.getElementById('thisweek-body').classList.toggle('open'); this.querySelector('.thisweek-chevron').classList.toggle('open');">
       <span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
       <span class="thisweek-label">This week</span>
-      {% if week_total > 0 %}<span class="thisweek-total mono">{{ currency() }}{{ "{:,.2f}".format(week_remaining) }} left of {{ currency() }}{{ "{:,.2f}".format(week_total) }}</span>{% else %}<span class="thisweek-total thisweek-none">Nothing due</span>{% endif %}
+      {% if week_total > 0 %}<span class="thisweek-total mono">{% if week_remaining == week_total %}{{ currency() }}{{ "{:,.2f}".format(week_total) }} due{% else %}{{ currency() }}{{ "{:,.2f}".format(week_remaining) }} left of {{ currency() }}{{ "{:,.2f}".format(week_total) }}{% endif %}</span>{% else %}<span class="thisweek-total thisweek-none">Nothing due</span>{% endif %}
       <span class="thisweek-chevron open">&#9662;</span>
     </div>
     <div class="thisweek-body open" id="thisweek-body">
@@ -373,6 +373,14 @@
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}
+    {% set _nt = notification_trouble() %}
+    {% if _nt %}
+    <a class="alert-line" href="/alerts#notifications">
+      <span class="dot" style="background:var(--neon-pink);"></span>
+      <span class="txt">Notifications failing since <b>{{ _nt.since|nice_when }}</b></span>
+      <span class="arrow">&rsaquo;</span>
+    </a>
+    {% endif %}
     {% if duplicate_groups %}
     <a class="alert-line" href="/alerts">
       <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px color-mix(in srgb, var(--neon-violet) 50%, transparent);"></span>
@@ -383,7 +391,7 @@
     {% if ghost_items %}
     <a class="alert-line" href="/alerts">
       <span class="dot" style="background:var(--neon-violet); box-shadow:0 0 6px color-mix(in srgb, var(--neon-violet) 50%, transparent);"></span>
-      <span class="txt"><b>{{ ghost_items|length }}</b> ghost item{{ "s" if ghost_items|length != 1 else "" }}</span>
+      <span class="txt"><b>{{ ghost_items|length }}</b> with no order number</span>
       <span class="arrow">&rsaquo;</span>
     </a>
     {% endif %}

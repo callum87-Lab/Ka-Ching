@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ka-Ching! &middot; Log Orders{% endblock %}
+{% block title %}Ka-Ching! &middot; Log orders{% endblock %}
 
 {% block extra_style %}
   .logorders-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
@@ -8,10 +8,10 @@
   .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
   .settings-form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
   .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--text-muted); font-weight: 600; }
-  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; color-scheme: dark; }
+  .field-input { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; }
   .field-input:focus { outline: none; border-color: var(--neon-blue); }
 
-  .comic-row { display: grid; grid-template-columns: 1fr 240px 130px 32px; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .comic-row { display: grid; grid-template-columns: minmax(0, 1.5fr) 210px minmax(0, 1fr) 110px 32px; gap: 10px; align-items: center; margin-bottom: 8px; }
   .comic-row .field-input { margin: 0; }
   .row-remove-btn { width: 30px; height: 30px; border-radius: var(--radius-xs); background: var(--surface-raised); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 18px; }
   .row-remove-btn:hover { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
@@ -40,7 +40,11 @@
   @media (max-width: 900px) {
     /* Phone: item name on its own line, then category, price, remove */
     .comic-row { grid-template-columns: minmax(0, 1fr) 92px 32px; }
-    .comic-row > .comic-row-name { grid-column: 1 / -1; }
+    .comic-row > .comic-row-name, .comic-row > .series-input { grid-column: 1 / -1; }
+    .comic-row > .series-input { order: 1; }
+    .comic-row > .category-input { order: 2; }
+    .comic-row > .comic-row-price { order: 3; }
+    .comic-row > .row-remove-btn { order: 4; }
     .comic-row > * { min-width: 0; }
   }
 {% endblock %}
@@ -54,8 +58,8 @@
 
 <div class="grid">
   <div class="logorders-tabs">
-    <button type="button" class="logorders-tab active" data-target="tab-paste">Paste Invoice</button>
-    <button type="button" class="logorders-tab" data-target="tab-manual">Manual Entry</button>
+    <button type="button" class="logorders-tab active" data-target="tab-paste">Paste an order</button>
+    <button type="button" class="logorders-tab" data-target="tab-manual">Add by hand</button>
   </div>
 </div>
 
@@ -75,7 +79,7 @@
   <div class="grid">
     <div class="card form-card">
       <div class="card-title" style="margin-bottom: 10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg></span>Import order history</div>
-      <p class="warn-hint" style="max-width:none;">Copy your order history page (Forbidden Planet, eBay, or similar) and paste the whole thing below. Addresses, card details and pagination are ignored automatically. Items you've already ticked "paid" or "cancelled" yourself are left alone; everything else gets refreshed to match what the retailer's currently showing, so it's safe to paste the same page again next month. You can also paste one of Forbidden Planet's "revised release date" emails straight in. It'll update just that item's date without needing a full re-import.</p>
+      <p class="warn-hint" style="max-width:none;">Copy your order history page (Forbidden Planet, eBay or similar) and paste the whole thing below. Addresses and card details are ignored. Pasting the same page again later is safe: it updates what the shop has changed, and anything you've marked paid or cancelled stays as you left it. Forbidden Planet's "revised release date" emails can be pasted in too.</p>
 
       <form method="post" action="/import">
         <div class="parser-hint-row">
@@ -92,8 +96,8 @@
                  value="{{ default_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60" style="min-width:230px; width:auto;">
         </div>
         <textarea name="order_text" class="paste-textarea" placeholder="Paste order history here..." required></textarea>
-        <p class="warn-hint" style="max-width:none; margin:10px 0 0;">Mixed order? Pick the most common category here, then change individual items on the import preview before saving.</p>
-        <div style="display:flex; gap:10px;">
+        <p class="warn-hint" style="max-width:none; margin:10px 0 0;">Mixed order? Pick the most common category here, then change individual items on the review screen.</p>
+        <div style="display:flex; gap:10px; margin-top:14px;">
           <button type="submit" class="submit-btn" style="margin-top:0;">Import</button>
           <button type="button" id="clear-paste-btn" class="clear-btn">Clear</button>
         </div>
@@ -112,7 +116,7 @@
         <input type="hidden" name="next" value="/orders">
         <div class="settings-form-grid-3">
           <label class="field-label"><span>Release date</span><input class="field-input" type="date" name="release_date" required></label>
-          <label class="field-label"><span>Source / retailer</span><input class="field-input" type="text" name="source" list="known-sources" required value="{{ last_used_source }}"></label>
+          <label class="field-label"><span>Shop</span><input class="field-input" type="text" name="source" list="known-sources" required value="{{ last_used_source }}"></label>
           <label class="field-label"><span>Order / invoice # <span style="color:var(--text-dim); font-weight:400;">(optional)</span></span><input class="field-input" type="text" name="order_number" placeholder="e.g. 05-13811-02460"></label>
         </div>
         <datalist id="known-sources">
@@ -128,11 +132,12 @@
 
         <div id="comic-rows">
           <div class="comic-row">
-            <input type="text" name="name" class="field-input comic-row-name" placeholder="Item name" required>
+            <input type="text" name="name" class="field-input comic-row-name" data-item-name placeholder="Item name" required>
             {% set default_cat = default_category_id() %}
             {% set default_cat_name = (all_categories() | selectattr('id', 'equalto', default_cat) | map(attribute='name') | first) or '' %}
             <input type="text" name="category_id" class="field-input category-input" aria-label="Category"
                    value="{{ default_cat_name }}" placeholder="Pick or type a category" autocomplete="off" maxlength="60">
+            <input type="text" name="series" class="field-input series-input" autocomplete="off" maxlength="120">
             <input type="text" inputmode="decimal" pattern="^\d*\.?\d{0,2}$" name="price" class="field-input comic-row-price" placeholder="Price" required>
             <button type="button" class="row-remove-btn">&times;</button>
           </div>
@@ -150,7 +155,7 @@
           <button type="button" id="clear-manual-btn" class="clear-btn">Clear</button>
         </div>
       </form>
-      <p class="warn-hint" style="max-width:none; margin-top:14px;">Set the release date and shop once, then add every item from that same order before submitting. One shipment, one form. The order number and shipping cost are both optional, but adding them lets that shop's shipping figure be exact rather than an estimate.</p>
+      <p class="warn-hint" style="max-width:none; margin-top:14px;">One form per parcel: set the date and shop once, then add each item in it. The order number and shipping are optional, but with them the shipping figure is exact rather than estimated.</p>
     </div>
   </div>
 </div><!-- /tab-manual -->
@@ -181,7 +186,8 @@ document.getElementById('add-row-btn').addEventListener('click', function () {
   var row = document.createElement('div');
   row.className = 'comic-row';
   row.innerHTML =
-    '<input type="text" name="name" class="field-input comic-row-name" placeholder="Item name" required>' +
+    '<input type="text" name="name" class="field-input comic-row-name" data-item-name placeholder="Item name" required>' +
+    '<input type="text" name="series" class="field-input series-input" autocomplete="off" maxlength="120">' +
     '<input type="text" inputmode="decimal" pattern="^\\d*\\.?\\d{0,2}$" name="price" class="field-input comic-row-price" placeholder="Price" required>' +
     '<button type="button" class="row-remove-btn">&times;</button>';
   /* new rows start with the same category as the row above - orders are usually one kind of thing */
@@ -191,6 +197,7 @@ document.getElementById('add-row-btn').addEventListener('click', function () {
   box.setAttribute('value', lastBox.value);
   row.insertBefore(box, row.children[1]);
   container.appendChild(row);
+  if (window.KCSeries) window.KCSeries.refresh(row);
   row.querySelector('.comic-row-name').focus();
 });
 container.addEventListener('click', function (e) {

@@ -26,7 +26,7 @@ def _restore_copies():
         full = os.path.join(folder, fname)
         try:
             size_bytes = os.path.getsize(full)
-            taken_at = datetime.strptime(stamp, "%Y%m%d%H%M%S").strftime("%d %b %Y, %H:%M")
+            taken_at = datetime.strptime(stamp, "%Y%m%d%H%M%S").strftime("%-d %b %Y, %H:%M")
         except (OSError, ValueError):
             continue
         size_label = f"{size_bytes / 1024 / 1024:.2f} MB" if size_bytes >= 1024 * 1024 else f"{size_bytes / 1024:.1f} KB"
@@ -88,7 +88,7 @@ def _build_settings_context(
             # Filename is kaching-auto-YYYYMMDD-HHMMSS.db
             stamp = fname.replace("kaching-auto-", "").replace(".db", "")
             try:
-                taken_at = datetime.strptime(stamp, "%Y%m%d-%H%M%S").strftime("%d %b %Y, %H:%M")
+                taken_at = datetime.strptime(stamp, "%Y%m%d-%H%M%S").strftime("%-d %b %Y, %H:%M")
             except ValueError:
                 taken_at = fname
             past_backups.append({"filename": fname, "size_label": size_label, "taken_at": taken_at})
@@ -278,6 +278,23 @@ async def save_layout(request: Request):
     return {"ok": True, "hidden": hidden}
 
 
+@app.post("/settings/tracking")
+async def save_tracking(request: Request):
+    """What you track. "save" stores the kinds and the pre-order answer and
+    updates only the cards those decide (your other toggles stay as they
+    are); "reset" puts every card back to the preset."""
+    form = await request.form()
+    kinds = [k for k in db.KINDS if k in form.getlist("kinds")]
+    preorder = form.get("preorder", "yes") != "no"
+    action = form.get("action", "save")
+    conn = db.get_db()
+    cur = conn.cursor()
+    apply_tracking(cur, kinds, preorder, reset=(action == "reset"))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=safe_redirect(form.get("next"), "/settings#layout"), status_code=303)
+
+
 @app.get("/settings")
 def settings_v2(
     request: Request,
@@ -341,6 +358,20 @@ def toggle_category_series(category_id: int, next: str = Form("/settings")):
     conn.execute("UPDATE categories SET has_series = 1 - has_series WHERE id = ?", (category_id,))
     conn.commit()
     conn.close()
+    return RedirectResponse(url=next, status_code=303)
+
+
+@app.post("/settings/categories/{category_id}/kind")
+def set_category_kind(category_id: int, kind: str = Form(...), next: str = Form("/settings")):
+    """What kind of thing a category holds. Also sets Numbered issues to
+    match (on for comics and manga, off otherwise) - still changeable."""
+    next = safe_redirect(next, '/settings')
+    if kind in db.KINDS:
+        conn = db.get_db()
+        conn.execute("UPDATE categories SET kind = ?, has_series = ? WHERE id = ?",
+                     (kind, 1 if db.KINDS[kind]["numbered"] else 0, category_id))
+        conn.commit()
+        conn.close()
     return RedirectResponse(url=next, status_code=303)
 
 
@@ -562,11 +593,12 @@ def export_all_csv():
     cur.execute("SELECT * FROM items ORDER BY release_date DESC, name")
     rows = [dict(r) for r in cur.fetchall()]
     category_names = _sync_category_names(cur)
+    category_kinds = {c["id"]: c["kind"] for c in get_categories(cur)}
     conn.close()
 
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category"])
+    writer.writerow(["Name", "Price", "Release Date", "Shop", "Status", "Paid", "Order Number", "Category", "Series / Set"])
     for r in rows:
         writer.writerow([
             _csv_safe(r["name"]),
@@ -577,6 +609,7 @@ def export_all_csv():
             "Yes" if r["charge_status"] == "charged" else "No",
             _csv_safe(r["order_number"]) if r["order_number"] else "",
             _csv_safe(category_names.get(r.get("category_id")) or category_names.get(None) or ""),
+            _csv_safe(item_series(r, category_kinds.get(r.get("category_id"))) or ""),
         ])
     csv_bytes = buffer.getvalue().encode("utf-8")
     filename = f"kaching-full-export-{date.today().isoformat()}.csv"

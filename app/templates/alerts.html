@@ -54,6 +54,7 @@
   .toggle-switch.on::after { left: 16px; }
   .notif-test-btn { padding: 10px 22px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
   .notif-log-row { display: grid; grid-template-columns: 130px 1fr 70px; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .notif-log-err { display: block; color: var(--text-dim); font-size: 12.5px; margin-top: 2px; overflow-wrap: anywhere; }
   .notif-log-row:first-of-type { border-top: none; }
   .notif-log-status { font-size: 12.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; text-align: center; }
   .notif-log-status.ok { color: var(--neon-green); background: color-mix(in srgb, var(--neon-green) 10%, transparent); }
@@ -69,11 +70,27 @@
   .history-card { grid-column: span 12; }
   .history-log-row { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; font-size: 13.5px; }
   .history-log-row .hl-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; position: relative; top: 1px; }
-  .history-log-row .hl-date { color: var(--text-dim); width: 58px; flex: 0 0 auto; white-space: nowrap; }
+  .history-log-row .hl-date { color: var(--text-dim); width: 84px; flex: 0 0 auto; white-space: nowrap; }
   .history-log-row .hl-text { color: var(--text); }
   .warn-card.blue { border-color: color-mix(in srgb, var(--neon-blue) 35%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--neon-blue) 6%, transparent), var(--surface) 45%); }
   .warn-card.blue .card-title { color: var(--neon-blue); }
   .warn-item-row.undated-row { grid-template-columns: 1fr 90px auto; }
+  .warn-item-row.undated-row.has-fine { grid-template-columns: 1fr 90px auto auto; }
+  .warn-item-row.ghost-row { grid-template-columns: 1fr 90px auto 16px 26px; }
+  @media (max-width: 600px) {
+    .warn-item-row.ghost-row { grid-template-columns: 1fr auto 16px 26px; row-gap: 6px; }
+    .warn-item-row.ghost-row > .row-name { grid-column: 1 / -1; }
+    .warn-item-row.undated-row.has-fine { grid-template-columns: 1fr auto auto; row-gap: 6px; }
+    .warn-item-row.undated-row.has-fine > .row-name { grid-column: 1 / -1; }
+  }
+  .fine-btn { background: none; border: none; padding: 4px 2px; color: var(--text-muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .fine-btn:hover { color: var(--text); text-decoration: underline; }
+  .dismissed-card summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-muted); list-style: none; display: flex; align-items: center; gap: 8px; }
+  .dismissed-card summary::-webkit-details-marker { display: none; }
+  .dismissed-card summary::before { content: ''; width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(-45deg); transition: transform var(--dur) var(--ease); }
+  .dismissed-card details[open] summary::before { transform: rotate(45deg); }
+  .dismissed-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px dashed var(--border); font-size: 13.5px; }
+  .dismissed-kind { color: var(--text-dim); font-size: 12.5px; white-space: nowrap; }
 {% endblock %}
 
 {% block content %}
@@ -82,7 +99,7 @@
 <div class="page-head">
   <h1>Alerts</h1>
   <p>
-    {% if alert_count %}{{ awaiting_charge|length }} unpaid awaiting charge &middot; {{ duplicate_groups|length }} possible duplicate{{ "s" if duplicate_groups|length != 1 else "" }} &middot; {{ ghost_items|length }} ghost item{{ "s" if ghost_items|length != 1 else "" }}{% if undated_items %} &middot; {{ undated_items|length }} with no release date{% endif %}{% else %}Nothing needs your attention right now{% endif %}
+    {% if alert_count %}{% set _p = [] %}{% if awaiting_charge %}{% set _ = _p.append(awaiting_charge|length ~ " unpaid awaiting charge") %}{% endif %}{% if duplicate_groups %}{% set _ = _p.append(duplicate_groups|length ~ " possible duplicate" ~ ("s" if duplicate_groups|length != 1 else "")) %}{% endif %}{% if ghost_items %}{% set _ = _p.append(ghost_items|length ~ " with no order number") %}{% endif %}{% if undated_items %}{% set _ = _p.append(undated_items|length ~ " with no release date") %}{% endif %}{% if category_overages %}{% set _ = _p.append(category_overages|length ~ " over a category limit") %}{% endif %}{{ _p|join(" · ") }}{% else %}Nothing needs your attention right now{% endif %}
   </p>
 </div>
 
@@ -100,6 +117,17 @@
 
 
 <div id="tab-alerts">
+{% set _nt = notification_trouble() %}
+{% if _nt %}
+<div class="grid">
+  <div class="card warn-card pink" style="grid-column: span 12;">
+    <div class="card-title">Notifications aren't getting through</div>
+    <p class="warn-hint">The last {{ _nt.count }} have failed, since {{ _nt.since|nice_when(true) }}. {{ _nt.error }}</p>
+    <a class="warn-action-btn" href="#notifications" onclick="var t=document.querySelector('[data-alerts-tab=notifications]'); if(t){t.click(); window.scrollTo(0,0); return false;}">Check notification settings</a>
+  </div>
+</div>
+{% endif %}
+
 
 <div class="grid">
   <div class="card plain-stat">
@@ -127,25 +155,40 @@
   </div>
 </div>
 
+{% if awaiting_charge %}
 <div class="grid">
-  <div class="card history-card">
-    <div class="card-title" style="margin-bottom:16px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Alert history</div>
-    {% if alert_history %}
-    <div id="history-log-body">
-      {% for e in alert_history %}
-      <div class="history-log-row"><span class="hl-dot" style="background:{{ 'var(--neon-violet)' if e.kind == 'ghost_item' else 'var(--neon-pink)' }}; box-shadow:0 0 6px {{ 'color-mix(in srgb, var(--neon-violet) 50%, transparent)' if e.kind == 'ghost_item' else 'color-mix(in srgb, var(--neon-pink) 50%, transparent)' }};"></span><span class="hl-date mono">{{ e.at[5:10] }}</span><span class="hl-text">{{ e.text }}</span></div>
-      {% endfor %}
+  <div class="card warn-card pink">
+    <div class="card-head">
+      <div class="card-title"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-pink) 14%, transparent); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg></span>Awaiting charge ({{ awaiting_charge|length }})</div>
     </div>
-    <div class="search-pagination" id="history-pagination" style="display:none; margin-top:14px;">
-      <button type="button" class="warn-action-btn" id="history-prev-btn">&larr; Prev</button>
-      <span class="muted" style="font-size:12px;" id="history-page-label">Page 1 of 1</span>
-      <button type="button" class="warn-action-btn" id="history-next-btn">Next &rarr;</button>
+    <p class="warn-hint">Released, but not marked paid yet. Shops often charge a few days after release; check any that have been here more than a couple of weeks.</p>
+
+    {% for item in awaiting_charge %}
+    <div class="warn-item-row" style="grid-template-columns: 24px 1fr 90px 16px 26px;">
+      <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
+        <input type="hidden" name="next" value="/alerts">
+        <input type="hidden" name="action" value="paid">
+        <button type="submit" class="paid-check" title="Mark as paid"></button>
+      </form>
+      <span class="row-name">{{ item.name }}<span class="late-tag">{{ item.days_late }}d late</span></span>
+      <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
+      <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
+      <div class="row-menu-wrap">
+        <button type="button" class="row-menu-btn" data-drawer-template="drawer-aw-{{ item.id }}">&#8942;</button>
+      </div>
+      <template id="drawer-aw-{{ item.id }}" class="drawer-template">
+        <a href="/items/{{ item.id }}/edit">Edit</a>
+        <form method="post" action="/items/{{ item.id }}/mark">
+          <input type="hidden" name="next" value="/alerts">
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit">Cancel</button>
+        </form>
+      </template>
     </div>
-    {% else %}
-    <div class="empty-note">Nothing resolved yet.</div>
-    {% endif %}
+    {% endfor %}
   </div>
 </div>
+{% endif %}
 
 {% if duplicate_groups %}
 <div class="grid">
@@ -215,11 +258,12 @@
     <div class="card-head">
       <div class="card-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="15" x2="14" y2="19"/><line x1="14" y1="15" x2="10" y2="19"/></svg></span>No release date ({{ undated_items|length }})</div>
     </div>
-    <p class="warn-hint">These have no release date or order date, so they don't appear on the calendar or in any month. Add a date and they'll drop into place.</p>
+    <p class="warn-hint">These have no release date or order date, so they don't appear on the calendar or in any month. Add a date and they'll drop into place, or choose <b>Fine as it is</b> for anything that will never have one.</p>
     {% for item in undated_items %}
-    <div class="warn-item-row undated-row">
+    <div class="warn-item-row undated-row has-fine">
       <span class="row-name">{{ item.name }}{% if item.source %} &middot; <span class="muted">{{ item.source }}</span>{% endif %}</span>
       <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
+      <form method="post" action="/alerts/fine"><input type="hidden" name="item_id" value="{{ item.id }}"><input type="hidden" name="kind" value="undated"><input type="hidden" name="next" value="/alerts"><button type="submit" class="fine-btn" title="Stop flagging this item; you can put it back below">Fine as it is</button></form>
       <a class="warn-action-btn" href="/items/{{ item.id }}/edit">Set date</a>
     </div>
     {% endfor %}
@@ -233,12 +277,13 @@
     <div class="card-head">
       <div class="card-title"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-violet) 14%, transparent); color:var(--neon-violet);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>Items with no order number ({{ ghost_items|length }})</div>
     </div>
-    <p class="warn-hint">These came from a parser issue in an earlier version and can't be matched to a real order. Almost always a duplicate of something already tracked properly. Check before keeping.</p>
+    <p class="warn-hint">These came from a parser issue in an earlier version and can't be matched to a real order. Almost always a duplicate of something already tracked properly. Check before keeping, and choose <b>Fine as it is</b> for any that are real.</p>
 
     {% for item in ghost_items %}
-    <div class="warn-item-row">
+    <div class="warn-item-row ghost-row">
       <span class="row-name">{{ item.name }}{% if item.release_date %} &middot; {{ item.release_date }}{% endif %}</span>
       <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
+      <form method="post" action="/alerts/fine"><input type="hidden" name="item_id" value="{{ item.id }}"><input type="hidden" name="kind" value="ghost"><input type="hidden" name="next" value="/alerts"><button type="submit" class="fine-btn" title="Keep it and stop flagging it; you can put it back below">Fine as it is</button></form>
       <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
       <div class="row-menu-wrap">
         <button type="button" class="row-menu-btn" data-drawer-template="drawer-ghost-{{ item.id }}">&#8942;</button>
@@ -257,37 +302,27 @@
 </div>
 {% endif %}
 
-{% if awaiting_charge %}
+{% if dismissed_alerts.count %}
 <div class="grid">
-  <div class="card warn-card pink">
-    <div class="card-head">
-      <div class="card-title"><span class="card-icon-badge" style="background:color-mix(in srgb, var(--neon-pink) 14%, transparent); color:var(--neon-pink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg></span>Awaiting charge ({{ awaiting_charge|length }})</div>
-    </div>
-    <p class="warn-hint">These released a while ago but are still sitting unpaid and unmarked. Usually just a normal short delay before the retailer charges. Worth a check if any of these are sitting here a while.</p>
-
-    {% for item in awaiting_charge %}
-    <div class="warn-item-row" style="grid-template-columns: 24px 1fr 90px 16px 26px;">
-      <form method="post" action="/items/{{ item.id }}/mark" style="display:contents;">
-        <input type="hidden" name="next" value="/alerts">
-        <input type="hidden" name="action" value="paid">
-        <button type="submit" class="paid-check" title="Mark as paid"></button>
-      </form>
-      <span class="row-name">{{ item.name }}<span class="late-tag">{{ item.days_late }}d late</span></span>
-      <span class="row-price mono">{{ currency() }}{{ "{:,.2f}".format(item.price) }}</span>
-      <input type="checkbox" name="item_ids" value="{{ item.id }}" form="bulk-form" class="row-check bulk-select" title="Select for bulk action">
-      <div class="row-menu-wrap">
-        <button type="button" class="row-menu-btn" data-drawer-template="drawer-aw-{{ item.id }}">&#8942;</button>
+  <div class="card dismissed-card" style="grid-column: span 12;">
+    <details>
+      <summary>Marked as fine ({{ dismissed_alerts.count }})</summary>
+      <p class="warn-hint" style="margin:10px 0 4px;">These no longer count as alerts. Put one back if you change your mind.</p>
+      {% for d in dismissed_alerts['items'] %}
+      <div class="dismissed-row">
+        <span class="row-name">{{ d.name }}</span>
+        <span class="dismissed-kind">{{ d.label }}</span>
+        <form method="post" action="/alerts/unfine"><input type="hidden" name="item_id" value="{{ d.item_id }}"><input type="hidden" name="kind" value="{{ d.kind }}"><input type="hidden" name="next" value="/alerts"><button type="submit" class="row-undo">Put back</button></form>
       </div>
-      <template id="drawer-aw-{{ item.id }}" class="drawer-template">
-        <a href="/items/{{ item.id }}/edit">Edit</a>
-        <form method="post" action="/items/{{ item.id }}/mark">
-          <input type="hidden" name="next" value="/alerts">
-          <input type="hidden" name="action" value="cancel">
-          <button type="submit">Cancel</button>
-        </form>
-      </template>
-    </div>
-    {% endfor %}
+      {% endfor %}
+      {% for d in dismissed_alerts.duplicates %}
+      <div class="dismissed-row">
+        <span class="row-name">{{ d.name }}</span>
+        <span class="dismissed-kind">Not a duplicate</span>
+        <form method="post" action="/duplicates/undismiss"><input type="hidden" name="name" value="{{ d.name }}"><input type="hidden" name="release_date" value="{{ d.release_date }}"><input type="hidden" name="next" value="/alerts"><button type="submit" class="row-undo">Put back</button></form>
+      </div>
+      {% endfor %}
+    </details>
   </div>
 </div>
 {% endif %}
@@ -295,6 +330,26 @@
 {% if not alert_count %}
 <div class="grid"><div class="card" style="grid-column: span 12; text-align:center; padding:40px; color:var(--text-dim);">Nothing needs your attention right now.</div></div>
 {% endif %}
+
+<div class="grid">
+  <div class="card history-card">
+    <div class="card-title" style="margin-bottom:16px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><path d="M3 15v-4h4"/></svg></span>Alert history</div>
+    {% if alert_history %}
+    <div id="history-log-body">
+      {% for e in alert_history %}
+      <div class="history-log-row"><span class="hl-dot" style="background:{{ 'var(--neon-violet)' if e.kind == 'ghost_item' else 'var(--neon-pink)' }};"></span><span class="hl-date">{{ e.at|nice_when }}</span><span class="hl-text">{{ e.text }}</span></div>
+      {% endfor %}
+    </div>
+    <div class="search-pagination" id="history-pagination" style="display:none; margin-top:14px;">
+      <button type="button" class="warn-action-btn" id="history-prev-btn">&larr; Prev</button>
+      <span class="muted" style="font-size:12px;" id="history-page-label">Page 1 of 1</span>
+      <button type="button" class="warn-action-btn" id="history-next-btn">Next &rarr;</button>
+    </div>
+    {% else %}
+    <div class="empty-note">Nothing resolved yet.</div>
+    {% endif %}
+  </div>
+</div>
 
 </div><!-- /tab-alerts -->
 
@@ -417,8 +472,8 @@
         <div id="notiflog-body">
         {% for n in notification_log %}
         <div class="notif-log-row">
-          <span class="notif-log-date mono">{{ n.sent_at[:16] }}</span>
-          <span class="notif-log-title">{{ n.title }}</span>
+          <span class="notif-log-date">{{ n.sent_at|nice_when(true) }}</span>
+          <span class="notif-log-title">{{ n.title }}{% if not n.success and n.error %}<small class="notif-log-err">{{ n.error|friendly_send_error }}</small>{% endif %}</span>
           <span class="notif-log-status {{ 'ok' if n.success else 'bad' }}" {% if n.error %}title="{{ n.error }}"{% endif %}>{{ "Sent" if n.success else "Failed" }}</span>
         </div>
         {% endfor %}
@@ -464,7 +519,7 @@
 
   var remembered = null;
   try { remembered = localStorage.getItem(storageKey); } catch (e) {}
-  if (remembered === 'notifications') {
+  if (location.hash === '#notifications' || remembered === 'notifications') {
     activate('notifications');
   }
 })();

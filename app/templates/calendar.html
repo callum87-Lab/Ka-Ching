@@ -37,11 +37,12 @@
   .mini-cal-grid a.day-selected { box-shadow: inset 0 0 0 1.5px var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 14%, transparent); }
   .mini-cal-grid a.today-cell.day-selected { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--neon-blue); background: var(--neon-blue); }
   .cal-day.cal-selected { border-color: var(--neon-blue); box-shadow: inset 0 0 0 1px var(--neon-blue), 0 0 12px color-mix(in srgb, var(--neon-blue) 35%, transparent); background: color-mix(in srgb, var(--neon-blue) 10%, transparent); }
-  .day-filter-clear[hidden] { display: none; }
+  .day-filter-switch { display: inline-flex; gap: 2px; }
+  .day-filter-switch[hidden] { display: none; }
   .day-group.day-filter-first { border-top: none; padding-top: 4px; }
   .mini-cal-legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
   .shop-legend-row { display: flex; align-items: center; gap: 7px; font-size: 13px; margin-bottom: 5px; }
-  .shop-legend-name { color: var(--text-muted); flex: 1; }
+  .shop-legend-name { color: var(--text-muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .shop-legend-pct { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-dim); }
   .shop-legend-bar { height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--text) 6%, transparent); overflow: hidden; margin-bottom: 12px; }
   .shop-legend-bar div { height: 100%; border-radius: 3px; }
@@ -196,14 +197,14 @@
             <span class="cal-day-num">{% if day.count > 0 %}<span class="cal-day-dot" style="background: rgba(47,216,255,{{ 0.25 + day.intensity * 0.75 }});"></span>{% endif %}{{ day.day }}</span>
             {% if day.count > 0 %}
             <span class="cal-day-total mono">{{ currency() }}{{ "{:,.2f}".format(day.total) }}</span>
-            <span class="cal-day-count">{{ day.count }} issue{{ "s" if day.count != 1 else "" }}</span>
+            <span class="cal-day-count">{{ day.count }} item{{ "s" if day.count != 1 else "" }}</span>
             {% endif %}
           </div>
           {% endif %}
         {% endfor %}
       {% endfor %}
     </div>
-    <p class="cal-hint">Blank days are release-free. The dot marks a day with something due. Brighter means more spent that day. Tap any marked day to show just that day's releases below. Tap it again for the whole month.</p>
+    <p class="cal-hint">The brighter a day, the more is due on it. Tap a day to see just its releases below; tap it again for the whole month.</p>
   </div>
 </div>
 
@@ -228,7 +229,7 @@
       <span class="heatmap-cell" style="background:var(--neon-blue);"></span>
       More
     </div>
-    <p class="cal-hint">Each square is a day. Darker means more tracked spend, so recurring pull-day rhythms (and quiet stretches) show up at a glance.</p>
+    <p class="cal-hint">Each square is a day over the past year; the brighter it is, the more you spent.</p>
   </div>
 </div>
 
@@ -236,7 +237,7 @@
   <div class="card list-card" data-card="cal.list">
     <div class="list-card-head">
       <div class="list-title"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span><span id="releases-title" data-month-title="{{ viewed_month_label }} releases">{{ viewed_month_label }} releases</span></div>
-      <button type="button" class="tab-pill day-filter-clear" id="day-filter-clear" hidden>Show whole month</button>
+      <span class="day-filter-switch" id="day-filter-switch" hidden><button type="button" class="tab-pill" id="df-day" aria-pressed="true"></button><button type="button" class="tab-pill" id="df-month" aria-pressed="false">Whole month</button></span>
     </div>
     {% if agenda_groups %}
       {% for group in agenda_groups %}
@@ -279,14 +280,18 @@
 {% block extra_script %}
 
 // Clicking a day (mini or big calendar) filters the releases card to that
-// day; clicking it again, or "Show whole month", clears it. Not remembered.
+// day. Once a day has been picked, a two-way switch (that day / Whole month)
+// stays in the card's header so you can flip between them. Not remembered.
 (function () {
   var card = document.querySelector('.list-card');
   var title = document.getElementById('releases-title');
-  var clearBtn = document.getElementById('day-filter-clear');
-  if (!card || !title || !clearBtn) return;
+  var sw = document.getElementById('day-filter-switch');
+  var dayBtn = document.getElementById('df-day');
+  var monthBtn = document.getElementById('df-month');
+  if (!card || !title || !sw) return;
   var groups = Array.prototype.slice.call(card.querySelectorAll('.day-group'));
   var selected = null;
+  var lastDay = null;
 
   function dayLabel(iso) {
     // Same style as the day-group labels, e.g. "Wed 9 Sep"
@@ -318,7 +323,11 @@
       }
     });
     title.textContent = iso ? 'Releases on ' + dayLabel(iso) : title.dataset.monthTitle;
-    clearBtn.hidden = !iso;
+    if (iso) lastDay = iso;
+    sw.hidden = !lastDay;
+    if (lastDay) dayBtn.textContent = dayLabel(lastDay);
+    dayBtn.classList.toggle('active', !!iso); dayBtn.setAttribute('aria-pressed', iso ? 'true' : 'false');
+    monthBtn.classList.toggle('active', !iso); monthBtn.setAttribute('aria-pressed', iso ? 'false' : 'true');
   }
 
   function pick(iso) { apply(selected === iso ? null : iso, true); }
@@ -337,7 +346,8 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(el.dataset.day); }
     });
   });
-  clearBtn.addEventListener('click', function () { apply(null, false); });
+  dayBtn.addEventListener('click', function () { if (lastDay) apply(lastDay, false); });
+  monthBtn.addEventListener('click', function () { apply(null, false); });
 })();
 
 (function () {

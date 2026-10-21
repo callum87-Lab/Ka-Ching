@@ -19,7 +19,8 @@
   .search-pagination { display: flex; align-items: center; gap: 14px; justify-content: center; }
   .btn-secondary.danger { color: var(--neon-pink); border-color: color-mix(in srgb, var(--neon-pink) 30%, transparent); }
   .cat-list { border-top: 1px solid var(--border); }
-  .cat-row { display: grid; grid-template-columns: 14px 1fr 90px 150px 60px; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .kind-select { padding: 6px 28px 6px 10px; font-size: 13px; width: 100%; }
+  .cat-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) 90px 170px 150px 60px; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
   .cat-head { font-size: 12.5px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; padding-top: 4px; }
   .cat-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .cat-count { font-family: var(--font-mono); font-size: 13.5px; color: var(--text-muted); }
@@ -35,7 +36,8 @@
   .add-cat-btn { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 999px; background: var(--neon-blue); color: var(--on-accent); border: none; cursor: pointer; }
   @media (max-width: 700px) {
     .cat-row { grid-template-columns: 14px 1fr 70px; }
-    .cat-row .series-cell { grid-column: 2 / span 2; }
+    .cat-row .series-cell, .cat-row .kind-cell { grid-column: 2 / span 2; }
+    .cat-row.cat-head .kind-cell { display: none; }
     .cat-row .cat-remove-wrap { grid-column: 2; }
     .cat-row .cat-remove { text-align: left; }
     .cat-head { display: none; }
@@ -78,16 +80,35 @@
   .day-group:not(.expanded) .day-group-arrow { transform: rotate(-90deg); }
   .day-group-body { margin-top: 10px; }
   .day-group:not(.expanded) .day-group-body { display: none; }
-  .wide-head { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; margin: 14px 0 4px; }
+  .wide-head { font-size: 13.5px; color: var(--text); font-weight: 600; margin: 16px 0 4px; }
   .wide-choices .layout-preset { cursor: pointer; font-family: inherit; }
   /* every option box in a row the same height, whatever its text */
+  .track-types { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 6px 0 14px; }
+  .track-type { position: relative; display: block; border: 1px solid var(--border); background: var(--input-bg); border-radius: var(--radius-md); padding: 11px 36px 11px 14px; cursor: pointer; transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease); }
+  .track-type:hover { border-color: var(--border-strong); }
+  .track-type input { position: absolute; opacity: 0; pointer-events: none; }
+  .track-type b { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+  .track-type span { display: block; font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+  .track-type .tick { position: absolute; top: 11px; right: 12px; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-strong); }
+  .track-type:has(input:checked) { border-color: var(--neon-blue); box-shadow: 0 0 0 1px var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 5%, var(--input-bg)); }
+  .track-type:has(input:checked) .tick { background: var(--neon-blue); border-color: var(--neon-blue); }
+  .track-type:has(input:checked) .tick::after { content: ""; position: absolute; left: 5px; top: 2px; width: 5px; height: 9px; border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .track-type:has(input:focus-visible) { outline: 2px solid var(--neon-blue); outline-offset: 2px; }
+  .track-pre { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .track-pre > span { font-weight: 600; }
+  .track-pre label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; color: var(--text-muted); }
+  .track-pre input { accent-color: var(--neon-blue); }
+  .track-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+  .track-status { font-size: 13.5px; color: var(--text-muted); }
+  .track-status b { color: var(--text); }
   .layout-presets { align-items: stretch; }
   .layout-preset { height: 100%; min-height: 72px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
   .layout-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 6px 0 18px; }
   .layout-preset { text-align: left; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
   .layout-preset.sel { border-color: var(--neon-blue); background: color-mix(in srgb, var(--neon-blue) 8%, transparent); }
   .layout-preset b { display: block; font-size: 14px; }
-  .layout-preset span { font-size: 12px; color: var(--text-muted); }
+  .warn-hint code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; background: var(--hover); color: var(--text); padding: 1px 5px; border-radius: 5px; }
+  .layout-preset span { font-size: 12.5px; color: var(--text-muted); font-weight: 400; line-height: 1.4; }
   .layout-md { display: grid; grid-template-columns: 230px minmax(0, 1fr); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
   .layout-pages { background: color-mix(in srgb, var(--text) 2%, transparent); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
   .layout-page { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border: none; border-bottom: 1px solid var(--border); background: none; color: var(--text-muted); font-size: 13.5px; font-weight: 600; text-align: left; }
@@ -95,7 +116,7 @@
   .layout-page.on { background: color-mix(in srgb, var(--neon-blue) 8%, transparent); color: var(--neon-blue); box-shadow: inset 3px 0 0 var(--neon-blue); }
   .layout-page small { font-size: 11.5px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
   .layout-cards { padding: 4px 18px 10px; min-width: 0; }
-  .layout-panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 800; padding: 12px 0 6px; }
+  .layout-panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; color: var(--text); font-weight: 600; padding: 12px 0 6px; }
   .layout-panel-head a { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--neon-blue); text-decoration: none; }
   .layout-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid var(--border); }
   .layout-text { flex: 1 1 auto; min-width: 0; }
@@ -204,7 +225,7 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:0;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Budget</div>
-      <p class="warn-hint" style="margin-top:10px;">Set a monthly target and the dashboard shows how close this month's forecast total is to it. Leave blank to hide the progress bar entirely.</p>
+      <p class="warn-hint" style="margin-top:10px;">Set a budget and the Dashboard shows how this cycle's spending, paid and still due, compares with it. Leave it empty to hide the budget bar.</p>
       <form method="post" action="/settings">
         <input type="hidden" name="next" value="/settings">
         <input type="hidden" name="notify_provider" value="{{ values.notify_provider }}">
@@ -225,7 +246,7 @@
         <input type="hidden" name="auto_backup" value="{{ values.auto_backup }}">
 
         <div class="settings-form-grid">
-          <label class="field-label"><span>Monthly budget ({{ currency() }})</span><input class="field-input" type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00"></label>
+          <label class="field-label"><span>Budget ({{ currency() }})</span><input class="field-input" type="number" name="monthly_budget" step="0.01" min="0" value="{{ values.monthly_budget }}" placeholder="e.g. 80.00"></label>
           <label class="field-label"><span>Budget cycle</span>
             <select class="field-input" name="budget_cycle">
               <option value="monthly" {{ 'selected' if values.budget_cycle == 'monthly' else '' }}>Monthly</option>
@@ -299,11 +320,11 @@
               <option value="dashboard" {{ 'selected' if values.default_landing_page == 'dashboard' else '' }}>Dashboard</option>
               <option value="calendar" {{ 'selected' if values.default_landing_page == 'calendar' else '' }}>Calendar</option>
               <option value="search" {{ 'selected' if values.default_landing_page == 'search' else '' }}>Search</option>
-              <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log Orders</option>
+              <option value="add" {{ 'selected' if values.default_landing_page == 'add' else '' }}>Log orders</option>
             </select>
           </label>
         </div>
-        <p class="warn-hint">Changes the symbol shown everywhere in the app, and lets the paste-in importer and manual add form recognise prices in that currency too. The two dedicated shop parsers (Forbidden Planet, eBay) are still built around their UK pages specifically, whatever this is set to.</p>
+        <p class="warn-hint">Currency changes the symbol everywhere, and the importer reads prices in it. The Forbidden Planet and eBay readers are built for their UK sites whatever this is set to.</p>
         <label class="notif-toggle-row">
           <span class="toggle-switch {{ 'on' if values.auto_backup == 'yes' else '' }}" data-toggle-name="auto_backup"></span>
           <input type="checkbox" name="auto_backup" value="yes" {{ 'checked' if values.auto_backup == 'yes' else '' }} style="display:none;">
@@ -321,13 +342,13 @@
         <button type="button" class="collapse-btn" data-target="catlimits-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="catlimits-body">
-        <p class="warn-hint">Optional spending limit per category, for each budget cycle. Listed here: categories switched on below, anything with items, and anything with a limit already set. Leave blank for no limit. The Dashboard's Budget by category card shows each one, and going over shows in Alerts (and sends a push if budget alerts are on).</p>
+        <p class="warn-hint">An optional limit per category for each budget cycle; leave it empty for no limit. Categories with items or a limit are listed. Going over shows on the Dashboard and in Alerts, with a push if budget alerts are on.</p>
         <form method="post" action="/settings/category-limits">
           <input type="hidden" name="next" value="/settings">
           <div class="catlimit-list">
             {% set _unused = [] %}
             {% for c in categories_with_counts %}
-            {% set _in_use = c.item_count > 0 or c.id in category_limits or c.has_series %}
+            {% set _in_use = c.item_count > 0 or c.id in category_limits %}
             {% if not _in_use %}{% set _ = _unused.append(c.id) %}{% endif %}
             <label class="catlimit-row{{ '' if _in_use else ' catlimit-unused' }}"><span class="catlimit-name"><span class="cat-dot" style="background:{{ c.color }};"></span>{{ c.name }}</span>
               <span class="catlimit-input"><span class="muted">{{ currency() }}</span><input class="field-input" type="number" step="0.01" min="0" name="limit_{{ c.id }}" value="{{ '%.2f'|format(category_limits[c.id]) if c.id in category_limits else '' }}" placeholder="No limit"></span>
@@ -348,14 +369,20 @@
         <button type="button" class="collapse-btn" data-target="categories-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="categories-body">
-        <p class="warn-hint">What kinds of things you track. <b style="color:var(--text);">Numbered issues</b>: turn on for anything sold as #1, #2, #3&hellip; (comics, manga volumes): Price creep and Top titles then track price rises per series.</p>
+        <p class="warn-hint">What kinds of things you track. <b style="color:var(--text);">Type</b> sets the words used for that category (Series for comics, Set for trading cards, Line for figures&hellip;). <b style="color:var(--text);">Numbered issues</b>: on for anything sold as #1, #2, #3&hellip; (comics, manga volumes), so Price creep can track price rises per series; it follows the type, and you can still change it.</p>
         <div class="cat-list">
-          <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span>Numbered issues</span><span></span></div>
+          <div class="cat-row cat-head"><span></span><span>Name</span><span>Items</span><span class="kind-cell">Type</span><span>Numbered issues</span><span></span></div>
           {% for c in categories_with_counts %}
           <div class="cat-row">
             <span class="cat-dot" style="background:{{ c.color }};"></span>
             <span>{{ c.name }}</span>
             <span class="cat-count">{{ c.item_count }} item{{ "s" if c.item_count != 1 else "" }}</span>
+            <form method="post" action="/settings/categories/{{ c.id }}/kind" class="kind-cell">
+              <input type="hidden" name="next" value="/settings#categories-card">
+              <select name="kind" class="field-input kind-select" aria-label="Type: {{ c.name }}" onchange="this.form.submit()">
+                {% for k, info in KINDS.items() %}<option value="{{ k }}"{{ ' selected' if (c.kind or 'general') == k else '' }}>{{ info.name }}</option>{% endfor %}
+              </select>
+            </form>
             <span class="series-cell">
               <form method="post" action="/settings/categories/{{ c.id }}/series">
                 <input type="hidden" name="next" value="/settings#categories-card">
@@ -446,6 +473,33 @@
       </form>
     </div>
 
+    <div class="card settings-card" id="tracking-card">
+      {% set _tr = tracking_summary() %}
+      {% set _changed = _tr.changed %}
+      <div class="card-title" style="margin-bottom:4px;">What you track</div>
+      <p class="warn-hint">Pick everything you collect. Ka-Ching! uses the right words for each (series, set, line&hellip;) and switches on the pages and cards that suit it. You can still turn any card on or off under <b style="color:var(--text);">Cards on each page</b> below.</p>
+      <form method="post" action="/settings/tracking">
+        <input type="hidden" name="next" value="/settings#layout">
+        <div class="track-types">
+          {% for k, info in KINDS.items() %}
+          <label class="track-type"><input type="checkbox" name="kinds" value="{{ k }}"{{ ' checked' if k in _tr.kinds else '' }}><i class="tick" aria-hidden="true"></i><b>{{ info.name }}</b><span>{{ info.examples }}</span></label>
+          {% endfor %}
+        </div>
+        <div class="track-pre">
+          <span>Do you pre-order?</span>
+          <label><input type="radio" name="preorder" value="yes"{{ ' checked' if _tr.preorder else '' }}> Yes</label>
+          <label><input type="radio" name="preorder" value="no"{{ '' if _tr.preorder else ' checked' }}> No, I buy things already out</label>
+        </div>
+        <div class="track-foot">
+          <span class="track-status">{% if _tr.kinds %}Preset: <b>{{ _tr.names }}</b>{% else %}Nothing picked: every card is on{% endif %}{% if _changed %} &middot; {{ _changed|length }} card{{ 's' if _changed|length != 1 else '' }} changed by you{% endif %}</span>
+          <span style="flex:1"></span>
+          {% if _changed %}<button type="submit" name="action" value="reset" class="btn-secondary">Reset cards to preset</button>{% endif %}
+          <button type="submit" name="action" value="save" class="submit-btn" style="margin-top:0;">Save</button>
+        </div>
+        <p class="warn-hint" style="margin:10px 0 0;">Saving only changes the cards your picks decide (Price creep, Top titles and the pre-order cards). Reset puts every card back to the preset.</p>
+      </form>
+    </div>
+
     <div class="card settings-card" id="layout-card">
       <div class="card-title" style="margin-bottom:4px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Layout</div>
       <p class="warn-hint">Choose which cards show on each page. Changes apply straight away. You can also use &#9881; Customise on each page.</p>
@@ -459,11 +513,6 @@
         <button type="submit" name="layout" value="panel" class="layout-preset{{ ' sel' if _wl == 'panel' else '' }}"><b>Side panel</b><span>An "At a glance" column on the right of every page, on wide screens</span></button>
       </form>
       <div class="wide-head" style="margin-top:22px;">Cards on each page</div>
-      <div class="layout-presets">
-        <button type="button" class="layout-preset" data-preset="all"><b>Everything</b><span>Every card on every page</span></button>
-        <button type="button" class="layout-preset" data-preset="nopre"><b>I don't pre-order</b><span>Hides still-due, this week and on-order cards</span></button>
-        <button type="button" class="layout-preset" data-preset="essential"><b>Just the essentials</b><span>Totals, alerts, trends and the main lists</span></button>
-      </div>
       {% set _hid = hidden_cards() %}
       <div class="layout-md">
         <div class="layout-pages" role="tablist">
@@ -515,7 +564,7 @@
         <button type="submit" class="submit-btn">Save password</button>
       </form>
       {% elif login_enabled() %}
-      <p class="warn-hint">Login is <b style="color:var(--neon-green);">on</b>. Every page, export and the old /classic/ view asks for the password. Changing it signs every other device out.</p>
+      <p class="warn-hint">Login is <b style="color:var(--neon-green);">on</b>. Every page and export asks for the password. Changing it signs every other device out.</p>
       <form method="post" action="/settings/security/password" class="sec-form">
         <label class="field-label"><span>Current password</span><input class="field-input" type="password" name="current" autocomplete="current-password" required></label>
         <label class="field-label"><span>New password</span><input class="field-input" type="password" name="password" autocomplete="new-password" minlength="12" required></label>
@@ -534,7 +583,7 @@
         <button type="submit" class="submit-btn">Turn login on</button>
       </form>
       {% endif %}
-      <p class="warn-hint" style="margin-top:18px;">Forgotten it? Add <span class="mono">KACHING_PASSWORD=something</span> under <span class="mono">environment:</span> in docker-compose.yml and rebuild. That password always works. Sign in, set a new one here, then remove the line and rebuild again.{% if login_enabled() %} Calendar subscriptions use a private link while login is on. Re-add the <b style="color:var(--text);">Subscribe (live)</b> link from the Calendar page in your calendar app.{% endif %}</p>
+      <p class="warn-hint" style="margin-top:18px;">Forgotten it? Add <code>KACHING_PASSWORD=something</code> under <code>environment:</code> in <code>docker-compose.yml</code> and rebuild. That password always works. Sign in, set a new one here, then remove the line and rebuild again.{% if login_enabled() %} Calendar subscriptions use a private link while login is on. Re-add the <b style="color:var(--text);">Subscribe (live)</b> link from the Calendar page in your calendar app.{% endif %}</p>
     </div>
   </div>
 </div><!-- /settings-tab-security -->
@@ -598,7 +647,7 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:14px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Data backup</div>
-      <p class="warn-hint">Downloads the whole tracked database as a single file. Every item, every manual tick, everything. Separate from GitHub on purpose, since GitHub never sees your real order data.</p>
+      <p class="warn-hint">Downloads everything Ka-Ching! holds as a single file: every item, every tick and every setting. Use it to restore, or to move to another server.</p>
       <p class="warn-hint"><span class="mono">{{ item_count }}</span> item{{ "s" if item_count != 1 else "" }} tracked &middot; database file is <span class="mono">{{ db_size_label }}</span></p>
       <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
         <a href="/settings/backup" class="btn-primary">Download backup</a>
@@ -622,7 +671,7 @@
 
       {% if restore_copies %}
       <div class="settings-card-head" style="margin-top:16px;">
-        <span class="warn-hint" style="margin:0;">Before-restore copies (newest {{ restore_copies|length }})</span>
+        <span class="warn-hint" style="margin:0;">Before-restore copies ({{ restore_copies|length }})</span>
         <button type="button" class="collapse-btn" data-target="restore-copies-body">&#9656;</button>
       </div>
       <div class="collapsible-body collapsed" id="restore-copies-body">
@@ -663,7 +712,7 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>About</div>
-      <p class="warn-hint">Ka-Ching! answers exactly two questions. What's due this week and what it'll cost, and what this month (and next) is forecast to come to. Nothing more: no collection cataloguing, no accounts, no cloud, nothing ever leaves this server.</p>
+      <p class="warn-hint">Ka-Ching! keeps track of what your collecting costs: what's due and when, what each month comes to, and where the money goes. It isn't a catalogue of what you own. No accounts, no cloud: everything stays on this server.</p>
       <p class="about-meta"><span class="mono">v{{ app_version }}</span> &middot; <a href="https://github.com/callum87-Lab/Ka-Ching" target="_blank" rel="noopener">View on GitHub</a></p>
     </div>
   </div>
@@ -673,10 +722,11 @@
   <div class="grid">
     <div class="card settings-card">
       <div class="card-title" style="margin-bottom:10px;"><span class="card-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span>Getting started</div>
-      <div class="getting-started-step"><span class="gs-num">1</span><div><b>Log your first order.</b> Paste an order-history page from Forbidden Planet or eBay into Log Orders, or add items by hand. Either way, nothing's saved until you confirm the review screen.</div></div>
-      <div class="getting-started-step"><span class="gs-num">2</span><div><b>Set a monthly budget.</b> General &rarr; Budget, over on Settings. Once it's set, the budget bar at the top of the Dashboard tracks it and warns you if you go over.</div></div>
-      <div class="getting-started-step"><span class="gs-num">3</span><div><b>Turn on notifications.</b> Alerts &rarr; Notifications, pick a provider (ntfy, Gotify, Telegram, or a webhook), send a test to confirm it works, then it'll check once a day for anything releasing tomorrow.</div></div>
+      <div class="getting-started-step"><span class="gs-num">1</span><div><b>Log your first order.</b> Paste an order-history page from Forbidden Planet or eBay into Log orders, or add items by hand. A pasted page is only saved once you confirm the review screen.</div></div>
+      <div class="getting-started-step"><span class="gs-num">2</span><div><b>Set a budget.</b> Settings &rarr; General &rarr; Budget. The Dashboard then shows how each month compares, and turns red if you go over.</div></div>
+      <div class="getting-started-step"><span class="gs-num">3</span><div><b>Turn on notifications.</b> Alerts &rarr; Notifications: pick a provider (ntfy, Gotify, Telegram or a webhook) and send a test. You'll then get one message a day when something releases tomorrow.</div></div>
       {% if sync_enabled() %}<div class="getting-started-step"><span class="gs-num">4</span><div><b>Connect the Android app (optional).</b> Settings &rarr; Sync, generate a key, paste it into the app. From then on both stay in step automatically.</div></div>{% endif %}
+      <p class="warn-hint" style="margin:14px 0 0;">Want the quick setup again? <a href="/welcome">Run the setup guide</a> - what you collect, pre-orders, pages, budget, theme and password. Nothing is lost; every step can be skipped.</p>
     </div>
   </div>
 
@@ -694,11 +744,11 @@
       </div>
       <div class="day-group" id="faq-3">
         <div class="day-group-head"><div class="day-group-label">Why is an item marked "awaiting charge"?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It released a while ago but hasn't been marked paid yet. Usually just a normal short delay before the retailer actually charges the card. Worth a check if it's been sitting a while, but not necessarily a problem.</p></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">It came out but hasn't been marked paid yet. Shops often charge a few days after release, so it's usually nothing; it's worth a look if it's been there more than a couple of weeks.</p></div>
       </div>
       <div class="day-group" id="faq-4">
-        <div class="day-group-head"><div class="day-group-label">What's a "ghost item"?</div><span class="day-group-arrow">&#9662;</span></div>
-        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">An entry that came from an old parser issue and can't be matched to a real order number. Almost always a duplicate of something already tracked properly elsewhere. Worth checking before removing.</p></div>
+        <div class="day-group-head"><div class="day-group-label">Why are some items flagged "no order number"?</div><span class="day-group-arrow">&#9662;</span></div>
+        <div class="day-group-body"><p class="warn-hint" style="padding-left:4px;">Every real Forbidden Planet order has an order number, so one without is usually left over from an older import and a duplicate of something tracked properly. Check before removing it, or mark it Fine as it is if it's genuine.</p></div>
       </div>
       <div class="day-group" id="faq-5">
         <div class="day-group-head"><div class="day-group-label">Does anything ever leave this server?</div><span class="day-group-arrow">&#9662;</span></div>

@@ -1,5 +1,118 @@
 # Changelog
 
+## v3.4.0 - fits what you collect
+
+Ka-Ching! started with comics, and plenty of it still assumed you collect
+comics. This release makes it fit whatever you collect: cards, figures,
+vinyl, films, games or a mix. New installs get a short setup guide, and a
+round of fixes from a full audit makes the everyday jobs quicker.
+
+### What you collect
+- **A setup guide on new installs.** What you collect, whether you
+  pre-order, which pages to show, currency and budget, theme and layout, and
+  an optional password. Every step can be skipped, and you can run it again
+  from Settings -> Help. Existing installs never see it unless they open it.
+- **What you track** (Settings -> Appearance) replaces the three layout
+  presets. Tick what you collect and whether you pre-order, and the pages
+  that don't fit are switched off for you: Price creep only shows for
+  numbered things like comics and manga, Top titles is hidden if nothing
+  you collect comes in sets or series, and the pre-order cards go if you
+  don't pre-order. You can still switch any card back on, and **Reset
+  cards to preset** puts things back.
+- **Price creep and Top titles get their own on/off switch** ("Show this
+  page") in Customise and in Settings -> Appearance. A hidden page also
+  leaves the sidebar.
+- **A type for every category:** Comics, Manga and books, Trading cards,
+  Figures and toys, Vinyl and music, Films and TV, Video games or Something
+  else, set in Settings -> General -> Categories. The type decides the
+  words used: a **Set** for trading cards, a **Line** for figures, an
+  **Artist** for vinyl, and so on. Existing categories get a type from
+  their name (you can change it), and new ones you type in get a guess.
+  On upgrading, unused Comics and Manga type categories get Numbered issues
+  switched on, so Price creep picks them up the first time you use them.
+- **A Series / Set box** on Log orders (both tabs), the import review
+  screen and Edit item, worded to match the category. For comics and manga
+  it's worked out from the title as before, so you can leave it empty. It
+  suggests names you've used before, and is included in both CSV exports.
+- **Top titles groups by Series / Set**, with its headings and wording
+  following what you collect ("Top sets by total spend" for cards, and so
+  on). Its category chips start with every category except "Something
+  else".
+- **Gold / silver is no longer a starter category** on new installs. If you
+  already have it, it stays.
+
+### Orders, Calendar and Alerts
+- **A floating bar for bulk select** that stays in view as you scroll:
+  Mark paid, **Delay** (+30, +60 or +90 days), Cancel and Remove. Esc or
+  the ✕ clears the selection, and each action says what it did.
+- **Calendar:** a **Day / Whole month** switch replaces "Show whole month",
+  so it's always clear which you're looking at.
+- **Alerts: "Fine as it is".** Items with no order number or no release
+  date can be marked as fine, so they stop showing up. They're listed under
+  "Marked as fine", where you can bring any of them back.
+- "Ghost items" are now called **items with no order number**, and the
+  Alerts summary only lists the kinds of alert you actually have.
+
+### Smaller changes
+- **Typing a new category** in a category box: the "Add ..." row comes first
+  and is highlighted, and **+ New category...** stays at the top of the list.
+- **Insights -> Overview:** the 10 releases card loses its title and just
+  has **Recent**, **Most expensive** and **Lowest** tabs, and the "Edit
+  priciest item" link is gone.
+- **Where each series sits** (Price creep) shows the same hover box as the
+  charts: first and latest price, change and category.
+- **Log orders** tabs are now **Paste an order** and **Add by hand**. Figures say
+  "item" rather than "issue", and "Busiest day of the week" is clearer
+  about what it means.
+- **The sidebar budget box** sits at the very bottom, below Collapse.
+- Text boxes have a clearer border and focus ring in every theme, and
+  date pickers and scroll bars match light or dark themes properly.
+
+### Fixes
+- **Shipping was counted too many times for orders with several release
+  dates.** An order's real postage (from a pasted order page) was added to
+  every parcel in it, so a pre-order spread over several weeks could show
+  its whole postage again on each one. It's now shared across the order's
+  parcels: matched one-to-one when there's a figure per parcel, otherwise
+  split evenly. Still due, budgets, shipping figures and charts that use
+  real postage will come out lower and correct.
+- The Dashboard's **year so far** and **all time** figures now include
+  shipping, like every other total.
+- **Insights left out items with no release date.** Older dispatched
+  orders often only have an order date, and Overview's monthly figures
+  (priciest month, average per month, the 12-month trend) and shipping
+  skipped them. They're now dated by their order date, as everywhere else,
+  so Overview, Spend by shop and the Dashboard all give the same total.
+- Overview's **Cumulative spend** card says "released so far" rather than
+  "spent", and compares the whole month with your budget, so it no longer
+  disagrees with the Dashboard about whether you're over.
+- Price creep only offers categories with **Numbered issues** switched on,
+  so things like Funko Pops with a "#" in the name no longer show up as a
+  series; manga is counted in volumes.
+- Series typed in capitals (common in eBay listings) group with the same
+  series written normally.
+- Top titles names every type in a mixed collection ("Series / Set /
+  Artist"), and the price buckets on Overview use your currency.
+- The Alerts page shows open alerts first, with the history underneath,
+  and dates read "15 Sep" rather than "09-15" everywhere.
+- **Notifications that keep failing are now flagged** on the Dashboard and
+  at the top of Alerts, with the reason in plain words ("couldn't reach the
+  server"). Before, they failed silently.
+- **Price creep ignores issues you only bought as a variant** when there
+  are enough standard covers to go on, so one pricey variant of an early
+  issue no longer shows as a huge rise or a -79% "drop".
+- Free (£0) items no longer show as unpaid or awaiting charge.
+- Chart labels stay a readable size whatever the card's width.
+- The 12-month trend line no longer dips below zero between quiet months.
+- Search filters, the Delay buttons, the calendar legend, shop rows and
+  alert rows could run off the edge of narrow screens; the This week list
+  could cut off its last link on a phone; shop names on Spend by shop were
+  cut to a few letters, and eBay sellers now show just the seller's name.
+- Wording tidied throughout: "due" instead of "left of" when nothing's
+  paid yet, clearer labels on Spend by shop and Price creep, shorter help
+  text, and fewer repeated figures.
+- Leftover mentions of the removed `/classic/` interface.
+
 ## v3.3.0 - a calmer, premium look
 
 A restyle release. Every page has been redesigned to be quieter and easier

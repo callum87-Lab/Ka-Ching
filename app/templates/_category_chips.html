@@ -1,5 +1,5 @@
 {# Category filter chip row - shared by Insights Price creep and Top titles. #}
-{% if category_chips %}
+{% if category_chips|length > 1 or (category_chips and not category_chips[0].on) %}
 <div class="filter-row" id="category-filter">
   <span class="lbl">Showing:</span>
   {% for c in category_chips %}

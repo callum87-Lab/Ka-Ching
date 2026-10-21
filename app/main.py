@@ -7,7 +7,8 @@ The code is split by area:
   settings_pages.py  the Settings page and everything it saves
   auth.py            the optional login
   api.py             phone sync API, summary JSON, calendar feed, service worker
+  welcome.py         the first-run setup guide
 """
 from .core import *  # noqa: F401,F403 - keeps app.main.<name> working
 from .core import app  # noqa: F401
-from . import pages, items, settings_pages, auth, api  # noqa: F401,E402 - registers the routes
+from . import pages, items, settings_pages, auth, api, welcome  # noqa: F401,E402 - registers the routes
