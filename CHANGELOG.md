@@ -61,9 +61,9 @@ round of fixes from a full audit makes the everyday jobs quicker.
   priciest item" link is gone.
 - **Where each series sits** (Price creep) shows the same hover box as the
   charts: first and latest price, change and category.
-- **Log orders** tabs are now **Paste an order** and **Add by hand**. Figures say
-  "item" rather than "issue", and "Busiest day of the week" is clearer
-  about what it means.
+- **Log orders** tabs are now **Paste an order** and **Add by hand**.
+- Overview's figures say "item" rather than "issue", and "Busiest day of
+  the week" is clearer about what it means.
 - **The sidebar budget box** sits at the very bottom, below Collapse.
 - Text boxes have a clearer border and focus ring in every theme, and
   date pickers and scroll bars match light or dark themes properly.
