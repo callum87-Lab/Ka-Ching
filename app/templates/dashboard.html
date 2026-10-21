@@ -237,7 +237,7 @@
     </div>
     <div class="hero-side">
       {% if biggest_still_to_come %}
-      <div class="hero-side-k">Biggest still to come &middot; {{ biggest_still_to_come.due_label }}{% if biggest_still_to_come.days_until_due is not none and biggest_still_to_come.days_until_due >= 0 %} &middot; in {{ biggest_still_to_come.days_until_due }} day{{ "s" if biggest_still_to_come.days_until_due != 1 else "" }}{% endif %}</div>
+      <div class="hero-side-k">Biggest still to come &middot; {{ biggest_still_to_come.due_label }}{% set _d = biggest_still_to_come.days_until_due %}{% if _d is not none and _d >= 0 %} &middot; {% if _d == 0 %}today{% elif _d == 1 %}tomorrow{% else %}in {{ _d }} days{% endif %}{% endif %}</div>
       <div class="hero-side-t">{{ biggest_still_to_come.name }}</div>
       <div class="hero-side-p mono">{{ currency() }}{{ "{:,.2f}".format(biggest_still_to_come.price) }}</div>
       <div class="hero-side-s">{{ biggest_still_to_come.source }}</div>

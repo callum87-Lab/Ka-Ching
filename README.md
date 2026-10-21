@@ -107,7 +107,7 @@ Click any screenshot to view it full-size.
 <td><a href="screenshots/spend-by-shop.png"><img src="screenshots/spend-by-shop.png" width="400"></a></td>
 <td><a href="screenshots/search.png"><img src="screenshots/search.png" width="400"></a></td>
 </tr>
-<tr><th>Customise mode</th><th>Settings → Appearance</th></tr>
+<tr><th>Customise mode</th><th>Settings → Appearance: What you track</th></tr>
 <tr>
 <td><a href="screenshots/customise.png"><img src="screenshots/customise.png" width="400"></a></td>
 <td><a href="screenshots/appearance.png"><img src="screenshots/appearance.png" width="400"></a></td>
@@ -116,6 +116,11 @@ Click any screenshot to view it full-size.
 <tr>
 <td><a href="screenshots/alerts.png"><img src="screenshots/alerts.png" width="400"></a></td>
 <td><a href="screenshots/settings.png"><img src="screenshots/settings.png" width="400"></a></td>
+</tr>
+<tr><th>Setup guide (new installs)</th><th>Top sets, for a trading-card collection</th></tr>
+<tr>
+<td><a href="screenshots/setup-guide.png"><img src="screenshots/setup-guide.png" width="400"></a></td>
+<td><a href="screenshots/top-sets.png"><img src="screenshots/top-sets.png" width="400"></a></td>
 </tr>
 </table>
 

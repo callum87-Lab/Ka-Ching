@@ -123,8 +123,9 @@ def test_variant_only_issue_doesnt_fake_a_price_change(client, fresh_db):
 
 def test_free_items_are_not_unpaid(client, fresh_db):
     add_item(fresh_db, "Freebie #1", 0.0, -20, status="released")
-    page = client.get("/orders?tab=unpaid").text
-    assert "Freebie" not in page
+    page = client.get("/orders").text
+    unpaid = page.split('id="orders-tab-unpaid"', 1)[1]
+    assert "Freebie" not in unpaid
 
 
 def test_failing_notifications_are_flagged(client, fresh_db):
