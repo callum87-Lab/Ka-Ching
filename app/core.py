@@ -89,7 +89,13 @@ async def _lifespan(_app):
     yield
 
 
-app = FastAPI(title="Ka-Ching!", lifespan=_lifespan)
+# FastAPI ships OpenTelemetry hooks. They only export when OTEL_* settings
+# point somewhere, but Ka-Ching! switches them off entirely: no tracing,
+# metrics or logs are collected, and environment settings can't turn them on.
+app = FastAPI(title="Ka-Ching!", lifespan=_lifespan, telemetry={
+    "tracing": False, "metrics": False, "logs": False,
+    "operation_spans": False, "auto_configure": False,
+})
 
 
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
