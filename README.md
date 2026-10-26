@@ -24,6 +24,35 @@ best at — but anything with a name, a price, a release date and a shop works
 the same way, and since v3 you can sort it all into **categories** (Comics,
 Manga, Pokémon cards, Funko Pop… or your own).
 
+## Quick start
+
+Ka-Ching! is one Docker container. Use this compose file. It builds the
+latest release straight from GitHub, so there's nothing to download first:
+
+```yaml
+services:
+  kaching:
+    build: https://github.com/callum87-Lab/Ka-Ching.git#v3.4.0
+    container_name: kaching
+    restart: unless-stopped
+    ports:
+      - "8091:8000"
+    volumes:
+      - ./data:/data
+```
+
+- **Docker Compose:** save it as `docker-compose.yml` in an empty folder and
+  run `docker compose up -d --build`.
+- **Arcane or Dockge:** create a new stack or project called `ka-ching`,
+  paste the compose file in, and deploy.
+
+Then open `http://<your-server>:8091`. A short setup guide walks you through
+the rest, and every step can be skipped. To update to a later release,
+change the version at the end of the `build:` line and redeploy. A
+ready-made image (no build step, and templates for Portainer and Unraid) is
+coming with v3.4.1. More options are under [Running it](#running-it) and
+[Configuration](#configuration).
+
 > **New in v3.4 — fits what you collect.** Tell it what you collect
 > (comics, cards, figures, vinyl, films, games or a mix) and the pages and
 > wording follow: a **Series / Set** box when logging orders, Top titles by
@@ -32,34 +61,9 @@ Manga, Pokémon cards, Funko Pop… or your own).
 > See [CHANGELOG.md](CHANGELOG.md) and
 > [Upgrading from v3.3](#upgrading-from-v33).
 
-> **New in v3.3 — a calmer, premium look.** Every page redesigned: four
-> themes (Sand, Grey, Blue and Noir) with contrast-checked accent colours, a
-> new "K!" logo, a Dashboard that leads with this month at a glance, a
-> Spending chart that splits paid from still due, a collapsible sidebar, and
-> a Compact layout. Fonts are bundled, so nothing loads from outside your
-> server. See [CHANGELOG.md](CHANGELOG.md) and
-> [Upgrading from v3.2](#upgrading-from-v32).
-
-> **New in v3.2 — a security and quality release.** A full security review
-> (OWASP ASVS Level 1, plus GitHub's CodeQL scanning) with every issue it
-> found fixed, a stronger optional login, a framework upgrade that clears 7
-> known vulnerabilities, a round of bug fixes, faster pages, an automated
-> test suite, and signed releases. See [CHANGELOG.md](CHANGELOG.md) and
-> [Upgrading from v3.1](#upgrading-from-v31) — **you'll be asked to sign in
-> once more** if you use the login.
-
-> **New in v3.1:** customise every page (show, hide and drag cards into
-> your own order), layouts for wide landscape monitors, a budget split by category with optional per-category
-> limits, an optional login, a `/` search shortcut, and a lot of polish.
-> See [CHANGELOG.md](CHANGELOG.md). The old interface at `/classic/` has now
-> been removed as planned — old links simply open the same page in the
-> current one.
-
-> **New in v3.0 — a completely new interface.** Dark neon redesign, a proper
-> sidebar layout, a real phone layout, categories, a reworked Insights
-> section, and a lot of smaller fixes. See [CHANGELOG.md](CHANGELOG.md) for
-> the full list, and [Upgrading from v2](#upgrading-from-v2x) before you
-> update — your data upgrades itself, nothing needs doing by hand.
+> **Earlier releases** (v3.3's new look, v3.2's security review, v3.1's
+> customisable pages, v3.0's new interface…) are all in
+> [CHANGELOG.md](CHANGELOG.md).
 
 > **About the Android app:** the Ka-Ching! Android app is **dormant for
 > now**, and its repository is private until it's back. It was built against the old interface, and rather
@@ -512,7 +516,11 @@ than only provable by checking the database.
 
 ## Running it
 
+The quickest way is the compose file in [Quick start](#quick-start). Or
+download the source and build it yourself:
+
 ```bash
+git clone https://github.com/callum87-Lab/Ka-Ching && cd Ka-Ching
 docker compose up -d --build
 ```
 
