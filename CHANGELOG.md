@@ -245,9 +245,9 @@ better and more safely.
 - **Signed releases:** each release comes with a software bill of materials
   and a checksums file, signed by GitHub - see
   [Verifying a release](SECURITY.md#verifying-a-release).
-- New documents: [ARCHITECTURE.md](ARCHITECTURE.md),
-  [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md),
-  [INTERFACES.md](INTERFACES.md), [MAINTAINERS.md](MAINTAINERS.md), and
+- New documents: [ARCHITECTURE.md](docs/ARCHITECTURE.md),
+  [SECURITY-ASSESSMENT.md](docs/SECURITY-ASSESSMENT.md),
+  [INTERFACES.md](docs/INTERFACES.md), [MAINTAINERS.md](docs/MAINTAINERS.md), and
   fuller [SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 - OpenSSF Best Practices: Baseline Level 1 and Level 2.
 
