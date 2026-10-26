@@ -11,6 +11,9 @@ COPY app ./app
 RUN mkdir -p /data
 ENV DB_PATH=/data/kaching.db
 ENV SHIPPING_ESTIMATE=4.00
+# No telemetry: FastAPI's OpenTelemetry hooks are switched off in the app,
+# and this makes sure nothing in the container can turn them back on.
+ENV OTEL_SDK_DISABLED=true
 
 EXPOSE 8000
 
