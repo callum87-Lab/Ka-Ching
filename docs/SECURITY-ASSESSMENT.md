@@ -10,7 +10,7 @@ re-checked with every release.
 - **Last reviewed:** 3 October 2026
 - **How it's kept current:** this file is reviewed before each release, and
   whenever a vulnerability report, CodeQL alert or Dependabot alert comes in.
-  Reports go through [SECURITY.md](SECURITY.md).
+  Reports go through [SECURITY.md](../SECURITY.md).
 
 ## What it is, in one paragraph
 

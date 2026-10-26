@@ -163,7 +163,7 @@ locked into anything.
 other websites, nothing is ever loaded from outside the app, uploads have
 size limits, and every page sends strict security headers. The code is
 scanned on every change (CodeQL, dependency checks) and reviewed against
-OWASP ASVS Level 1 — see [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md).
+OWASP ASVS Level 1 — see [SECURITY-ASSESSMENT.md](docs/SECURITY-ASSESSMENT.md).
 
 ## A tour of the interface
 
@@ -869,9 +869,9 @@ Ka-Ching! keeps its dependencies deliberately few:
   (Inter and Instrument Serif) are bundled in `app/static/fonts` with their
   SIL Open Font Licence files.
 - **How they're obtained:** from PyPI with pip, in hash-checking mode:
-  [`requirements.txt`](requirements.txt) pins every package, including
+  [`requirements/requirements.txt`](requirements/requirements.txt) pins every package, including
   sub-dependencies, to an exact version *and* fingerprint, so a tampered
-  download is refused. It's generated from `requirements.in` with
+  download is refused. It's generated from `requirements/requirements.in` with
   `pip-compile --generate-hashes`. The official `python:3.12-slim` Docker
   base image is pinned by digest too.
 - **How they're tracked:** GitHub's dependency graph and Dependabot alerts
@@ -883,11 +883,11 @@ Ka-Ching! keeps its dependencies deliberately few:
 
 - [SECURITY.md](SECURITY.md) - reporting a vulnerability, supported versions, verifying a release, and the scanning and secrets policies
 - [CONTRIBUTING.md](CONTRIBUTING.md) - how to contribute
-- [MAINTAINERS.md](MAINTAINERS.md) - who maintains the project and what they look after
-- [INTERFACES.md](INTERFACES.md) - every way data gets in or out of the app
-- [ARCHITECTURE.md](ARCHITECTURE.md) - how the app is put together, who uses it and how data flows
-- [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md) - threat model and attack surface: the likely risks and how each is handled
-- [vex.openvex.json](vex.openvex.json) - dependency vulnerabilities that don't affect Ka-Ching!, with the reasons (currently none)
+- [MAINTAINERS.md](docs/MAINTAINERS.md) - who maintains the project and what they look after
+- [INTERFACES.md](docs/INTERFACES.md) - every way data gets in or out of the app
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - how the app is put together, who uses it and how data flows
+- [SECURITY-ASSESSMENT.md](docs/SECURITY-ASSESSMENT.md) - threat model and attack surface: the likely risks and how each is handled
+- [vex.openvex.json](docs/vex.openvex.json) - dependency vulnerabilities that don't affect Ka-Ching!, with the reasons (currently none)
 - [CHANGELOG.md](CHANGELOG.md) - what changed in each release
 
 ## Contributing a new shop's parser

@@ -1,6 +1,6 @@
 {
   "@context": "https://openvex.dev/ns/v0.2.0",
-  "@id": "https://github.com/callum87-Lab/Ka-Ching/vex.openvex.json",
+  "@id": "https://github.com/callum87-Lab/Ka-Ching/docs/vex.openvex.json",
   "author": "Callum (Ka-Ching! maintainer)",
   "timestamp": "2026-10-04T00:00:00Z",
   "version": 1,

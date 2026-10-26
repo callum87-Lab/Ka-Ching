@@ -1,7 +1,7 @@
 # Contributing to Ka-Ching!
 
 Thanks for wanting to help. Ka-Ching! is a small project with one maintainer
-(see [MAINTAINERS.md](MAINTAINERS.md)), so contributions are welcome but are
+(see [MAINTAINERS.md](docs/MAINTAINERS.md)), so contributions are welcome but are
 reviewed carefully to keep it simple, private and reliable.
 
 ## Before you start
@@ -51,22 +51,22 @@ review** and **Sign-off** checks run at the same time.
 **Running them yourself** (Python 3.12):
 
 ```bash
-pip install --require-hashes -r requirements-dev.txt
+pip install --require-hashes -r requirements/requirements-dev.txt
 python -m pytest
 ```
 
 They take a few seconds and never touch real data - each test uses its own
 throwaway database. The same command also runs in CI, plus
-`pip-audit -r requirements.txt` for known vulnerabilities in dependencies.
+`pip-audit -r requirements/requirements.txt` for known vulnerabilities in dependencies.
 
 **Tests are required for changes.** Every pull request that adds a feature,
 changes behaviour or fixes a bug must add or update tests in `tests/` that
 cover it - a bug fix should include a test that fails without the fix.
 Pull requests that only change documentation or styling are the exception.
 
-**Changing dependencies:** edit `requirements.in` (or `requirements-dev.in`),
+**Changing dependencies:** edit `requirements/requirements.in` (or `requirements/requirements-dev.in`),
 then regenerate the locked files with
-`pip-compile --generate-hashes requirements.in` (and the same for
+`cd requirements && pip-compile --generate-hashes requirements.in` (and the same for
 `requirements-dev.in`) - never edit the `.txt` files by hand.
 
 ## Sign-off (Developer Certificate of Origin)

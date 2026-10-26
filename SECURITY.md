@@ -1,7 +1,7 @@
 # Security Policy
 
 Ka-Ching! is a personal, self-hosted project maintained by one person in
-their spare time (see [MAINTAINERS.md](MAINTAINERS.md)). There's no dedicated
+their spare time (see [MAINTAINERS.md](docs/MAINTAINERS.md)). There's no dedicated
 security team, but reports are taken seriously and looked at promptly.
 
 ## Reporting a vulnerability
@@ -114,7 +114,7 @@ Ka-Ching! in the VEX file below.
 
 **Findings that don't affect Ka-Ching!** - for example, a vulnerability in
 part of a library this app never uses - are recorded with the reason in
-[`vex.openvex.json`](vex.openvex.json) (OpenVEX format), and dismissed in
+[`vex.openvex.json`](docs/vex.openvex.json) (OpenVEX format), and dismissed in
 GitHub with the same reason, so the decision is public and checkable.
 
 ## Secrets and credentials
@@ -127,7 +127,7 @@ GitHub with the same reason, so the decision is public and checkable.
   protection are on, so a password or key accidentally committed is
   blocked or flagged straight away.
 - **Access:** only the maintainer has write or admin access (see
-  [MAINTAINERS.md](MAINTAINERS.md)), protected by GitHub two-factor
+  [MAINTAINERS.md](docs/MAINTAINERS.md)), protected by GitHub two-factor
   authentication.
 - **If a secret is ever exposed**, it's revoked and replaced immediately,
   the history is cleaned if needed, and affected users are told through a
@@ -138,7 +138,7 @@ GitHub with the same reason, so the decision is public and checkable.
   months and whenever anyone with access leaves.
 - **Your own instance's secrets** (the login password, calendar and sync
   keys, notification tokens) live only in your database; see
-  [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md) for how they're
+  [SECURITY-ASSESSMENT.md](docs/SECURITY-ASSESSMENT.md) for how they're
   protected.
 
 ## Scope
@@ -151,4 +151,4 @@ traditional hosted-SaaS concerns don't apply. Relevant concerns include:
 - Anything that could expose data beyond your own instance
 - Any unexpected outbound network activity from the container
 
-The interfaces the app exposes are listed in [INTERFACES.md](INTERFACES.md).
+The interfaces the app exposes are listed in [INTERFACES.md](docs/INTERFACES.md).
