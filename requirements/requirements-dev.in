@@ -3,6 +3,6 @@
 #   pip-compile --generate-hashes requirements-dev.in
 -c requirements.txt
 -r requirements.in
-pytest==9.1.1
+pytest==9.2.0
 httpx==0.28.1
 pip-audit==2.10.1
